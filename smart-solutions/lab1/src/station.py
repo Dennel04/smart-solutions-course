@@ -39,6 +39,8 @@ class Config:
 
 CONFIG = Config(log_path=Path("data/letter_events.csv"), letters_path=DEFAULT_LETTERS_PATH, dry_run=True)
 LOG_LOCK = threading.Lock()
+# Flask serves requests on threads: the duplicate check and the update must be atomic.
+SEQ_LOCK = threading.Lock()
 
 # The latest accepted sequence number per Atom boot/session id.
 # It prevents a retry from accidentally starting the same robot drawing twice.
@@ -174,8 +176,13 @@ def receive_letter():
             422,
         )
 
-    previous = LAST_SEQ.get(session)
-    if previous is not None and seq <= previous:
+    with SEQ_LOCK:
+        previous = LAST_SEQ.get(session)
+        duplicate = previous is not None and seq <= previous
+        if not duplicate:
+            LAST_SEQ[session] = seq
+
+    if duplicate:
         # Retry / duplicate: acknowledge it, but never move the robot twice.
         append_log(
             letter=letter,
@@ -198,8 +205,6 @@ def receive_letter():
             ),
             200,
         )
-
-    LAST_SEQ[session] = seq
 
     # This plan contains normalized geometry only. It cannot command an MG400.
     plan = build_motion_plan(strokes)

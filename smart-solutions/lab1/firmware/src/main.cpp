@@ -674,7 +674,7 @@ static void handleSettingsPost() {
 
   station.trim();
   ssid.trim();
-  prefs.putString("station", station);
+  if (server.hasArg("station")) prefs.putString("station", station);
   if (server.hasArg("letter_mode")) {
     letterButtonMode = server.arg("letter_mode") == "1";
     prefs.putBool("letterMode", letterButtonMode);
@@ -820,7 +820,7 @@ static void handleState() {
     if (i < NUM_SLOTS - 1) filled += ",";
   }
   filled += "]";
-  String s = "{\"name\":\"" + disco::name() + "\""
+  String s = "{\"name\":" + jsonString(disco::name())
            + ",\"slot\":" + String(curSlot)
            + ",\"slots\":" + String(NUM_SLOTS)
            + ",\"filled\":" + filled
