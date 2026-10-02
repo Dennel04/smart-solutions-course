@@ -73,7 +73,7 @@ ilma, et robot sama tähte kaks korda joonistaks.
 
 ## Jaama vastus
 
-Uus sündmus:
+Uus dry-run sündmus:
 
 ```json
 {
@@ -82,11 +82,34 @@ Uus sündmus:
   "letter": "A",
   "seq": 12,
   "station_received_iso": "TODO",
-  "robot_started": false
+  "robot_started": false,
+  "dry_run": true
 }
 ```
 
-Kordussõnum:
+Execute-režiimis teeb jaam enne vastust kalibratsiooni ja mg400-base oleku
+kontrolli. Kui kontroll läbib, käivitab ta ühe taustatöötaja ning vastab kohe:
+
+```json
+{
+  "ok": true,
+  "accepted": true,
+  "duplicate": false,
+  "letter": "A",
+  "seq": 12,
+  "robot_started": true,
+  "execution_status": "started",
+  "dry_run": false
+}
+```
+
+Siin `robot_started=true` tähendab, et täitmine võeti vastu ja töötaja
+käivitati; see **ei kinnita**, et täht on valmis joonistatud. Lõpptulemus
+(`completed` või `failed`) salvestatakse jaama sündmuslogisse. Kui sama
+`session + seq` saabub töö ajal uuesti, kinnitab jaam selle ilma teist töötajat
+käivitamata.
+
+Kordussõnum pärast lõpetamist:
 
 ```json
 {
@@ -94,16 +117,24 @@ Kordussõnum:
   "duplicate": true,
   "letter": "A",
   "seq": 12,
-  "station_received_iso": "TODO"
+  "station_received_iso": "TODO",
+  "execution_status": "completed"
 }
 ```
 
 HTTP:
 
-- `202` — uus täht võeti vastu;
-- `200` — sama `session + seq` oli juba vastu võetud ja ainult kinnitatakse;
+- `202` — uus täht võeti vastu või sama sündmus on veel käimas;
+- `200` — sama `session + seq` oli juba lõpetatud ja ainult kinnitatakse;
 - `400` — vigane JSON või vigane täht.
 - `422` — tähe trajektoor ei ole jaamas seadistatud.
+- `409` — station täidab juba teist uut tähesündmust või sama sündmus on
+  pärast liikumise alustamist veaga lõppenud; viimast ei joonistata uuesti.
+- `503` — kalibratsioon, mg400-base ühendus või roboti safety gate ei luba täitmist.
+
+Enne täitmise algust tekkinud kalibratsiooni või safety gate'i vea puhul
+võib sama `session + seq` pärast vea parandamist uuesti saata. Atomi 2 s
+vastuse timeout'i tõttu toimub joonistamine HTTP päringust eraldi.
 
 ## Atomi saatja teostus
 
@@ -170,8 +201,15 @@ Jaam peab enne esimese MG400 käsu saatmist kontrollima vähemalt:
 - kas tähe trajektoor on olemas;
 - kas reaalsed Z väärtused on mõõdetud.
 
-Praegune `station.py` võtab sündmuse vastu ja logib selle, kuid ei liiguta
-robotit enne päris MG400 laborikatset.
+`station.py` käivitub vaikimisi dry-run režiimis ja ei saada robotikäske.
+Reaalne täitmisrada aktiveerub ainult lipuga `--execute`; ka siis nõuab see
+täielikku kalibratsiooni ja ohutut mg400-base olekut. Tarkvararada on
+mockidega kontrollitud, kuid reaalne MG400 tähejoonistus on endiselt laboris
+kontrollimata.
+
+Jaam peatab täitmise, kui mg400-base `servo_active` on väär või `/api/move`
+vastuses teatatud sihtpunkti on piiratult muudetud (`clamped`). Vea järel
+tehakse best-effort `/api/stop` ja rohkem plaani samme ei saadeta.
 
 ## Ajatemplid ja latentsus
 
@@ -186,7 +224,9 @@ Praegune protokoll salvestab:
 - `atom_sent_ms`;
 - `station_received_iso`;
 - `station_received_monotonic_ns`;
-- hiljem `robot_command_monotonic_ns`.
+- execute-režiimis `robot_command_monotonic_ns` vahetult enne esimest
+  `/api/move` päringut, mis alustab tähe trajektoori. `/api/speed` on
+  ettevalmistuskäsk ja ei ole joonistuse latentsuse alguspunkt.
 
 **Oluline:** Atomi `millis()` ja arvuti monotonic clock ei ole sama kell.
 Neid ei tohi lihtsalt lahutada ja nimetada tulemuseks millisekundites.
@@ -222,8 +262,11 @@ laborisse minekut läbi proovida.
 - [x] Mock Atom sender on kirjutatud.
 - [x] Atomi püsivara saatmisfunktsioon ja retry-olekumasin on kirjutatud.
 - [x] `/test/letter` tarkvaraline testitee on kirjutatud.
-- [ ] Käivitada station lokaalselt ja teha mock test.
+- [x] Käivitada station lokaalselt ja teha mock test.
 - [x] Ehitada ja kontrollida saatmisfunktsioon PlatformIO-ga.
+
+02.10.26 tarkvaraline kontroll: station töötas vaikimisi dry-run režiimis,
+`mock_atom.py` saatis tähe A, vastus oli HTTP 202 ning robotikäske ei saadetud.
 
 ## Laboris kontrollitav
 

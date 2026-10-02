@@ -31,11 +31,11 @@ Ka täielik ja valideeritud kalibratsioon tähendab ainult seda, et abstraktse p
 - [ ] Kinnita esimese katse kiirus, maksimaalselt 20%.
 - [ ] Sisesta kinnitatud väärtused faili `config/robot_calibration.json`.
 - [ ] Käivita tarkvaratestid uuesti.
-- [ ] Kontrolli teisendatud punkte enne robotiadapteri loomist.
+- [ ] Kontrolli teisendatud punkte enne reaalset MG400 käivitust.
 
 ## Veel tegemata
 
 - Reaalsete väärtuste mõõtmine: TODO
-- Robotiadapter: TODO
-- MG400 käskude saatmine: TODO
+- mg400-base HTTP adapter: tarkvaraliselt valmis ja mockidega kontrollitud
+- MG400 käskude saatmine päris robotile: TODO
 - Füüsiline joonistuskatse: TODO

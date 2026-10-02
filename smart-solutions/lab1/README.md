@@ -183,6 +183,12 @@ Kirjuta üles:
 
 **KAARDISTA ISE — vastused.** Iga osa kohta: numbrid, ühikud, kus fail on. Tegemata asja kohta üks rida, miks.
 
+**Tarkvara olek 02.10.26:** station → mg400-base HTTP täitmisrada on
+tarkvaraliselt valmis ja fake-klientidega kontrollitud. Vaikimisi käivitub
+station dry-run režiimis; robotikäsud nõuavad eraldi `--execute` lippu,
+täielikku kalibratsiooni ja ohutut roboti olekut. Reaalne MG400 tähejoonistus
+on laboris kontrollimata ning vastavad riistvara kriteeriumid jäävad TODO-ks.
+
 ##### Tegelik MG400 katse Raimo arvutil
 
 - See MG400 katse toimus sama meeskonna ühise laboritöö käigus ja oli seotud ka Andmehõive Lab 1 tööga.

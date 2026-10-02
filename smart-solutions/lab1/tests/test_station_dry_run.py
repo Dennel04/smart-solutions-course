@@ -13,6 +13,7 @@ sys.path.insert(0, str(LAB1_ROOT / "src"))
 
 import station
 from letter_paths import DEFAULT_LETTERS_PATH, load_letter_paths
+from mg400_client import MG400Client
 
 
 class StationDryRunTests(unittest.TestCase):
@@ -27,6 +28,9 @@ class StationDryRunTests(unittest.TestCase):
         )
         station.LETTER_PATHS = load_letter_paths(DEFAULT_LETTERS_PATH)
         station.LAST_SEQ.clear()
+        station.EXECUTION_EVENTS.clear()
+        station.MG400_CLIENT_FACTORY = mock.Mock(side_effect=AssertionError("MG400 called"))
+        self.addCleanup(setattr, station, "MG400_CLIENT_FACTORY", MG400Client)
         self.client = station.app.test_client()
         self.log_path = log_path
 
@@ -41,15 +45,18 @@ class StationDryRunTests(unittest.TestCase):
 
     def test_a_l_n_are_accepted_in_dry_run(self) -> None:
         with mock.patch.object(socket, "create_connection") as network_call:
-            for seq, letter in enumerate(("A", "L", "N"), start=1):
-                response = self.client.post(
-                    "/api/letter",
-                    json=self.payload(letter, "configured", seq),
-                )
-                self.assertEqual(response.status_code, 202)
-                self.assertFalse(response.get_json()["robot_started"])
-                self.assertTrue(response.get_json()["dry_run"])
-            network_call.assert_not_called()
+            with mock.patch.object(station.threading, "Thread") as worker:
+                for seq, letter in enumerate(("A", "L", "N"), start=1):
+                    response = self.client.post(
+                        "/api/letter",
+                        json=self.payload(letter, "configured", seq),
+                    )
+                    self.assertEqual(response.status_code, 202)
+                    self.assertFalse(response.get_json()["robot_started"])
+                    self.assertTrue(response.get_json()["dry_run"])
+                network_call.assert_not_called()
+                worker.assert_not_called()
+        station.MG400_CLIENT_FACTORY.assert_not_called()
 
         with self.log_path.open(newline="", encoding="utf-8") as handle:
             rows = list(csv.DictReader(handle))
@@ -78,6 +85,19 @@ class StationDryRunTests(unittest.TestCase):
         self.assertEqual(first.status_code, 202)
         self.assertEqual(duplicate.status_code, 200)
         self.assertTrue(duplicate.get_json()["duplicate"])
+
+    def test_default_cli_mode_is_dry_run(self) -> None:
+        with mock.patch.object(sys, "argv", ["station.py"]):
+            args = station.parse_args()
+        self.assertFalse(args.execute)
+
+    def test_health_reports_mode_and_incomplete_calibration_without_network(self) -> None:
+        response = self.client.get("/health")
+        self.assertEqual(response.status_code, 200)
+        body = response.get_json()
+        self.assertEqual(body["execution_mode"], "dry-run")
+        self.assertFalse(body["calibration_complete"])
+        station.MG400_CLIENT_FACTORY.assert_not_called()
 
 
 if __name__ == "__main__":
