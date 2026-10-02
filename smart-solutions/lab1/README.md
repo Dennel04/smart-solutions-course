@@ -1,3 +1,7 @@
+> **Meie lisatud märkus (ei kuulu õpetaja originaalülesande teksti):** See fail on elav tööleht. Reaalsed mõõtmised, koordinaadid ja katsetulemused lisatakse laboris.
+
+---
+
 ## Nutikad Lahendused: Labor 1 — Robot, ekraan ja tähemasin
 
 **Töömaht:** 28 tundi | **Hindamine:** 20 punkti | **Meeskond:** 3 tudengit | **Välja antud:** 12.09.26 | **Tellimise kuupäev:** 22.09.26 | **Esimene kaitsmine:** 06.10.26, veebis
@@ -121,6 +125,29 @@ Kirjuta üles:
 * kümme tõstmist failis `docs/pick_test.csv` (kas tõstis, kas pani, märkus);
 * mis baaspaketis oli valesti või puudu. Paranduse kohta tee pull request õppejõu repole.
 
+#### Tegelik MG400 katse Raimo arvutil
+
+- See MG400 katse toimus sama meeskonna ühise laboritöö käigus ja oli seotud ka Andmehõive Lab 1 tööga.
+- Smart Solutions dokumenteerib sellest ainult robotiliikumise, võrgu, positsioonide, pick-and-place'i ja tähejoonistamise jaoks olulise osa.
+
+- MG400 ühendati Raimo arvutiga LAN1 kaudu.
+- Jaama IPv4 oli `192.168.1.50`.
+- `ping 192.168.1.6` õnnestus.
+- `mg400 status` töötas.
+- `mg400 serve` töötas.
+- Veebilehel töötasid **Connect** ja **Enable**.
+- MG400 liikus veebilehe kaudu.
+- Liikumist kontrolliti 20% kiirusel.
+- Pumba funktsiooni test tehti.
+
+Pooleli:
+
+- DO1/DO2 tegelik vastavus
+- Neli nõutud positsiooni
+- 10 järjestikust pick-and-place tsüklit
+- `positions.json`
+- `pick_test.csv`
+
 #### 2. Ekraan
 
 Alguspunkt on ESP32-Image-Server, kaust `atom-image-server`. Ava see PlatformIO-s ja laadi AtomS3 peale. Plaadi nimi on `m5stack-atoms3`. M5Unified tunneb ekraani ise ära. Seeriaport 115200. Kui Atomil ei ole salvestatud võrku, teeb ta oma WiFi võrgu aadressiga 192.168.4.1. Sellel aadressil on leht: lõika pilt, saada slotti, pilt on ekraanil.
@@ -175,6 +202,23 @@ Kirjuta üles:
 
 Tellimus läheb välja 22.09.26 ja jõuab kohale enne kaitsmist. Valmis nimekirja ei ole: meeskond käib labori alguses läbi ja paneb tellimuse ise kokku faili `docs/bom.md`, iga rea juures üks lause, milline osa seda küsib. Mõtle näiteks, kas igal sülearvutil on Etherneti port või adapter, kas USB-C kaableid jätkub ja millega robot joonistab, kuni hoidikut ei ole.
 
+#### Esimese laborikülastuse kontrollnimekiri
+
+- [ ] Kontrolli BOM-i järgi, mis on laboris olemas.
+- [ ] Kontrolli, kas sülearvutil on Ethernet või USB-C → Ethernet adapter.
+- [ ] Leia MG400 LAN1 port.
+- [ ] Kontrolli, et hädastopp oleks käeulatuses.
+- [ ] Kontrolli MG400 API-režiimi.
+- [ ] Seadista arvuti Ethernet aadress 192.168.1.50 / 255.255.255.0.
+- [ ] Pingi 192.168.1.6.
+- [ ] Kontrolli porte 29999, 30003, 30004.
+- [ ] Käivita `mg400 status`.
+- [ ] Käivita `mg400 serve`.
+- [ ] Tee esimene liigutus ainult 20% kiirusel.
+- [ ] Kontrolli pumbakasti DO liinid juhendi ja multimeetriga.
+- [ ] Ära ühenda 24 V pumbakasti juhtmeid enne kontrolli.
+- [ ] Pane kõik reaalsed tulemused README-sse ja vajalikesse docs failidesse.
+
 ### Hindamiskriteeriumid
 
 | Kategooria | Punktid |
@@ -209,6 +253,46 @@ Repos on kaustas `smart-solutions/lab1/`:
 * Juhtus (numbrid):
 * Otsustasime, ja miks:
 * Lahti järgmiseks korraks:
+
+**12.09.26 — kes olid kohal**
+* Osalejad: TODO
+* Tegime:
+  * Repo struktuur loodi.
+  * Õpetaja ülesanne kopeeriti README-sse.
+  * Kohustuslike failide mallid loodi.
+  * BOM-i kontrollnimekiri valmistati ette.
+  * Esimese laborikülastuse sammud pandi kirja.
+* Juhtus (numbrid): Reaalseid mõõtmisi ei tehtud.
+* Otsustasime, ja miks: Riistvaraandmed jäävad TODO-ks kuni laborikontrollini, et dokumenti ei lisataks oletusi.
+* Lahti järgmiseks korraks: Kontrollida laboris BOM-i ja esimese laborikülastuse kontrollnimekirja punkte.
+
+**TODO kuupäev — MG400 katse Raimo arvutil**
+* Osalejad: TODO
+* Tegime:
+  * Kloonisime `mg400-base`.
+  * Seadistasime Python keskkonna.
+  * Ühendasime MG400 LAN1 kaudu.
+  * Seadistasime jaama IPv4 aadressile `192.168.1.50`.
+  * Pingisime robotit.
+  * Käivitasime `mg400 status`.
+  * Käivitasime `mg400 serve`.
+  * Kasutasime **Connect** ja **Enable**.
+  * Liigutasime robotit veebilehe kaudu.
+  * Kontrollisime 20% kiirust.
+  * Testisime pumpa.
+* Juhtus (numbrid):
+  * Jaama IP: `192.168.1.50`
+  * Roboti IP: `192.168.1.6`
+  * Kontrollitud liikumiskiirus: `20%`
+  * Muud reaalsed väärtused: TODO
+* Otsustasime, ja miks:
+  * DO, positsioonid ja 10 tsükli tulemused lisatakse alles pärast tegelikku kontrolli.
+* Lahti järgmiseks korraks:
+  * DO mapping
+  * Neli positsiooni
+  * 10 pick-and-place tsüklit
+  * `positions.json`
+  * `pick_test.csv`
 
 ### Väljundid ja tulemused
 
