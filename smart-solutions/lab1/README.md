@@ -53,6 +53,23 @@ Esimene asi on tellimus. Esimesel päeval uusi osi ei ole: mõtle välja, mida s
 
 **KAARDISTA ISE — kuupäevad ja sinu enda sammud.**
 
+##### Esimese laborikülastuse kontrollnimekiri
+
+- [ ] Kontrolli BOM-i järgi, mis on laboris olemas.
+- [ ] Kontrolli, kas sülearvutil on Ethernet või USB-C → Ethernet adapter.
+- [ ] Leia MG400 LAN1 port.
+- [ ] Kontrolli, et hädastopp oleks käeulatuses.
+- [ ] Kontrolli MG400 API-režiimi.
+- [ ] Seadista arvuti Ethernet aadress 192.168.1.50 / 255.255.255.0.
+- [ ] Pingi 192.168.1.6.
+- [ ] Kontrolli porte 29999, 30003, 30004.
+- [ ] Käivita `mg400 status`.
+- [ ] Käivita `mg400 serve`.
+- [ ] Tee esimene liigutus ainult 20% kiirusel.
+- [ ] Kontrolli pumbakasti DO liinid juhendi ja multimeetriga.
+- [ ] Ära ühenda 24 V pumbakasti juhtmeid enne kontrolli.
+- [ ] Pane kõik reaalsed tulemused README-sse ja vajalikesse docs failidesse.
+
 ### Sisendid
 
 * Riiulilt: AtomS3, USB-C kaabel, USB-C → Ethernet adapter, LAN kaabel, marker, maalriteip, paber. Proovitükk tõstmise jaoks: AtomS3 näidissilt või mis tahes lameda pealsega asi, umbes 24 × 24 mm.
@@ -125,29 +142,6 @@ Kirjuta üles:
 * kümme tõstmist failis `docs/pick_test.csv` (kas tõstis, kas pani, märkus);
 * mis baaspaketis oli valesti või puudu. Paranduse kohta tee pull request õppejõu repole.
 
-#### Tegelik MG400 katse Raimo arvutil
-
-- See MG400 katse toimus sama meeskonna ühise laboritöö käigus ja oli seotud ka Andmehõive Lab 1 tööga.
-- Smart Solutions dokumenteerib sellest ainult robotiliikumise, võrgu, positsioonide, pick-and-place'i ja tähejoonistamise jaoks olulise osa.
-
-- MG400 ühendati Raimo arvutiga LAN1 kaudu.
-- Jaama IPv4 oli `192.168.1.50`.
-- `ping 192.168.1.6` õnnestus.
-- `mg400 status` töötas.
-- `mg400 serve` töötas.
-- Veebilehel töötasid **Connect** ja **Enable**.
-- MG400 liikus veebilehe kaudu.
-- Liikumist kontrolliti 20% kiirusel.
-- Pumba funktsiooni test tehti.
-
-Pooleli:
-
-- DO1/DO2 tegelik vastavus
-- Neli nõutud positsiooni
-- 10 järjestikust pick-and-place tsüklit
-- `positions.json`
-- `pick_test.csv`
-
 #### 2. Ekraan
 
 Alguspunkt on ESP32-Image-Server, kaust `atom-image-server`. Ava see PlatformIO-s ja laadi AtomS3 peale. Plaadi nimi on `m5stack-atoms3`. M5Unified tunneb ekraani ise ära. Seeriaport 115200. Kui Atomil ei ole salvestatud võrku, teeb ta oma WiFi võrgu aadressiga 192.168.4.1. Sellel aadressil on leht: lõika pilt, saada slotti, pilt on ekraanil.
@@ -189,6 +183,29 @@ Kirjuta üles:
 
 **KAARDISTA ISE — vastused.** Iga osa kohta: numbrid, ühikud, kus fail on. Tegemata asja kohta üks rida, miks.
 
+##### Tegelik MG400 katse Raimo arvutil
+
+- See MG400 katse toimus sama meeskonna ühise laboritöö käigus ja oli seotud ka Andmehõive Lab 1 tööga.
+- Smart Solutions dokumenteerib sellest ainult robotiliikumise, võrgu, positsioonide, pick-and-place'i ja tähejoonistamise jaoks olulise osa.
+
+- MG400 ühendati Raimo arvutiga LAN1 kaudu.
+- Jaama IPv4 oli `192.168.1.50`.
+- `ping 192.168.1.6` õnnestus.
+- `mg400 status` töötas.
+- `mg400 serve` töötas.
+- Veebilehel töötasid **Connect** ja **Enable**.
+- MG400 liikus veebilehe kaudu.
+- Liikumist kontrolliti 20% kiirusel.
+- Pumba funktsiooni test tehti.
+
+Pooleli:
+
+- DO1/DO2 tegelik vastavus
+- Neli nõutud positsiooni
+- 10 järjestikust pick-and-place tsüklit
+- `positions.json`
+- `pick_test.csv`
+
 ### Ohutus
 
 * MG400 ulatub 440 mm kaugusele. Kui käsk on ootel, ei ole kellegi käed selles alas. Enne iga käivitust ütleb keegi "liigub".
@@ -201,23 +218,6 @@ Kirjuta üles:
 ### Komponendid selle labori jaoks
 
 Tellimus läheb välja 22.09.26 ja jõuab kohale enne kaitsmist. Valmis nimekirja ei ole: meeskond käib labori alguses läbi ja paneb tellimuse ise kokku faili `docs/bom.md`, iga rea juures üks lause, milline osa seda küsib. Mõtle näiteks, kas igal sülearvutil on Etherneti port või adapter, kas USB-C kaableid jätkub ja millega robot joonistab, kuni hoidikut ei ole.
-
-#### Esimese laborikülastuse kontrollnimekiri
-
-- [ ] Kontrolli BOM-i järgi, mis on laboris olemas.
-- [ ] Kontrolli, kas sülearvutil on Ethernet või USB-C → Ethernet adapter.
-- [ ] Leia MG400 LAN1 port.
-- [ ] Kontrolli, et hädastopp oleks käeulatuses.
-- [ ] Kontrolli MG400 API-režiimi.
-- [ ] Seadista arvuti Ethernet aadress 192.168.1.50 / 255.255.255.0.
-- [ ] Pingi 192.168.1.6.
-- [ ] Kontrolli porte 29999, 30003, 30004.
-- [ ] Käivita `mg400 status`.
-- [ ] Käivita `mg400 serve`.
-- [ ] Tee esimene liigutus ainult 20% kiirusel.
-- [ ] Kontrolli pumbakasti DO liinid juhendi ja multimeetriga.
-- [ ] Ära ühenda 24 V pumbakasti juhtmeid enne kontrolli.
-- [ ] Pane kõik reaalsed tulemused README-sse ja vajalikesse docs failidesse.
 
 ### Hindamiskriteeriumid
 
