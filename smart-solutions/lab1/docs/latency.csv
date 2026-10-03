@@ -1,1 +1,6 @@
 katse_nr,letter,atom_sent_ts,station_received_ts,station_robot_command_ts,atom_to_station_ms,station_to_robot_ms,note
+1,O,2970407,2026-10-03T11:58:56.080+00:00,26864968700400,1.4,592.2,"session 323d1f0559c2924d, seq 25, executed; MG400 motion plan completed"
+2,P,2983837,2026-10-03T11:59:09.509+00:00,26878143755000,0.0,338.7,"session 323d1f0559c2924d, seq 26, executed; MG400 motion plan completed"
+3,Q,2997697,2026-10-03T11:59:23.369+00:00,26892222812400,0.2,557.5,"session 323d1f0559c2924d, seq 27, executed; MG400 motion plan completed"
+4,R,3012697,2026-10-03T11:59:38.381+00:00,26907133822100,12.2,456.5,"session 323d1f0559c2924d, seq 28, executed; MG400 motion plan completed"
+5,S,3028797,2026-10-03T11:59:54.477+00:00,26923296549700,8.1,523.4,"session 323d1f0559c2924d, seq 29, executed; MG400 motion plan completed"
