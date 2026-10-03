@@ -141,6 +141,12 @@ static void logf(const char* fmt, ...) {
   va_end(args);
   size_t n = strlen(buf);
   while (n && (buf[n - 1] == '\n' || buf[n - 1] == '\r')) buf[--n] = 0;
+  // Log text can come from Wi-Fi clients (Host header, URI, settings form):
+  // a control character must not start a new USB line, or a client could
+  // fake a {"letter":..} event that the station bridge would draw.
+  for (size_t i = 0; i < n; i++) {
+    if ((uint8_t)buf[i] < 0x20 || (uint8_t)buf[i] == 0x7f) buf[i] = '?';
+  }
   xSemaphoreTake(serialMux, portMAX_DELAY);
   Serial.print("# ");
   Serial.println(buf);
@@ -785,6 +791,7 @@ static void pumpButton() {
 static void handleRoot() {
   // Lab 1 part 2: log which address the phone probed when it joined the AP
   // (Android: /generate_204, iPhone: /hotspot-detect.html, ...).
+  // Client-controlled text; logf() replaces control characters.
   logf("portal GET http://%s%s", server.hostHeader().c_str(), server.uri().c_str());
   server.send_P(200, "text/html", INDEX_HTML);
 }
