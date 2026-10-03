@@ -44,11 +44,16 @@ Esimene asi on tellimus. Esimesel päeval uusi osi ei ole: mõtle välja, mida s
 **Peab olema tehtud**
 
 - [ ] Tellimus 22.09: mis selle labori jaoks riiulil puudu on, failis `docs/bom.md`.
-- [ ] Robot on API-režiimis. `mg400 status` vastab. Leht liigutab robotit. Pump imeb ja puhub käsurealt.
+- [x] Robot on API-režiimis. `mg400 status` vastab. Leht liigutab robotit. Pump imeb ja puhub käsurealt.
+  * 03.10.26: kinnitatud — Raimo arvutil esimene kontroll (vt allpool), 02.10.26 laboriarvutil pumba DO2 = imemine / DO1 = puhumine ja kümme võtmist, 03.10.26 tähtede joonistamine API kaudu (`mg400 serve`, 127.0.0.1:8000).
 - [ ] Neli asendit õpetatud ja failis `data/positions.json`. Robot tõstab proovitüki allikast valmis pessa kümme korda järjest.
+  * 03.10.26: kümme võtmist 10/10 tehti 02.10.26 Andmehõive katses samal robotil (`docs/pick_test.csv`); `positions.json` neli asendit tuleb iminapaga uuesti õpetada (02.10 asendeid server ei salvestanud).
 - [ ] AtomS3 püsivara on PlatformIO-st peale laetud. Atom teeb oma WiFi võrgu. Telefon liitub ja leht avaneb ise, ilma aadressi trükkimata. Pilt jõuab lehelt ekraanile.
+  * 03.10.26: püsivara PlatformIO-st peal, Atom teeb võrgu `AtomFramer` (192.168.4.1). Telefoni test ja pildi saatmine: TODO.
 - [ ] Atomi lehel on seadete ja testide osa. Fail `docs/atom_page.md` ütleb, mis seal on.
+  * 03.10.26: `docs/atom_page.md` täidetud (võrk, seaded, testid, rõhu rida); lehe kontroll telefoniga TODO.
 - [ ] Täht: Atomi nupp valib tähe, jaam saab selle kätte, robot joonistab. Kolm tähte.
+  * 03.10.26: töötab otsast lõpuni — 15 tähte jõudis jaama, 13 joonistati (A A C D D D D E G G I J J), `data/letter_events.csv`. Initsiaalidest D tehtud, N ja R TODO; latentsus (30 vajutust) TODO.
 - [ ] Repo ja arenduspäevik täidetud, tag `smart-solutions-lab1`.
 
 **KAARDISTA ISE — kuupäevad ja sinu enda sammud.**
@@ -299,6 +304,12 @@ Repos on kaustas `smart-solutions/lab1/`:
   * 10 pick-and-place tsüklit
   * `positions.json`
   * `pick_test.csv`
+
+**03.10.26 — Denys (+ Claude)**
+* Tegime: jaam joonistab nüüd MG400-ga paberile. Leht kalibreeriti kahe punktiga: Denys juhtis roboti käe jog-nuppudega lehe alumistesse nurkadesse ja Claude võttis roboti asendist koordinaadid. Atomile laeti ühendatud püsivara (pump + täht); laboriarvutil ei ole Wi-Fi-d, seepärast läheb täht USB kaudu (`src/atom_bridge.py`). Atomi ekraan on nupp: lühike vajutus valib tähe, pikk saadab; tähed tulevad lehele järjest vasakult paremale. Lisaks: tekstijoonistus fondi ja suurusega (`docs/text_drawing.md`).
+* Juhtus (numbrid): lehe nurgad X 335 / Y −118 ja X 335 / Y 146, nurkade vahe 264 mm; roboti ulatuses ala 240 × 110 mm. Pastakas all −110 … −112 mm, üleval −100 mm, R −28°, kiirus 2 % → 4 % → 20 %. 15 tähte jõudis jaama, 13 joonistati; jaama vastuvõtust esimese robotikäsuni mediaan 358 ms. Kaks esimest tähte katkesid 15 s liigutuse ajapiiranguga (280 mm sõit 4 % kiirusel kestab ~35 s) — ajapiirang arvutatakse nüüd teekonnast. Atom taaskäivitus, kui vajutati külgmist nuppu (see on RESET, kasutajanupp on ekraan).
+* Otsustasime, ja miks: täht USB kaudu (Wi-Fi puudub laboriarvutil); leht kahe punkti järgi, et tekst oleks lugejale püsti ka viltu lehel; MG400 sisemine ulatus paberi kõrgusel on ~195–212 mm, mitte baaspaketi 150 mm, seepärast kontrollib jaam iga punkti `mg400-base /api/check` kaudu.
+* Lahti järgmiseks korraks: N ja R joonistada ja joonlauaga mõõta; 30 vajutuse latentsus; neli asendit iminapaga `positions.json`-i; telefoni captive portal ja pildi saatmine; tag `smart-solutions-lab1`.
 
 ### Väljundid ja tulemused
 

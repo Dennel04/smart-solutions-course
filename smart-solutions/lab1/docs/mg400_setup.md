@@ -79,8 +79,8 @@ Raimo arvutil tehtud töö on reaalne laboritöö, kuid dokumenti märgitakse te
 
 ### Pooleli olevad MG400 ülesanded
 
-- DO1/DO2 tegelik vastavus imemisele ja puhumisele: TODO
-- Kontrollimeetod (juhend / multimeeter / CLI): TODO
+- DO1/DO2 tegelik vastavus imemisele ja puhumisele: DO2 = imemine, DO1 = puhumine (02.10.26).
+- Kontrollimeetod (juhend / multimeeter / CLI): impulsid DO liinidele ja rõhuanduri lugem — imemine annab vaakumi, puhumine rõhu (`data-acquisition-course/.../docs/pump_control.md`, 02.10.26).
 - `above_source` koordinaadid: TODO
 - `source` koordinaadid: TODO
 - `above_finished` koordinaadid: TODO
@@ -149,8 +149,8 @@ Baaspakett eeldab, et DO2 juhib imemist ja DO1 puhumist. See ei ole veel meie la
 ### Pump
 
 - Pumba funktsiooni test: tehtud
-- DO1/DO2 täpne vastavus: TODO
-- Kontrollimeetod: TODO
+- DO1/DO2 täpne vastavus: DO2 = imemine, DO1 = puhumine.
+- Kontrollimeetod: DO impulsid + MPX5700AP rõhuandur (02.10.26).
 
 ### Muud tulemused
 

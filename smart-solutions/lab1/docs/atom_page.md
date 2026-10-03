@@ -6,10 +6,10 @@ Captive portal ning seadete ja ekraanitesti tarkvaraline teostus on lisatud. Rea
 
 | Väli | Väärtus |
 | :--- | :--- |
-| Wi-Fi SSID | TODO |
-| Parool | TODO |
-| Atom IP | TODO |
-| Lehe URL | TODO |
+| Wi-Fi SSID | `AtomFramer` (SoftAP, kui salvestatud võrku pole) |
+| Parool | `atomframer` — vaikimisi, vahetada enne kui Atom laborist lahkub |
+| Atom IP | `192.168.4.1` (03.10.26 serial `ip` käsuga) |
+| Lehe URL | `http://192.168.4.1/` |
 
 ## Captive portal
 
@@ -74,8 +74,8 @@ korduskatsete lõppu.
 
 ## Riistvaratesti kontrollnimekiri
 
-- [ ] Laadi püsivara reaalsele AtomS3-le.
-- [ ] Märgi kasutatud Wi-Fi SSID, Atom IP ja lehe URL.
+- [x] Laadi püsivara reaalsele AtomS3-le. *(03.10.26, PlatformIO, ühendatud püsivara)*
+- [x] Märgi kasutatud Wi-Fi SSID, Atom IP ja lehe URL. *(03.10.26)*
 - [ ] Kontrolli captive portalit Android-telefoniga.
 - [ ] Kontrolli captive portalit iPhone'iga.
 - [ ] Kontrolli pildi saatmist ja kuvamist AtomS3 ekraanil.
@@ -85,5 +85,18 @@ korduskatsete lõppu.
 - [ ] Kontrolli, et `GET /settings` ei tagastaks Wi-Fi parooli.
 - [ ] Kontrolli `TEST DISPLAY STATUS` nuppu reaalsel ekraanil.
 - [ ] Kontrolli `TEST LETTER SEND` nuppu päris Atomi ja jaamaga.
-- [ ] Kontrolli lühikese ja pika vajutuse tähe nupurežiimi.
+- [x] Kontrolli lühikese ja pika vajutuse tähe nupurežiimi. *(03.10.26: nupp on ekraan ise; lühike → järgmine täht, pikk → saadab; külgmine nupp on RESET)*
 - [ ] Kontrolli, et tähe nupurežiimi väljalülitamisel töötavad sloti žestid endiselt.
+
+## Lisandus 03.10.26: ühendatud püsivara
+
+- Atomil jookseb üks püsivara: see leht + Andmehõive tark pumbakast (rõhuandur G5, pumba
+  otsus, JSON telemeetria iga 10 ms). Kontrollitud: telemeetria `t` vahe täpselt 10 ms.
+- `Settings & tests` osa ülaosas on rida rõhu, pumba režiimi, pumba oleku ja valitud
+  tähega (`GET /state` → `lab`), uueneb iga 1 s. Nutikate lahenduste L2 rõhuanduri lugem
+  on sellega juba lehel.
+- Tähe nupurežiim on vaikimisi sees: ekraanil suur täht, selle all rõhk ja pump. Saatmise
+  olek ekraanil: `SENDING` → `SENT` (HTTP) või `SENT USB` (kui jaama aadressi pole).
+- Täht saadetakse ka USB kaudu JSON reana; laboriarvutil pole Wi-Fi-d, seega kasutasime
+  03.10.26 USB kanalit (`letter_channel.md`). Wi-Fi/telefoni testid on veel tegemata.
+- Serial käsk `boot` näitab viimase taaskäivituse põhjust (nt `power-on / EN` = RESET nupp).
