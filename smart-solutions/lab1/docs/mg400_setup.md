@@ -163,4 +163,5 @@ Baaspakett eeldab, et DO2 juhib imemist ja DO1 puhumist. See ei ole veel meie la
   - Z põrand ainult koodis → käivitusvõti `--z-floor` ja muutmine töö ajal (meil −105 iminapaga, −112 pastakaga);
   - liigesepiire ei kontrollitud → pöördkinemaatika mudel (`kinematics.py`, L2 = 175,07 mm) peatab käe enne alarme 34 (J3 > 105°) ja 73 (parallelogramm, raadius < ~195 mm Z −16 juures); nupp **Recover** (`/api/recover`: ClearError + Continue); `/api/check` punkti kontrolliks enne liigutust;
   - `localhost` Windowsis proovib enne IPv6 → +200 ms päringu kohta; kasutame `127.0.0.1`.
+  - MG400 ei täida ServoP käsku, mis muudab ainult R-i (03.10.26 katse: R siht −27, X/Y/Z sama → käsi jäi 4 s IDLE olekusse R −27,98 juures; 0,5 mm X liigutusega pööras R osaliselt ja jäi −27,29 juures seisma). Jaam ootas R-i 15 s ja täht ei joonistunud. Parandus baaspaketis: kui X/Y/Z on kohal ja R on üle 0,2° mööda, pöörab follower R-i ühe `MovJ` käsuga. Robotil kontrollitud: −28 → −27 → −28, viga 0,007°, ~1 s. Jaam nõuab nüüd R-i täpsusega 0,3° (enne rakendati R-ile kogemata 0,15 mm XYZ-täpsust).
   - Pull request õppejõu repole (03.10.26): https://github.com/KKallas/mg400-base/pull/2

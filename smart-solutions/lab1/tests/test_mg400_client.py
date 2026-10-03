@@ -93,16 +93,24 @@ class MG400ClientTests(unittest.TestCase):
         )
         self.assertTrue(all(call[2]["timeout"] == 2.0 for call in session.calls))
 
-    def test_move_and_wait_r_has_its_own_tolerance(self) -> None:
-        # Lab 03.10.26: XYZ on target, R settled 0.68 deg off (-28.68 vs -28.0);
-        # the 0.15 mm pen tolerance was applied to R too and every letter timed out.
-        session = FakeSession([MOVE_OK, status([10.0, 20.0, 30.0, 40.68])])
+    def test_move_and_wait_r_tolerance_is_in_degrees(self) -> None:
+        # 03.10.26: the 0.15 mm pen tolerance was applied to R (degrees) too.
+        session = FakeSession([MOVE_OK, status([10.0, 20.0, 30.0, 40.25])])
         clock = iter([0.0]).__next__
         client = MG400Client(session=session, monotonic=clock, sleep=lambda _: None)
 
         result = client.move_and_wait(10, 20, 30, 40, tolerance=0.15, timeout=1)
 
-        self.assertEqual(result["pose"], [10.0, 20.0, 30.0, 40.68])
+        self.assertEqual(result["pose"], [10.0, 20.0, 30.0, 40.25])
+
+    def test_move_and_wait_r_still_off_times_out(self) -> None:
+        stopped = {"ok": True}
+        session = FakeSession([MOVE_OK, status([10.0, 20.0, 30.0, 40.68]), stopped])
+        clock = iter([0.0, 2.0]).__next__
+        client = MG400Client(session=session, monotonic=clock, sleep=lambda _: None)
+
+        with self.assertRaisesRegex(MG400Error, "timed out"):
+            client.move_and_wait(10, 20, 30, 40, tolerance=0.15, timeout=1)
 
     def test_move_timeout_stops_and_raises(self) -> None:
         session = FakeSession(

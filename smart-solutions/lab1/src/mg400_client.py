@@ -177,12 +177,14 @@ class MG400Client:
         r: float,
         *,
         tolerance: float = 0.5,
-        r_tolerance: float = 2.0,
+        r_tolerance: float = 0.3,
         timeout: float = 15.0,
     ) -> dict[str, Any]:
         """Move and wait until X/Y/Z are within `tolerance` mm and R within
-        `r_tolerance` degrees. R has its own limit: 03.10.26 the arm settled
-        0.68 deg off in R and a 0.15 mm limit on R timed out every letter."""
+        `r_tolerance` degrees (own unit, own limit). It stays above
+        mg400-base R_SETTLE_DEG (0.2): the base package turns R alone only
+        when it is further off than that, so a tighter limit here could wait
+        for a turn that never comes."""
         if tolerance <= 0 or r_tolerance <= 0 or timeout <= 0:
             raise ValueError("tolerance and timeout must be positive")
         target = (float(x), float(y), float(z), float(r))
