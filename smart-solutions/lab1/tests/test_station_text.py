@@ -186,6 +186,15 @@ class StationTextTests(unittest.TestCase):
         self.client.post("/api/paper/cursor/reset")
         self.assertIsNone(station.LETTER_CURSOR)
 
+    def test_cursor_can_be_set_to_another_row(self) -> None:
+        self.configure(dry_run=True)
+        r = self.client.post("/api/paper/cursor", json={"x": 0, "top": 115})
+        self.assertEqual(r.get_json()["cursor"], {"x": 0.0, "top": 115.0})
+        self.assertEqual(station.LETTER_CURSOR, (0.0, 115.0))
+        self.assertEqual(self.client.post("/api/paper/cursor", json={"x": "a", "top": 1}).status_code, 400)
+        self.assertEqual(self.client.post("/api/paper/cursor", json={"x": float("nan"), "top": 1}).status_code, 400)
+        station.LETTER_CURSOR = None
+
     def test_atom_letter_on_paper_executes_in_robot_mm(self) -> None:
         self.configure(dry_run=False)
         station.LETTER_CURSOR = None

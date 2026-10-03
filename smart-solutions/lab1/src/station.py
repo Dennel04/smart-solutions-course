@@ -361,6 +361,23 @@ def paper_cursor():
     return jsonify(ok=True, cursor=None if cursor is None else {"x": cursor[0], "top": cursor[1]})
 
 
+@app.post("/api/paper/cursor")
+def paper_cursor_set():
+    """Put the next Atom letter at paper (x, top) mm, e.g. the start of row 2
+    when row 1 of a reused sheet is already written. Off-sheet values wrap
+    like the typewriter does."""
+    global LETTER_CURSOR
+    data = request.get_json(silent=True) or {}
+    try:
+        x, top = float(data["x"]), float(data["top"])
+    except (KeyError, TypeError, ValueError):
+        return jsonify(ok=False, error="x and top must be numbers (mm)"), 400
+    if not (math.isfinite(x) and math.isfinite(top)):
+        return jsonify(ok=False, error="x and top must be finite"), 400
+    LETTER_CURSOR = (x, top)
+    return jsonify(ok=True, cursor={"x": x, "top": top})
+
+
 @app.post("/api/paper/cursor/reset")
 def paper_cursor_reset():
     """Next Atom letter starts again at the top-left of the sheet."""
