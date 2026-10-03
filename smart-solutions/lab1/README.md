@@ -273,8 +273,8 @@ Repos on kaustas `smart-solutions/lab1/`:
 * Otsustasime, ja miks:
 * Lahti järgmiseks korraks:
 
-**12.09.26 — kes olid kohal**
-* Osalejad: TODO
+**12.09.26 — Denys, Nikita, Raimo**
+* Osalejad: Denys, Nikita, Raimo
 * Tegime:
   * Repo struktuur loodi.
   * Õpetaja ülesanne kopeeriti README-sse.
@@ -285,8 +285,8 @@ Repos on kaustas `smart-solutions/lab1/`:
 * Otsustasime, ja miks: Riistvaraandmed jäävad TODO-ks kuni laborikontrollini, et dokumenti ei lisataks oletusi.
 * Lahti järgmiseks korraks: Kontrollida laboris BOM-i ja esimese laborikülastuse kontrollnimekirja punkte.
 
-**TODO kuupäev — MG400 katse Raimo arvutil**
-* Osalejad: TODO
+**12.09.26 — MG400 katse Raimo arvutil (Denys, Nikita, Raimo)**
+* Osalejad: Denys, Nikita, Raimo (kuupäev Nikita commit'ist „Document verified MG400 setup“, 12.09.26 17:01)
 * Tegime:
   * Kloonisime `mg400-base`.
   * Seadistasime Python keskkonna.
@@ -313,11 +313,30 @@ Repos on kaustas `smart-solutions/lab1/`:
   * `positions.json`
   * `pick_test.csv`
 
-**03.10.26 — Denys (+ Claude)**
+**13.–14.09.26 — Denys, Nikita, Raimo** *(kirja pandud 03.10.26 commit'ide järgi)*
+* Tegime: tarkvara ilma robotita, Nikita forgis (`Nikikikl/smart-solutions-course`). Jaama tähe kanali prototüüp (Flask + `mock_atom.py`); Atomile captive portal ning seadete ja testide leht; tähed `letters.json`-ist punktideks ja liikumisplaaniks (dry-run); Atomi nupp saadab tähe; roboti kalibratsiooni ja koordinaatide teisendus.
+* Juhtus (numbrid): kõik testidega fake-robotil ja fake-Atomil, päris robotit ei liigutatud.
+* Otsustasime, ja miks: kõigepealt dry-run, robotikäsud ainult `--execute` lipuga ja täieliku kalibratsiooniga — et vale koordinaat ei liigutaks robotit.
+* Lahti järgmiseks korraks: kalibratsioon päris robotil, esimene joonistus.
+
+**02.10.26 — Denys, Nikita, Raimo**
+* Tegime: Nikita fork liideti meie repo'sse ja parandati ülevaate leiud; Nikita lisas tähe ohutu täitmise MG400-l (`mg400_client.py`, `--execute`) ja juhendi `docs/robot_runbook.md`. Andmehõive L1 katses samal robotil: pumbakasti DO kontroll ja kümme võtmist iminapaga.
+* Juhtus (numbrid): DO2 = imemine, DO1 = puhumine; 10/10 võtmist, vaakum −52,7…−55,1 kPa (`docs/pick_test.csv`).
+* Otsustasime, ja miks: üks repo, Nikita töö liidetud, et kõik töötaksid sama koodiga.
+* Lahti järgmiseks korraks: tähed päris robotiga paberile.
+
+**03.10.26 — Denys, Nikita, Raimo (+ Claude)**
+* Tegime (kokkuvõte): ühendasime pastaka (pastakahoidik 3D printimise L1-st), testisime täna esimest korda joonistamist robotiga, seadistasime tarkvara, ühendasime eelmise laboriga (Andmehõive pumba püsivara + tähed ühel Atomil), kalibreerisime lehe jne.
 * Tegime: jaam joonistab nüüd MG400-ga paberile. Leht kalibreeriti kahe punktiga: Denys juhtis roboti käe jog-nuppudega lehe alumistesse nurkadesse ja Claude võttis roboti asendist koordinaadid. Atomile laeti ühendatud püsivara (pump + täht); laboriarvutil ei ole Wi-Fi-d, seepärast läheb täht USB kaudu (`src/atom_bridge.py`). Atomi ekraan on nupp: lühike vajutus valib tähe, pikk saadab; tähed tulevad lehele järjest vasakult paremale. Lisaks: tekstijoonistus fondi ja suurusega (`docs/text_drawing.md`).
 * Juhtus (numbrid): lehe nurgad X 335 / Y −118 ja X 335 / Y 146, nurkade vahe 264 mm; roboti ulatuses ala 240 × 110 mm. Pastakas all −110 … −112 mm, üleval −100 mm, R −28°, kiirus 2 % → 4 % → 20 %. 15 tähte jõudis jaama, 13 joonistati; jaama vastuvõtust esimese robotikäsuni mediaan 358 ms. Kaks esimest tähte katkesid 15 s liigutuse ajapiiranguga (280 mm sõit 4 % kiirusel kestab ~35 s) — ajapiirang arvutatakse nüüd teekonnast. Atom taaskäivitus, kui vajutati külgmist nuppu (see on RESET, kasutajanupp on ekraan).
 * Otsustasime, ja miks: täht USB kaudu (Wi-Fi puudub laboriarvutil); leht kahe punkti järgi, et tekst oleks lugejale püsti ka viltu lehel; MG400 sisemine ulatus paberi kõrgusel on ~195–212 mm, mitte baaspaketi 150 mm, seepärast kontrollib jaam iga punkti `mg400-base /api/check` kaudu.
 * Lahti järgmiseks korraks: N ja R joonistada ja joonlauaga mõõta; 30 vajutuse latentsus; neli asendit iminapaga `positions.json`-i; telefoni captive portal ja pildi saatmine; tag `smart-solutions-lab1`.
+
+**03.10.26 pärastlõuna — Denys, Nikita, Raimo (+ Claude)**
+* Tegime: leidsime, miks tähed jäid joonistamata (15 s ajapiirang esimesel liigutusel), ja parandasime põhjuse baaspaketis; tegime õppejõule pull request'i (https://github.com/KKallas/mg400-base/pull/2). Nihutasime roboti nii, et kogu leht oleks ulatuses, ja kalibreerisime lehe uuesti. Joonistasime N ja R. Mõõtsime latentsuse. Telefoniga: Atomi võrk, captive portal, pilt ekraanile.
+* Juhtus (numbrid): MG400 ei täida ServoP käsku, mis muudab ainult R-i (R siht −27, X/Y/Z sama → käsi seisis 4 s IDLE-s −27,98 juures); pärast parandust (`MovJ`) R viga 0,007°, ~1 s. Uus lehe ala: ülemine serv (215; −103)…(215; 132), 235 × 148 mm, kõik punktid ulatuses. Tähed joonlauaga 20 mm = kavandatud 20 mm. Latentsus 5 vajutust: Atom → jaam keskm. 4,4 ms (suhteline), jaam → robot keskm. 494 ms. Android küsis `connectivitycheck.gstatic.com/generate_204`, leht avanes ise; 128 × 128 pilt: vastuvõtt ~75 ms, salvestus + ekraan ~250 ms. Püsivara laadimine ~17 s.
+* Otsustasime, ja miks: viga parandada seal, kus ta on (baaspakett), mitte lõdvendada jaama täpsust — 2° R-tolerants oleks vea ainult peitnud. R-tolerants 0,3° (üle baaspaketi 0,2° läve).
+* Lahti järgmiseks korraks: fotod `docs/images/`; latentsus 30 vajutuseni (praegu 5); iPhone'i captive portal; Atomi vaikeparool vahetada; tag `smart-solutions-lab1`.
 
 ### Väljundid ja tulemused
 
