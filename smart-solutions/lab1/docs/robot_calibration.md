@@ -1,6 +1,6 @@
 # Roboti joonistusala kalibratsioon
 
-Fail `config/robot_calibration.json` hoiab normaliseeritud tähepunktide teisendamiseks vajalikke laboriväärtusi. Reaalsed koordinaadid, Z-kõrgused, R ja kiirus mõõdetakse MG400-l laboris. Seetõttu on need väärtused praegu tahtlikult `null` ning kalibratsioon on puudulik.
+Fail `config/robot_calibration.json` hoiab normaliseeritud tähepunktide teisendamiseks vajalikke laboriväärtusi. Enne laborimõõtmisi olid reaalsed koordinaadid, Z-kõrgused, R ja kiirus tahtlikult `null` ning kalibratsioon oli puudulik. 03.10.26 mõõdetud väärtused on nüüd failis olemas ja neid kasutati päris MG400 joonistuskatses.
 
 ## Teisendus
 
@@ -19,7 +19,7 @@ Puudulik kalibratsioon on enne laborimõõtmisi normaalne ja ohutu olek. `src/ro
 
 Ka täielik ja valideeritud kalibratsioon tähendab ainult seda, et abstraktse punkti saab arvutada. See ei luba ega käivita automaatselt MG400 käskude saatmist.
 
-## Laboris täidetav kontrollnimekiri
+## Laborieelne kontrollnimekiri
 
 - [ ] Mõõda joonistusala alguspunkt X.
 - [ ] Mõõda joonistusala alguspunkt Y.
@@ -45,9 +45,14 @@ ilma `paper` sektsioonita jääb kehtivaks. Mõõtmise juhend ja ulatuse piirid:
 - [ ] Mõõda sama alumise serva teise punkti X ja Y (≥ 50 mm nurgast).
 - [ ] Kontrolli eelvaates, et tekst on roboti ulatuses.
 
-## Veel tegemata
+## Laborieelne seis
 
 - Reaalsete väärtuste mõõtmine: TODO
 - mg400-base HTTP adapter: tarkvaraliselt valmis ja mockidega kontrollitud
 - MG400 käskude saatmine päris robotile: TODO
 - Füüsiline joonistuskatse: TODO
+
+See loetelu kirjeldab laborieelset seisu. 03.10.26 mõõdeti reaalsed
+kalibratsiooniväärtused, kontrolliti teisendatud punktide ulatust ning
+joonistati päris MG400-ga paberile. Hilisemad mõõdetud väärtused ja tulemused
+on kirjas `config/robot_calibration.json`, `README.md` ja `letters.md`.

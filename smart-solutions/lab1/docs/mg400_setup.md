@@ -56,7 +56,7 @@
 - Smart Solutions repo ei kopeeri Andmehõive `logger.py` faili.
 - Andmehõive repo: [https://github.com/Dennel04/data-acquisition-course](https://github.com/Dennel04/data-acquisition-course)
 
-## Raimo arvutil juba tehtud
+## Raimo arvutil 12.09.26 tehtud
 
 - [x] `mg400-base` kloonitud.
 - [x] Python keskkond loodud.
@@ -75,9 +75,9 @@
 - [ ] Neli nõutud positsiooni salvestatud.
 - [ ] Nõutud 10 järjestikust pick-and-place tsüklit tehtud.
 
-Raimo arvutil tehtud töö on reaalne laboritöö, kuid dokumenti märgitakse tehtuks ainult need sammud, mille tulemus on meeskonnal kinnitatud.
+See kontrollnimekiri kirjeldab 12.09.26 katse lõpu seisu, mitte Lab 1 lõpptulemust.
 
-### Pooleli olevad MG400 ülesanded
+### 02.10.26 vaheolek
 
 - DO1/DO2 tegelik vastavus imemisele ja puhumisele: DO2 = imemine, DO1 = puhumine (02.10.26).
 - Kontrollimeetod (juhend / multimeeter / CLI): impulsid DO liinidele ja rõhuanduri lugem — imemine annab vaakumi, puhumine rõhu (`data-acquisition-course/.../docs/pump_control.md`, 02.10.26).
@@ -88,6 +88,13 @@ Raimo arvutil tehtud töö on reaalne laboritöö, kuid dokumenti märgitakse te
 - 10 pick-and-place katse tulemused: TODO
 - `docs/pick_test.csv` täitmine: TODO
 - `data/positions.json` täitmine: TODO
+
+Need TODO-d kirjeldavad 02.10.26 vaheolekut. Hiljem tehti füüsiline
+pick-and-place allikast valmis pessa 10/10. Selle hilisema katse nelja
+lõplikku koordinaati eraldi reposse ei salvestatud. Praegune
+`data/positions.json` ja `docs/pick_test.csv` jäävad 02.10.26 ühe punkti
+tõstekatse kirjelduseks ning neid ei esitata hilisema source → finished
+katse koordinaatide või mõõtmislogina.
 
 ## Võrguplaan
 
@@ -123,7 +130,11 @@ Need väärtused pärinevad baaspaketi juhendist. Meeskond peab need laboris enn
 
 ## Pumba DO
 
-Baaspakett eeldab, et DO2 juhib imemist ja DO1 puhumist. See ei ole veel meie laboris kinnitatud. Kontrolli DO-liine pumbakasti juhendi ja multimeetriga enne juhtmete ühendamist. Ühenda juhtmed ainult siis, kui robot on keelatud ja pumbakast ei ole vooluvõrgus.
+Baaspakett eeldab, et DO2 juhib imemist ja DO1 puhumist. Enne 02.10.26
+laborikatset ei olnud see meie seadmel kinnitatud. Katses kontrolliti DO-liine
+impulsside ja MPX5700AP rõhuanduriga: DO2 on imemine ja DO1 puhumine.
+Ühenda juhtmed ainult siis, kui robot on keelatud ja pumbakast ei ole
+vooluvõrgus.
 
 ## Laboris täidetavad tulemused
 
@@ -145,7 +156,7 @@ Baaspakett eeldab, et DO2 juhib imemist ja DO1 puhumist. See ei ole veel meie la
 - Web **Enable**: töötas
 - Liikumine veebilehelt: töötas
 - Kontrollitud kiirus: 20%
-- Eraldi pordikontroll: TODO
+- Enne 03.10.26 eraldi pordikontroll: TODO
 - 03.10.26 pordikontroll (`Test-NetConnection 192.168.1.6 -Port …`): 29999 avatud, 30003 avatud, 30004 avatud. `ping 192.168.1.6`: 4/4, 0–1 ms.
 
 ### Pump

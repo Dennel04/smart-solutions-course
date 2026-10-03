@@ -1,6 +1,6 @@
 # AtomS3 lehe kirjeldus
 
-Captive portal ning seadete ja ekraanitesti tarkvaraline teostus on lisatud. Reaalsed väärtused ja riistvaratesti tulemused lisatakse pärast kontrolli laboris.
+Captive portal ning seadete ja ekraanitesti tarkvaraline teostus lisati enne laborikatset. 03.10.26 kontrollitud reaalsed väärtused ja riistvaratesti tulemused on kirjas allpool.
 
 ## Võrk ja leht
 
@@ -22,7 +22,7 @@ Püsivara suunab avalehele järgmised captive portal probe'i aadressid:
 - Windows ja muud kliendid: `/connecttest.txt`, `/ncsi.txt`, `/redirect`, `/canonical.html` ja `/success.txt`
 
 - Tarkvaraline teostus: lisatud
-- Automaatne avanemine Android-telefonis: TODO
+- Automaatne avanemine Android-telefonis: tehtud 03.10.26, tulemus allpool
 - Automaatne avanemine iPhone'is: TODO
 - Käitumine eri operatsioonisüsteemidega: TODO
 - 03.10.26 Android-telefon (Denys): leht avanes ise pärast `AtomFramer` võrguga liitumist. Atomi logi (`[atom-log] portal GET …`, sild `src/atom_bridge.py`) näitas, mida telefon küsis: `http://connectivitycheck.gstatic.com/generate_204` (7× ~minuti jooksul, Android kontrollib korduvalt), `…/favicon.ico`, lisaks taustaäpp `http://c.whatsapp.net/chat`. Kõik said vastuseks Atomi lehe.
@@ -31,9 +31,9 @@ Püsivara suunab avalehele järgmised captive portal probe'i aadressid:
 
 ## Pildi saatmine
 
-- 128 × 128 pildi saatmise aeg: TODO
-- Mõõtmise kuupäev ja tingimused: TODO
-- Reaalne pildi saatmine AtomS3-le: TODO
+- 128 × 128 pildi saatmise aeg: mõõdetud Atomis, kokku ~0,33 s
+- Mõõtmise kuupäev ja tingimused: 03.10.26, Android Chrome, Atomi Wi-Fi
+- Reaalne pildi saatmine AtomS3-le: tehtud, pilt kuvati pesas 1
 - 03.10.26: pilt saadeti Android-telefonist Chrome'iga, `SEND → SLOT`, pesa 1; pilt ilmus Atomi ekraanile. Atomi logi (aeg mõõdetakse Atomis `millis()` järgi, alates esimesest vastuvõetud tükist):
 
   | Katse | Tähe nupurežiim | Vastu võetud 32768 B | Salvestus + ekraan |
@@ -84,7 +84,7 @@ korduskatsete lõppu.
 - Ekraani oleku testi tarkvaraline teostus: lisatud
 - Ekraani oleku test reaalsel AtomS3-l: TODO
 - Tähe saatmise tarkvaraline testitee: lisatud
-- Atom ↔ jaam end-to-end test: TODO
+- Atom ↔ jaam end-to-end test: USB kanaliga tehtud 03.10.26; Wi-Fi kanalit ei kasutatud, sest laboriarvutil puudub Wi-Fi
 
 ## Riistvaratesti kontrollnimekiri
 
@@ -92,8 +92,8 @@ korduskatsete lõppu.
 - [x] Märgi kasutatud Wi-Fi SSID, Atom IP ja lehe URL. *(03.10.26)*
 - [x] Kontrolli captive portalit Android-telefoniga. *(03.10.26)*
 - [ ] Kontrolli captive portalit iPhone'iga.
-- [ ] Kontrolli pildi saatmist ja kuvamist AtomS3 ekraanil.
-- [ ] Mõõda 128 × 128 pildi saatmise aeg.
+- [x] Kontrolli pildi saatmist ja kuvamist AtomS3 ekraanil. *(03.10.26, Android Chrome, pesa 1)*
+- [x] Mõõda 128 × 128 pildi saatmise aeg. *(Atomis kokku ~0,33 s; telefoni koguaega ei salvestatud)*
 - [ ] Kontrolli seadete püsimist pärast taaskäivitust.
 - [ ] Kontrolli STA-ühendust labori võrgus.
 - [ ] Kontrolli, et `GET /settings` ei tagastaks Wi-Fi parooli.
@@ -112,5 +112,6 @@ korduskatsete lõppu.
 - Tähe nupurežiim on vaikimisi sees: ekraanil suur täht, selle all rõhk ja pump. Saatmise
   olek ekraanil: `SENDING` → `SENT` (HTTP) või `SENT USB` (kui jaama aadressi pole).
 - Täht saadetakse ka USB kaudu JSON reana; laboriarvutil pole Wi-Fi-d, seega kasutasime
-  03.10.26 USB kanalit (`letter_channel.md`). Wi-Fi/telefoni testid on veel tegemata.
+  03.10.26 USB kanalit (`letter_channel.md`). Atomi captive portalit ja pildi saatmist
+  kontrolliti Android-telefoniga; Wi-Fi-põhist tähekanalit ja iPhone'i ei kontrollitud.
 - Serial käsk `boot` näitab viimase taaskäivituse põhjust (nt `power-on / EN` = RESET nupp).

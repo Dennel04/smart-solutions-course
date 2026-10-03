@@ -60,7 +60,7 @@ Joon 1:
 - Ohutu pliiatsi tõstmise ja langetamise järjekord: tarkvaraliselt valmis ja mockidega kontrollitud; päris MG400-l kontrollitud 03.10.26.
 - Esimene füüsiline joonistus: 03.10.26, K õhus 2 % kiirusel, siis paberil 2 % ja 4 %; Atomi tähed 20 %.
 
-Kalibratsioon on praegu tahtlikult puudulik ja reaalsed väärtused on failis `config/robot_calibration.json` märgitud `null`. Täielik kalibratsioon üksi ei käivita MG400 käske. Liikumiseks peab station olema käivitatud eraldi `--execute` lipuga ning mg400-base safety gate peab läbima kõik kontrollid.
+Enne laborikatset oli kalibratsioon tahtlikult puudulik ja reaalsed väärtused olid failis `config/robot_calibration.json` märgitud `null`. 03.10.26 sisestati mõõdetud väärtused ning neid kasutati päris MG400 joonistuskatses. Täielik kalibratsioon üksi ei käivita MG400 käske. Liikumiseks peab station olema käivitatud eraldi `--execute` lipuga ning mg400-base safety gate peab läbima kõik kontrollid.
 
 Kalibratsiooni struktuur ja ohutuspiirangud on kirjeldatud failis `docs/robot_calibration.md`.
 
@@ -75,6 +75,10 @@ Meeskonna initsiaalid: **D** (Denys) joonistatud; **N** (Nikita) ja **R** (Raimo
 Joonlauaga mõõtmine (kavandatud tähe kõrgus 20 mm): TODO.
 *Mõõdetud 03.10.26:* joonistatud tähed on joonlauaga umbes 20–25 mm kõrged (kavandatud 20 mm).
 *03.10.26 pärastlõuna:* **N** ja **R** joonistatud (seq 19 R, 21–23 N; pärast roboti nihutamist uus lehe kalibreering). Initsiaalid D, N, R olemas. Pärast R-i parandust (mg400-base pöörab R-i `MovJ`-ga) ja uut kalibreeringut mõõtis Denys joonlauaga: tähed **20 mm** kõrged = kavandatud 20 mm.
+
+Esimesed kaks TODO-rida on hommikuse vaheoleku ajalugu. Lõpptulemus on
+03.10.26 pärastlõuna kirjes: D, N ja R joonistati ning mõõdetud tähekõrgus
+oli 20 mm.
 
 Esimesel katsel vajus pastakas pliiatsi alla laskmisel ~0,7 mm (2 %) ja ~1,3 mm (4 %)
 sihtkõrgusest madalamale, sest järgmine joon algas enne, kui Z oli peatunud. Parandus:

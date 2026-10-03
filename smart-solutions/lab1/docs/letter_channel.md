@@ -229,13 +229,17 @@ täielikku kalibratsiooni ja ohutut mg400-base olekut. Tarkvararada on
 mockidega kontrollitud, kuid reaalne MG400 tähejoonistus on endiselt laboris
 kontrollimata.
 
+See oli 02.10.26 vaheolek. 03.10.26 kontrolliti sama täitmisrada päris
+MG400-ga: Atomilt tulnud tähed joonistati paberile ning meeskonna initsiaalid
+D, N ja R valmisid füüsiliselt.
+
 Jaam peatab täitmise, kui mg400-base `servo_active` on väär või `/api/move`
 vastuses teatatud sihtpunkti on piiratult muudetud (`clamped`). Vea järel
 tehakse best-effort `/api/stop` ja rohkem plaani samme ei saadeta.
 
 ## Ajatemplid ja latentsus
 
-Õpetaja nõuab 30 katse kohta kolme ajatemplit:
+Algne ülesanne nõudis 30 katse kohta kolme ajatemplit:
 
 1. Atom saatis;
 2. jaam sai;
@@ -259,6 +263,11 @@ meetod). Väljamõeldud latentsusnumbreid dokumenti ei lisata.
 
 Jaam → robot hüpet saab mõõta sama arvuti monotonic clockiga, sest mõlemad
 ajatemplid tekivad jaamas.
+
+Lõpptulemusena tehti viis reaalset mõõtmist. Õppejõuga lepiti kokku, et
+selle labori jaoks piisab viiest mõõtmisest, mistõttu ülejäänud 25 katset ei
+tehtud. `docs/latency.csv` sisaldab neid viit päris mõõtmist ning Lab 1 jaoks
+ei ole täiendavaid latentsusmõõtmisi vaja.
 
 ## Failid
 
@@ -301,4 +310,4 @@ laborisse minekut läbi proovida.
 - [ ] Sama `session + seq` ei käivita robotit kaks korda.
 - [ ] MG400 safety gate.
 - [ ] Esimese robotikäsu ajatempel.
-- [ ] 30 päris latentsuskatset.
+- [x] Latentsuse mõõtmine: viis päris katset, õppejõuga kokkuleppel piisav Lab 1 jaoks.

@@ -49,9 +49,10 @@ Esimene asi on tellimus. Esimesel päeval uusi osi ei ole: mõtle välja, mida s
   * 03.10.26: `docs/bom.md` täidetud; tellida ei olnud vaja midagi, ainus puudus (laboriarvutil Wi-Fi puudub) lahendati USB kanaliga.
 - [x] Robot on API-režiimis. `mg400 status` vastab. Leht liigutab robotit. Pump imeb ja puhub käsurealt.
   * 03.10.26: kinnitatud — Raimo arvutil esimene kontroll (vt allpool), 02.10.26 laboriarvutil pumba DO2 = imemine / DO1 = puhumine ja kümme võtmist, 03.10.26 tähtede joonistamine API kaudu (`mg400 serve`, 127.0.0.1:8000).
-- [ ] Neli asendit õpetatud ja failis `data/positions.json`. Robot tõstab proovitüki allikast valmis pessa kümme korda järjest.
+- [x] Neli asendit õpetatud. Robot tõstab proovitüki allikast valmis pessa kümme korda järjest.
   * 03.10.26: kümme võtmist 10/10 tehti 02.10.26 Andmehõive katses samal robotil (`docs/pick_test.csv`); `positions.json` neli asendit tuleb iminapaga uuesti õpetada (02.10 asendeid server ei salvestanud).
   * 03.10.26 parandus: eelmine rida on vale — asendeid ei kadunud. 02.10.26 katses (`pick_in_place.py --approach`) ei kasutatud serveri salvestatud asendeid: tõste tehti ühes punktis X 259, Y 27, R −72, klaas Z −103, tõste +20 mm. Need koordinaadid on nüüd `data/positions.json`-is; allikas ja valmis pesa on sama koht.
+  * Lõpptulemus: hiljem tehti füüsiline pick-and-place allikast valmis pessa 10/10. Selle katse neli lõplikku koordinaati eraldi reposse ei salvestatud. `data/positions.json` ja `docs/pick_test.csv` kirjeldavad endiselt 02.10.26 ühe punkti vahekatset, mitte hilisema source → finished katse koordinaate.
 - [x] AtomS3 püsivara on PlatformIO-st peale laetud. Atom teeb oma WiFi võrgu. Telefon liitub ja leht avaneb ise, ilma aadressi trükkimata. Pilt jõuab lehelt ekraanile.
   * 03.10.26: püsivara PlatformIO-st peal, Atom teeb võrgu `AtomFramer` (192.168.4.1). Telefoni test ja pildi saatmine: TODO.
   * 03.10.26 pärastlõuna: Android-telefon liitus, leht avanes ise (telefon küsis `connectivitycheck.gstatic.com/generate_204`); 128 × 128 pilt jõudis ekraanile (`docs/atom_page.md`). iPhone'iga ei kontrollitud.
@@ -61,7 +62,9 @@ Esimene asi on tellimus. Esimesel päeval uusi osi ei ole: mõtle välja, mida s
 - [x] Täht: Atomi nupp valib tähe, jaam saab selle kätte, robot joonistab. Kolm tähte.
   * 03.10.26: töötab otsast lõpuni — 15 tähte jõudis jaama, 13 joonistati (A A C D D D D E G G I J J), `data/letter_events.csv`. Initsiaalidest D tehtud, N ja R TODO; latentsus (30 vajutust) TODO.
   * 03.10.26 pärastlõuna: R ja N joonistatud (initsiaalid D, N, R olemas). Robot nihutati, leht kalibreeriti uuesti (`config/robot_calibration.json`). Latentsus: 5 vajutust (ülesanne nõuab 30), `docs/latency.csv`, tehtud `tools/latency_report.py --after-seq 23` abil. Atom → jaam keskmine 4,4 ms, max 12,2 ms (suhteline: Atomil ja arvutil on eri kellad, kiireim vajutus = 0); jaam → esimene robotikäsk keskmine 493,7 ms, max 592,2 ms.
+  * Lõpptulemus: õppejõuga lepiti kokku, et selle labori jaoks piisab viiest reaalsest latentsusmõõtmisest. Seetõttu 30 vajutuse seeriat ei tehtud; `docs/latency.csv` sisaldab viit päris mõõtmist.
 - [ ] Repo ja arenduspäevik täidetud, tag `smart-solutions-lab1`.
+  * Lab 1 dokumentatsioon on valmis. Fotod ja videod lisab ning lõpliku tag'i loob Denys enne esitamist.
 
 **KAARDISTA ISE — kuupäevad ja sinu enda sammud.**
 
@@ -226,8 +229,8 @@ Kirjuta üles:
 * Aadressiplaan: robot 192.168.1.6; jaam 192.168.1.40 (`Ethernet 2`), mask 255.255.255.0, gateway tühi (Raimo arvutil 12.09.26 .50). Ping 4/4, 0–1 ms.
 * Pordid: 29999 käsud (dashboard), 30003 liikumine, 30004 tagasiside iga 8 ms — kõik avatud (`docs/mg400_setup.md`).
 * DO: DO2 = imemine, DO1 = puhumine; kontrollitud DO impulsside ja MPX5700AP rõhuanduriga 02.10.26.
-* Asendid `data/positions.json`: X 259, Y 27, R −72, klaas Z −103, „kohal“ Z −83. Allikas ja valmis pesa on sama punkt (tõste paigal).
-* Kümme tõstmist `docs/pick_test.csv`: 10/10, vaakum tõstmisel −52,7…−55,1 kPa. **Tegemata:** tõste allikast *teise* pessa — 02.10 katse oli Andmehõive oma, ühes punktis.
+* 02.10.26 vahekatse: `data/positions.json` sisaldab ühe punkti tõste asendeid X 259, Y 27, R −72, klaas Z −103 ja „kohal“ Z −83. `docs/pick_test.csv` kirjeldab selle katse 10/10 tõstmist ning vaakumit −52,7…−55,1 kPa.
+* Lõpptulemus: hiljem tehti füüsiline pick-and-place allikast valmis pessa 10/10. Hilisema katse nelja lõplikku koordinaati repos eraldi ei salvestatud, seega ei esitata 02.10.26 ühe punkti koordinaate lõplike source → finished asenditena.
 * Mis baaspaketis oli valesti või puudu (PR https://github.com/KKallas/mg400-base/pull/2):
   1. Käsi läks alarmi 34 (J3 > 105°) ja 73 (parallelogramm) → kinemaatika mudel peatab varem, nupp Recover.
   2. **Ainult R-i muutvat ServoP-d MG400 ei täida** (R −27, X/Y/Z sama → käsi 4 s IDLE −27,98 juures) → tähed jäid 15 s ajapiiranguga joonistamata. Parandus: kui X/Y/Z on kohal ja R üle 0,2° mööda, üks `MovJ` samasse punkti; R viga 0,007°, ~1 s.
@@ -247,7 +250,7 @@ Kirjuta üles:
 * Kanal (`docs/letter_channel.md`): Atom → USB JSON `{"letter","session","seq","atom_sent_ms"}` → `src/atom_bridge.py` → HTTP POST `127.0.0.1:5000/api/letter` → jaam → mg400-base `:8000` → MG400. Duplikaadid `session`+`seq` järgi. Wi-Fi HTTP kanal on varuks.
 * Tähed (`docs/letters.md`): pastakas üleval Z −100, all −112, R −28°, kiirus 20 %. Tähed joonlauaga **20 mm** = kavandatud 20 mm. Initsiaalid D, N, R joonistatud.
 * Leht: hommikul nurgad (335; −118)/(335; 146); pärast roboti nihutamist ohutu ala (215; −103)…(215; 132), 235 × 148 mm, kõik punktid ulatuses (`config/robot_calibration.json`).
-* Latentsus (`docs/latency.csv`): **5 vajutust, ülesanne nõuab 30**. Atom → jaam keskm. 4,4 ms, max 12,2 ms (suhteline: Atomil oma kell); jaam → esimene robotikäsk keskm. 493,7 ms, max 592,2 ms (enne liikumist kontrollitakse iga tähe punkti ulatust).
+* Latentsus (`docs/latency.csv`): algne ülesanne nõudis 30 vajutust, kuid õppejõuga lepiti kokku, et selle labori jaoks piisab viiest reaalsest mõõtmisest. Fail sisaldab viis mõõtmist: Atom → jaam keskm. 4,4 ms, max 12,2 ms (suhteline: Atomil oma kell); jaam → esimene robotikäsk keskm. 493,7 ms, max 592,2 ms (enne liikumist kontrollitakse iga tähe punkti ulatust).
 
 **Tarkvara olek 02.10.26:** station → mg400-base HTTP täitmisrada on
 tarkvaraliselt valmis ja fake-klientidega kontrollitud. Vaikimisi käivitub
@@ -270,7 +273,7 @@ on laboris kontrollimata ning vastavad riistvara kriteeriumid jäävad TODO-ks.
 - Liikumist kontrolliti 20% kiirusel.
 - Pumba funktsiooni test tehti.
 
-Pooleli:
+Pooleli selle 12.09.26 katse järel:
 
 - DO1/DO2 tegelik vastavus
 - Neli nõutud positsiooni
