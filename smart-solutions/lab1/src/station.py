@@ -104,11 +104,17 @@ def monotonic_ns() -> int:
     return time.monotonic_ns()
 
 
-def ensure_log() -> None:
-    CONFIG.log_path.parent.mkdir(parents=True, exist_ok=True)
-    if CONFIG.log_path.exists():
+def text_log_path() -> Path:
+    """Text jobs get their own CSV so the Atom latency log stays clean."""
+    return CONFIG.log_path.with_name("text_events.csv")
+
+
+def ensure_log(path: Path | None = None) -> None:
+    path = path or CONFIG.log_path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
         return
-    with CONFIG.log_path.open("w", newline="", encoding="utf-8") as f:
+    with path.open("w", newline="", encoding="utf-8") as f:
         csv.writer(f).writerow(
             [
                 "letter",
@@ -135,9 +141,11 @@ def append_log(
     robot_command_monotonic_ns: int | None,
     status: str,
     note: str = "",
+    path: Path | None = None,
 ) -> None:
-    ensure_log()
-    with LOG_LOCK, CONFIG.log_path.open("a", newline="", encoding="utf-8") as f:
+    path = path or CONFIG.log_path
+    ensure_log(path)
+    with LOG_LOCK, path.open("a", newline="", encoding="utf-8") as f:
         csv.writer(f).writerow(
             [
                 letter,
@@ -292,6 +300,7 @@ def _run_execution(
                 robot_command_monotonic_ns=command_ns,
                 status="executed" if final_state == "completed" else "execution_error",
                 note="MG400 motion plan completed" if error is None else error,
+                path=text_log_path() if key[0] == "text" else None,
             )
         except Exception:
             LOGGER.exception("could not write MG400 execution log")

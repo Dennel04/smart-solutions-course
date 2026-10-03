@@ -116,6 +116,10 @@ Päringu keha: `{"text": "Tere", "font": "futural", "size_mm": 20}` või
 `"fit": true`; valikulised `align`, `line_spacing`, `letter_spacing_mm`,
 `area` (`reachable`/`sheet`), `size`, `orientation`, `margin_mm`.
 
+Tekstitööd logitakse faili `data/text_events.csv`, mitte
+`data/letter_events.csv`-i, et Atomi 30 vajutuse latentsuse mõõtmine jääks
+puhtaks.
+
 ## Atomi tähed
 
 `letters.json` sisaldab käsitsi tehtud A, L ja N. Muud tähed A–Z võetakse nüüd

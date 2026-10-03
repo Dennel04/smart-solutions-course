@@ -106,6 +106,9 @@ class StationTextTests(unittest.TestCase):
         self.wait_for_worker()
         status = self.client.get(f"/api/text/{job}").get_json()
         self.assertEqual(status["execution_status"], "completed", status)
+        root = Path(self.temporary_directory.name)
+        self.assertFalse((root / "letter_events.csv").exists())
+        self.assertIn("executed", (root / "text_events.csv").read_text(encoding="utf-8"))
         moves = FakeMG400Client.instances[0].moves
         self.assertEqual({m[2] for m in moves}, {30.0, 25.0})  # pen_up_z, pen_down_z
         self.assertEqual(moves[0][2], 30.0)
