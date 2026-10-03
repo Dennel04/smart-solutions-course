@@ -291,6 +291,15 @@ class PaperCalibrationTests(unittest.TestCase):
         calibration.require_text_ready()
         self.assertEqual(calibration.paper.orientation, "landscape")
 
+    def test_measured_sheet_size_overrides_the_preset(self) -> None:
+        calibration = text_calibration(width_mm=264.0, height_mm=210.0)
+        job = build_text_job(parse_request({"text": "A", "size_mm": 10}), calibration)
+        self.assertEqual((job.paper_width, job.paper_height), (264.0, 210.0))
+        with self.assertRaises(CalibrationError):
+            text_calibration(width_mm=264.0)
+        with self.assertRaises(CalibrationError):
+            text_calibration(width_mm=-1.0, height_mm=210.0)
+
     def test_invalid_paper_values(self) -> None:
         for override in ({"size": "B4"}, {"orientation": "up"}, {"margin_mm": -1},
                          {"edge_x": 200.0, "edge_y": 90.0}, {"corner_x": True}):

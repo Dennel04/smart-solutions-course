@@ -7,20 +7,22 @@
     "height": null
   },
   "pose": {
-    "r": null,
-    "pen_up_z": null,
-    "pen_down_z": null
+    "r": -28.0,
+    "pen_up_z": -100.0,
+    "pen_down_z": -112.0
   },
   "motion": {
-    "speed_percent": null
+    "speed_percent": 20
   },
   "paper": {
-    "corner_x": null,
-    "corner_y": null,
-    "edge_x": null,
-    "edge_y": null,
+    "corner_x": 335.0,
+    "corner_y": -118.0,
+    "edge_x": 335.0,
+    "edge_y": 146.0,
     "size": "A4",
-    "orientation": "portrait",
-    "margin_mm": 15
+    "orientation": "landscape",
+    "margin_mm": 10,
+    "width_mm": 264.0,
+    "height_mm": 210.0
   }
 }

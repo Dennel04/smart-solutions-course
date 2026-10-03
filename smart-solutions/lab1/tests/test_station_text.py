@@ -151,6 +151,14 @@ class StationTextTests(unittest.TestCase):
         self.assertIn("joint limit", response.get_json()["error"])
         self.assertEqual(FakeMG400Client.instances[0].moves, [])
 
+    def test_move_timeout_scales_with_distance_and_speed(self) -> None:
+        self.configure(dry_run=True)
+        short = station.move_timeout((0, 0, 0), (5, 0, 0), 4)
+        long = station.move_timeout((335, 146, -100), (215, -108, -100), 4)
+        self.assertEqual(short, station.CONFIG.move_timeout)
+        self.assertGreater(long, 2 * 280 / 8)  # 280 mm at 8 mm/s, twice over
+        self.assertLess(station.move_timeout((0, 0, 0), (280, 0, 0), 50), long)
+
     def test_busy_station_rejects_second_job(self) -> None:
         self.configure(dry_run=False)
         self.assertTrue(station.EXECUTION_LOCK.acquire(blocking=False))

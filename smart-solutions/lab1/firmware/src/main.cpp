@@ -155,6 +155,34 @@ static void dataLine(const String& line) {
   xSemaphoreGive(serialMux);
 }
 
+// ---- crash breadcrumbs ------------------------------------------------------
+// RTC memory survives a panic/watchdog reset (not a power cut). Each core
+// writes the step it is in; setup() prints them with the reset reason, so a
+// reboot on a button press shows where it happened.
+RTC_NOINIT_ATTR static uint32_t crumbMagic;
+RTC_NOINIT_ATTR static uint32_t crumbCore0;
+RTC_NOINIT_ATTR static uint32_t crumbCore1;
+static constexpr uint32_t CRUMB_MAGIC = 0x5AFE0C0D;
+static char bootInfo[128] = "";  // reset reason line, re-printed by the "boot" command
+static inline void crumb0(uint32_t step) { crumbCore0 = step; }
+static inline void crumb1(uint32_t step) { crumbCore1 = step; }
+
+static const char* resetReasonName(esp_reset_reason_t r) {
+  switch (r) {
+    case ESP_RST_POWERON: return "power-on / EN (reset button)";
+    case ESP_RST_EXT: return "external pin";
+    case ESP_RST_SW: return "software restart";
+    case ESP_RST_PANIC: return "PANIC (crash)";
+    case ESP_RST_INT_WDT: return "interrupt watchdog";
+    case ESP_RST_TASK_WDT: return "task watchdog";
+    case ESP_RST_WDT: return "other watchdog";
+    case ESP_RST_DEEPSLEEP: return "deep sleep";
+    case ESP_RST_BROWNOUT: return "BROWNOUT (power dip)";
+    case ESP_RST_SDIO: return "sdio";
+    default: return "unknown";
+  }
+}
+
 struct DisplayLock {
   DisplayLock() { xSemaphoreTakeRecursive(displayMux, portMAX_DELAY); }
   ~DisplayLock() { xSemaphoreGiveRecursive(displayMux); }
@@ -428,6 +456,7 @@ static bool letterSendBusy() {
 
 // Uus kasutaja sündmus saab seq väärtuse ainult siin; korduskatsed seda ei muuda.
 static bool queueLetterEvent(char letter, uint32_t pressedAtMs) {
+  crumb0(30);
   if (letterSendBusy()) return false;
   pendingLetter.letter = letter;
   pendingLetter.session = letterSession;
@@ -453,6 +482,7 @@ static bool queueLetterEvent(char letter, uint32_t pressedAtMs) {
 
 // Teeb ühe piiratud HTTP katse. Korduskatsete ajastamine toimub loop()-is.
 static LetterAttemptResult sendLetterToStation(const LetterEvent& event, String& detail) {
+  crumb0(40);
   String station = prefs.getString("station", "");
   String url = normalizeStationUrl(station);
   if (!url.length()) {
@@ -613,6 +643,7 @@ static void handleSerialLine(String line) {
   if (line.equalsIgnoreCase("ip"))     { reportIP();  return; }
   if (line.equalsIgnoreCase("status")) { reportIP();  return; }
   if (line.equalsIgnoreCase("help"))   { printHelp(); return; }
+  if (line.equalsIgnoreCase("boot"))   { logf("%s, up %lu ms", bootInfo, (unsigned long)millis()); return; }
   if (line.equalsIgnoreCase("name"))   { logln("name: " + disco::name()); return; }
   if (line.length() > 5 && line.substring(0, 5).equalsIgnoreCase("name ")) {
     String nm = line.substring(5); nm.trim();
@@ -690,6 +721,7 @@ static void runGesture(int g) {
 
 // Tähe nupurežiim on eraldi valik, et olemasolevad sloti žestid säiliksid.
 static void runButtonAction(int g, uint32_t atMs) {
+  crumb0(20 + g);
   if (!letterButtonMode) {
     runGesture(g);
     return;
@@ -711,6 +743,7 @@ static void runButtonAction(int g, uint32_t atMs) {
 // short/long/double loogika ja double-click'i ooteaken jäävad muutmata.
 // Runs on core 1 (needs M5.update()); actions run on core 0 via gestureQueue.
 static void postGesture(int g, uint32_t atMs) {
+  crumb1(20 + g);
   GestureEvent ev{(int8_t)g, atMs};
   if (xQueueSend(gestureQueue, &ev, 0) != pdTRUE) logln("button: gesture queue full");
 }
@@ -995,6 +1028,7 @@ static void netTask(void*) {
     TextCommand cmd;
     while (xQueueReceive(commandQueue, &cmd, 0) == pdTRUE) handleSerialLine(String(cmd.line));
 
+    crumb0(10);
     vTaskDelay(1);   // let the core-0 idle task run (task watchdog)
   }
 }
@@ -1057,6 +1091,7 @@ static void handlePumpCommand(const String& line) {
 
 // Letter big, pressure and pump under it: one screen for both lab demos.
 static void drawLabScreen() {
+  crumb1(50);
   labCanvas.fillScreen(TFT_BLACK);
   labCanvas.setTextColor(TFT_GREEN, TFT_BLACK);
   labCanvas.setTextSize(1.5f);
@@ -1074,10 +1109,13 @@ static void drawLabScreen() {
   labCanvas.setTextColor(labPumpOn ? TFT_ORANGE : TFT_WHITE, TFT_BLACK);
   labCanvas.printf("pump: %s %s\n", labPumpOn ? "ON" : "off", labReason);
   DisplayLock lock;
+  crumb1(51);
   labCanvas.pushSprite(0, 0);
+  crumb1(52);
 }
 
 static void labTick() {
+  crumb1(10);
   const uint32_t now = millis();
   if ((int32_t)(now - nextLabLoopAt) < 0) return;
   nextLabLoopAt += LAB_LOOP_MS;
@@ -1125,6 +1163,18 @@ void setup() {
   letterSession = makeBootSession();
   // Lab mode (letter button + pressure screen) is the default for the demo.
   letterButtonMode = prefs.getBool("letterMode", true);
+  {
+    const esp_reset_reason_t reason = esp_reset_reason();
+    if (crumbMagic == CRUMB_MAGIC && reason != ESP_RST_POWERON) {
+      snprintf(bootInfo, sizeof(bootInfo), "reset: %s; last step core0=%lu core1=%lu",
+               resetReasonName(reason), (unsigned long)crumbCore0, (unsigned long)crumbCore1);
+    } else {
+      snprintf(bootInfo, sizeof(bootInfo), "reset: %s", resetReasonName(reason));
+    }
+    logf("%s", bootInfo);
+    crumbMagic = CRUMB_MAGIC;
+    crumbCore0 = crumbCore1 = 0;
+  }
   labSetup();
 
   // Mount flash and restore the last-shown slot immediately, so the panel comes

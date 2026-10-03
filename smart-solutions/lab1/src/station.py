@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import logging
 import threading
 import time
@@ -240,6 +241,7 @@ def _execute_plan(
     client.set_speed(speed)
     first_move_recorded = False
     for item in plan:
+        previous = (current_x, current_y, current_z)
         action = item["action"]
         if action == "PEN_UP":
             current_z = pen_up_z
@@ -265,8 +267,21 @@ def _execute_plan(
                 if action in ("PEN_UP", "PEN_DOWN")
                 else CONFIG.move_tolerance
             ),
-            timeout=CONFIG.move_timeout,
+            timeout=move_timeout(previous, (current_x, current_y, current_z), speed),
         )
+
+
+def move_timeout(
+    start: tuple[float, float, float], end: tuple[float, float, float], speed_percent: float
+) -> float:
+    """Time allowed for one move: its expected duration twice over plus slack.
+
+    03.10.26: a fixed 15 s stopped the arm half-way on a 280 mm travel at 4 %
+    (~8 mm/s, ~35 s). mg400-base: 100 % = 200 mm/s.
+    """
+    distance = math.dist(start, end)
+    speed_mm_s = max(speed_percent, 1.0) / 100 * 200.0
+    return max(CONFIG.move_timeout, 2.0 * distance / speed_mm_s + 5.0)
 
 
 def _run_execution(

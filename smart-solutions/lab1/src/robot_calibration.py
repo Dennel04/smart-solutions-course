@@ -51,6 +51,10 @@ class PaperCalibration:
     size: str = "A4"
     orientation: str = "portrait"
     margin_mm: float = 15.0
+    # Mõõdetud lehe mõõdud; kui mõlemad on antud, kehtivad need size asemel
+    # (03.10.26: õpetatud alumiste nurkade vahe oli 264 mm, mitte 297).
+    width_mm: float | None = None
+    height_mm: float | None = None
 
     @property
     def is_complete(self) -> bool:
@@ -162,6 +166,15 @@ def validate_robot_calibration(document: object) -> RobotCalibration:
     return RobotCalibration(version, workspace, pose, motion, paper)
 
 
+def _optional_positive(data: dict[str, object], key: str) -> float | None:
+    if key not in data:
+        return None
+    value = _nullable_number(data, key, "paper")
+    if value is not None and value <= 0:
+        raise CalibrationError(f"paper.{key} peab olema positiivne")
+    return value
+
+
 def _paper(document: dict[str, object]) -> PaperCalibration:
     """Valikuline sektsioon: vanad failid ilma paper-osata jäävad kehtima."""
     if "paper" not in document:
@@ -184,7 +197,11 @@ def _paper(document: dict[str, object]) -> PaperCalibration:
         size=str(size),
         orientation=str(orientation),
         margin_mm=margin,
+        width_mm=_optional_positive(data, "width_mm"),
+        height_mm=_optional_positive(data, "height_mm"),
     )
+    if (paper.width_mm is None) != (paper.height_mm is None):
+        raise CalibrationError("paper.width_mm ja paper.height_mm antakse koos")
     if paper.is_complete:
         baseline = math.hypot(paper.edge_x - paper.corner_x, paper.edge_y - paper.corner_y)  # type: ignore[operator]
         if baseline < 50.0:

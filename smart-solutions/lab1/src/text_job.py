@@ -156,13 +156,18 @@ def build_text_job(request: TextRequest, calibration: RobotCalibration | None) -
     paper_cal = calibration.paper if calibration is not None else None
     size_name = request.size or (paper_cal.size if paper_cal else "A4")
     orientation = request.orientation or (paper_cal.orientation if paper_cal else "portrait")
+    measured = (
+        (paper_cal.width_mm, paper_cal.height_mm)
+        if paper_cal is not None and paper_cal.width_mm and request.size is None
+        else None
+    )
     margin = (
         request.margin_mm
         if request.margin_mm is not None
         else (paper_cal.margin_mm if paper_cal else 15.0)
     )
     try:
-        width, height = paper_size(size_name, orientation)
+        width, height = measured or paper_size(size_name, orientation)
         font = load_font(request.font)
         frame = _frame(calibration, width, height)
         warnings: list[str] = []
@@ -331,7 +336,11 @@ def letter_on_paper(
         raise TextJobError("letter size must be a positive number")
     paper = calibration.paper
     try:
-        width, height = paper_size(paper.size, paper.orientation)
+        width, height = (
+            (paper.width_mm, paper.height_mm)
+            if paper.width_mm and paper.height_mm
+            else paper_size(paper.size, paper.orientation)
+        )
         frame = _frame(calibration, width, height)
         if frame is None:
             raise TextJobError("sheet is not calibrated")

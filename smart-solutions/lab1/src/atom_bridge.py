@@ -138,21 +138,37 @@ def main() -> None:
     p.add_argument("--station", default="http://127.0.0.1:5000")
     args = p.parse_args()
 
-    ser = open_atom(args.port, args.baud)
+    import serial
+
     forwarder = LetterForwarder(args.station)
     print(f"bridge {args.port} -> {forwarder.url} (Ctrl+C to stop)")
-
-    def lines():
-        while True:
-            yield ser.readline()
-
     try:
-        run_bridge(lines(), forwarder)
+        # The port vanishes when the Atom resets (side RESET button, re-flash,
+        # loose cable): wait and reopen instead of dying.
+        while True:
+            try:
+                ser = open_atom(args.port, args.baud)
+            except serial.SerialException as exc:
+                print(f"[usb] {args.port} not available ({exc}); retrying")
+                time.sleep(1.0)
+                continue
+            print(f"[usb] {args.port} open")
+
+            def lines():
+                while True:
+                    yield ser.readline()
+
+            try:
+                run_bridge(lines(), forwarder)
+            except serial.SerialException as exc:
+                print(f"[usb] port lost ({exc}); reconnecting")
+            finally:
+                ser.close()
+            time.sleep(1.0)
     except KeyboardInterrupt:
         pass
     finally:
         forwarder.close()
-        ser.close()
 
 
 if __name__ == "__main__":
