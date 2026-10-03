@@ -1,29 +1,29 @@
 {
-  "comment": "Koordinaadid tuleb mõõta MG400-l laboris.",
+  "comment": "02.10.26 Andmehõive Lab 1 katse samal MG400-l (docs/pick_test.csv, data-acquisition-course/data-acquisition/lab1/data/lab1_approach_pick10_02.10.26*.csv). Tõste tehti ühes punktis: allikas ja valmis pesa on sama koht klaasil, iminapp puudutas klaasi Z -102.8...-103.0 mm. Kõrgus 'above' = klaas + 20 mm (pick_in_place.py --lift 20). Ühikud mm ja kraadid, roboti baaskoordinaadid.",
   "positions": {
     "above_source": {
-      "x": null,
-      "y": null,
-      "z": null,
-      "r": null
+      "x": 259,
+      "y": 27,
+      "z": -83,
+      "r": -72
     },
     "source": {
-      "x": null,
-      "y": null,
-      "z": null,
-      "r": null
+      "x": 259,
+      "y": 27,
+      "z": -103,
+      "r": -72
     },
     "above_finished": {
-      "x": null,
-      "y": null,
-      "z": null,
-      "r": null
+      "x": 259,
+      "y": 27,
+      "z": -83,
+      "r": -72
     },
     "finished": {
-      "x": null,
-      "y": null,
-      "z": null,
-      "r": null
+      "x": 259,
+      "y": 27,
+      "z": -103,
+      "r": -72
     }
   }
 }

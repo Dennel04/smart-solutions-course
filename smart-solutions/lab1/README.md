@@ -48,6 +48,7 @@ Esimene asi on tellimus. Esimesel päeval uusi osi ei ole: mõtle välja, mida s
   * 03.10.26: kinnitatud — Raimo arvutil esimene kontroll (vt allpool), 02.10.26 laboriarvutil pumba DO2 = imemine / DO1 = puhumine ja kümme võtmist, 03.10.26 tähtede joonistamine API kaudu (`mg400 serve`, 127.0.0.1:8000).
 - [ ] Neli asendit õpetatud ja failis `data/positions.json`. Robot tõstab proovitüki allikast valmis pessa kümme korda järjest.
   * 03.10.26: kümme võtmist 10/10 tehti 02.10.26 Andmehõive katses samal robotil (`docs/pick_test.csv`); `positions.json` neli asendit tuleb iminapaga uuesti õpetada (02.10 asendeid server ei salvestanud).
+  * 03.10.26 parandus: eelmine rida on vale — asendeid ei kadunud. 02.10.26 katses (`pick_in_place.py --approach`) ei kasutatud serveri salvestatud asendeid: tõste tehti ühes punktis X 259, Y 27, R −72, klaas Z −103, tõste +20 mm. Need koordinaadid on nüüd `data/positions.json`-is; allikas ja valmis pesa on sama koht.
 - [ ] AtomS3 püsivara on PlatformIO-st peale laetud. Atom teeb oma WiFi võrgu. Telefon liitub ja leht avaneb ise, ilma aadressi trükkimata. Pilt jõuab lehelt ekraanile.
   * 03.10.26: püsivara PlatformIO-st peal, Atom teeb võrgu `AtomFramer` (192.168.4.1). Telefoni test ja pildi saatmine: TODO.
 - [ ] Atomi lehel on seadete ja testide osa. Fail `docs/atom_page.md` ütleb, mis seal on.
