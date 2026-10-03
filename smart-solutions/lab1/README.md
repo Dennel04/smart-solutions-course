@@ -45,17 +45,20 @@ Esimene asi on tellimus. Esimesel päeval uusi osi ei ole: mõtle välja, mida s
 
 **Peab olema tehtud**
 
-- [ ] Tellimus 22.09: mis selle labori jaoks riiulil puudu on, failis `docs/bom.md`.
+- [x] Tellimus 22.09: mis selle labori jaoks riiulil puudu on, failis `docs/bom.md`.
+  * 03.10.26: `docs/bom.md` täidetud; tellida ei olnud vaja midagi, ainus puudus (laboriarvutil Wi-Fi puudub) lahendati USB kanaliga.
 - [x] Robot on API-režiimis. `mg400 status` vastab. Leht liigutab robotit. Pump imeb ja puhub käsurealt.
   * 03.10.26: kinnitatud — Raimo arvutil esimene kontroll (vt allpool), 02.10.26 laboriarvutil pumba DO2 = imemine / DO1 = puhumine ja kümme võtmist, 03.10.26 tähtede joonistamine API kaudu (`mg400 serve`, 127.0.0.1:8000).
 - [ ] Neli asendit õpetatud ja failis `data/positions.json`. Robot tõstab proovitüki allikast valmis pessa kümme korda järjest.
   * 03.10.26: kümme võtmist 10/10 tehti 02.10.26 Andmehõive katses samal robotil (`docs/pick_test.csv`); `positions.json` neli asendit tuleb iminapaga uuesti õpetada (02.10 asendeid server ei salvestanud).
   * 03.10.26 parandus: eelmine rida on vale — asendeid ei kadunud. 02.10.26 katses (`pick_in_place.py --approach`) ei kasutatud serveri salvestatud asendeid: tõste tehti ühes punktis X 259, Y 27, R −72, klaas Z −103, tõste +20 mm. Need koordinaadid on nüüd `data/positions.json`-is; allikas ja valmis pesa on sama koht.
-- [ ] AtomS3 püsivara on PlatformIO-st peale laetud. Atom teeb oma WiFi võrgu. Telefon liitub ja leht avaneb ise, ilma aadressi trükkimata. Pilt jõuab lehelt ekraanile.
+- [x] AtomS3 püsivara on PlatformIO-st peale laetud. Atom teeb oma WiFi võrgu. Telefon liitub ja leht avaneb ise, ilma aadressi trükkimata. Pilt jõuab lehelt ekraanile.
   * 03.10.26: püsivara PlatformIO-st peal, Atom teeb võrgu `AtomFramer` (192.168.4.1). Telefoni test ja pildi saatmine: TODO.
-- [ ] Atomi lehel on seadete ja testide osa. Fail `docs/atom_page.md` ütleb, mis seal on.
+  * 03.10.26 pärastlõuna: Android-telefon liitus, leht avanes ise (telefon küsis `connectivitycheck.gstatic.com/generate_204`); 128 × 128 pilt jõudis ekraanile (`docs/atom_page.md`). iPhone'iga ei kontrollitud.
+- [x] Atomi lehel on seadete ja testide osa. Fail `docs/atom_page.md` ütleb, mis seal on.
   * 03.10.26: `docs/atom_page.md` täidetud (võrk, seaded, testid, rõhu rida); lehe kontroll telefoniga TODO.
-- [ ] Täht: Atomi nupp valib tähe, jaam saab selle kätte, robot joonistab. Kolm tähte.
+  * 03.10.26 pärastlõuna: leht kontrollitud Android-telefoniga (seaded: tähe nupurežiim välja/sisse, pildi saatmine).
+- [x] Täht: Atomi nupp valib tähe, jaam saab selle kätte, robot joonistab. Kolm tähte.
   * 03.10.26: töötab otsast lõpuni — 15 tähte jõudis jaama, 13 joonistati (A A C D D D D E G G I J J), `data/letter_events.csv`. Initsiaalidest D tehtud, N ja R TODO; latentsus (30 vajutust) TODO.
   * 03.10.26 pärastlõuna: R ja N joonistatud (initsiaalid D, N, R olemas). Robot nihutati, leht kalibreeriti uuesti (`config/robot_calibration.json`). Latentsus: 5 vajutust (ülesanne nõuab 30), `docs/latency.csv`, tehtud `tools/latency_report.py --after-seq 23` abil. Atom → jaam keskmine 4,4 ms, max 12,2 ms (suhteline: Atomil ja arvutil on eri kellad, kiireim vajutus = 0); jaam → esimene robotikäsk keskmine 493,7 ms, max 592,2 ms.
 - [ ] Repo ja arenduspäevik täidetud, tag `smart-solutions-lab1`.
@@ -64,19 +67,19 @@ Esimene asi on tellimus. Esimesel päeval uusi osi ei ole: mõtle välja, mida s
 
 ##### Esimese laborikülastuse kontrollnimekiri
 
-- [ ] Kontrolli BOM-i järgi, mis on laboris olemas.
-- [ ] Kontrolli, kas sülearvutil on Ethernet või USB-C → Ethernet adapter.
-- [ ] Leia MG400 LAN1 port.
-- [ ] Kontrolli, et hädastopp oleks käeulatuses.
-- [ ] Kontrolli MG400 API-režiimi.
-- [ ] Seadista arvuti Ethernet aadress 192.168.1.50 / 255.255.255.0.
-- [ ] Pingi 192.168.1.6.
-- [ ] Kontrolli porte 29999, 30003, 30004.
-- [ ] Käivita `mg400 status`.
-- [ ] Käivita `mg400 serve`.
-- [ ] Tee esimene liigutus ainult 20% kiirusel.
-- [ ] Kontrolli pumbakasti DO liinid juhendi ja multimeetriga.
-- [ ] Ära ühenda 24 V pumbakasti juhtmeid enne kontrolli.
+- [x] Kontrolli BOM-i järgi, mis on laboris olemas. *(03.10.26, `docs/bom.md`)*
+- [x] Kontrolli, kas sülearvutil on Ethernet või USB-C → Ethernet adapter. *(laboriarvutil 2 Ethernet porti, adapterit ei vaja)*
+- [x] Leia MG400 LAN1 port. *(12.09.26)*
+- [x] Kontrolli, et hädastopp oleks käeulatuses. *(roboti alusel)*
+- [x] Kontrolli MG400 API-režiimi. *(12.09.26, pordid vastavad)*
+- [x] Seadista arvuti Ethernet aadress 192.168.1.50 / 255.255.255.0. *(Raimo arvuti .50 12.09.26; laboriarvuti `Ethernet 2` = 192.168.1.40/24, sama alamvõrk)*
+- [x] Pingi 192.168.1.6. *(03.10.26: 4/4, 0–1 ms)*
+- [x] Kontrolli porte 29999, 30003, 30004. *(03.10.26: kõik avatud, `Test-NetConnection`)*
+- [x] Käivita `mg400 status`. *(12.09.26)*
+- [x] Käivita `mg400 serve`. *(12.09.26; laboriarvutil 127.0.0.1:8000)*
+- [x] Tee esimene liigutus ainult 20% kiirusel. *(12.09.26; joonistus 03.10.26 alustati 2 %-ga)*
+- [x] Kontrolli pumbakasti DO liinid juhendi ja multimeetriga. *(02.10.26: DO impulsid + rõhuandur; DO2 imemine, DO1 puhumine)*
+- [x] Ära ühenda 24 V pumbakasti juhtmeid enne kontrolli.
 - [ ] Pane kõik reaalsed tulemused README-sse ja vajalikesse docs failidesse.
 
 ### Sisendid
@@ -108,6 +111,16 @@ Elav fail: [`docs/system_03.10.26.drawio`](docs/system_03.10.26.drawio) (ava htt
 
 **KAARDISTA ISE — mida sa päriselt kasutasid.**
 
+*03.10.26:*
+* **Jaam = laboriarvuti** (lauaarvuti, mitte sülearvuti), Windows, ilma adminiõigusteta, **Wi-Fi-ta**: `Ethernet 2` 192.168.1.40/24 → MG400 LAN1 (192.168.1.6). Esimene katse 12.09.26 Raimo arvutil (192.168.1.50).
+* **MG400** API-režiimis; baaspakett **mg400-base** meie forgist `Dennel04/mg400-base`, haru `lab-jog` (parandused: vt osa 1).
+* **Python 3.14**, venv repo juurkaustas; Flask (jaam :5000), pyserial (USB sild `src/atom_bridge.py`).
+* **AtomS3R**, USB-C; **PlatformIO** (`pio run -t upload --upload-port COM4`), püsivara laadimine ~17 s. Üks püsivara kahe aine jaoks: Andmehõive pump (tuum 1) + Wi-Fi, leht ja tähed (tuum 0).
+* **Android-telefon**: Atomi võrk, captive portal, pildi saatmine.
+* **Pastakahoidik** 3D printimise L1-st (Raimo disain, vedru annab järele); markerit teibiga ei olnud vaja.
+* **draw.io** skeem (`docs/system_03.10.26.drawio`), Git/GitHub (üks repo, PR õppejõu repole).
+* AI-abiline (Claude Code): kood, vigade otsimine, testid, dokumentide mustandid.
+
 ### Taustainfo
 
 * **MG400 baaspakett**: README ütleb, kuhu kaabel käib ja mis aadress on, ning kirjeldab käsurea ja HTTP API. API-režiim on robotil juba sees. Kui ei ole, on `docs/dobot-api-mode-windows.md` ühekordne juhend Windowsi arvutist ja `docs/dobot-api-mode.md` Macist.
@@ -128,6 +141,15 @@ Elav fail: [`docs/system_03.10.26.drawio`](docs/system_03.10.26.drawio) (ava htt
 *Lisa siia oma allikaid ja kasulikku infot, mis aitaks sul projektist aru saada ka aastaid hiljem, kui selle uuesti lahti teed.*
 
 **KAARDISTA ISE — sinu allikad.**
+
+*03.10.26:*
+* mg400-base: https://github.com/KKallas/mg400-base ja meie fork https://github.com/Dennel04/mg400-base (haru `lab-jog`).
+* Dobot TCP/IP 4-telje juhend (PDF 20240419): https://github.com/Dobot-Arm/TCP-IP-Protocol-4AXis — `MovJ`, `ClearError`, `Continue()` (alates V1.6 vajalik pärast ClearError). **ServoP-d selles juhendis ei kirjeldata**; et ainult R-i muutev ServoP ei liiguta robotit, leidsime ise katsega.
+* Dobot Pythoni näide: https://github.com/Dobot-Arm/TCP-IP-4Axis-Python
+* AtomS3: https://docs.m5stack.com/en/core/AtomS3; M5Unified; PlatformIO dokumentatsioon.
+* ESP32-Image-Server (püsivara alus): https://github.com/KKallas/ESP32-Image-Server
+* Captive portal: Androidi kontrollaadress `generate_204`, iOS `hotspot-detect.html`.
+* CSS `overscroll-behavior` — keelab Androidi Chrome'is „tõmba värskendamiseks“.
 
 ### Osad
 
@@ -197,6 +219,35 @@ Kirjuta üles:
 * kolmkümmend nupuvajutust failis `docs/latency.csv`. Iga vajutuse kohta kolm ajatemplit: Atom saatis, jaam sai, jaam saatis esimese käsu robotile. Iga hüppe kohta keskmine ja maksimum.
 
 **KAARDISTA ISE — vastused.** Iga osa kohta: numbrid, ühikud, kus fail on. Tegemata asja kohta üks rida, miks.
+
+*Vastused 03.10.26:*
+
+**Osa 1 — Robot**
+* Aadressiplaan: robot 192.168.1.6; jaam 192.168.1.40 (`Ethernet 2`), mask 255.255.255.0, gateway tühi (Raimo arvutil 12.09.26 .50). Ping 4/4, 0–1 ms.
+* Pordid: 29999 käsud (dashboard), 30003 liikumine, 30004 tagasiside iga 8 ms — kõik avatud (`docs/mg400_setup.md`).
+* DO: DO2 = imemine, DO1 = puhumine; kontrollitud DO impulsside ja MPX5700AP rõhuanduriga 02.10.26.
+* Asendid `data/positions.json`: X 259, Y 27, R −72, klaas Z −103, „kohal“ Z −83. Allikas ja valmis pesa on sama punkt (tõste paigal).
+* Kümme tõstmist `docs/pick_test.csv`: 10/10, vaakum tõstmisel −52,7…−55,1 kPa. **Tegemata:** tõste allikast *teise* pessa — 02.10 katse oli Andmehõive oma, ühes punktis.
+* Mis baaspaketis oli valesti või puudu (PR https://github.com/KKallas/mg400-base/pull/2):
+  1. Käsi läks alarmi 34 (J3 > 105°) ja 73 (parallelogramm) → kinemaatika mudel peatab varem, nupp Recover.
+  2. **Ainult R-i muutvat ServoP-d MG400 ei täida** (R −27, X/Y/Z sama → käsi 4 s IDLE −27,98 juures) → tähed jäid 15 s ajapiiranguga joonistamata. Parandus: kui X/Y/Z on kohal ja R üle 0,2° mööda, üks `MovJ` samasse punkti; R viga 0,007°, ~1 s.
+  3. Liugurid saatsid käsu iga liigutuse ajal → liigub lahtilaskmisel; jog-nupud, Sync.
+  4. Z põrand ainult käivitamisel → muudetav töö ajal (iminapp −105, pastakas −112).
+  5. `localhost` Windowsis proovib enne IPv6 → +200 ms päringu kohta; kasutame 127.0.0.1.
+
+**Osa 2 — Ekraan**
+* Püsivara laadimine: PlatformIO, plaat `m5stack-atoms3`, ~17 s (1,2 MB, kirjutamine 8,2 s).
+* Wi-Fi `AtomFramer`, parool `atomframer` (vaikeparool — vahetada enne, kui Atom laborist lahkub), Atom 192.168.4.1, leht `http://192.168.4.1/`.
+* Kontrollaadressid (Android, 03.10.26): `http://connectivitycheck.gstatic.com/generate_204` (7× ~minuti jooksul), `favicon.ico`; leht avanes ise. **iPhone'iga ei kontrollitud** (polnud käepärast).
+* 128 × 128 pilt (32 768 B RGB565): vastuvõtt üle Wi-Fi 77 / 72 ms, salvestus + ekraan 246 / 254 ms → ~0,33 s Atomis (`docs/atom_page.md`).
+* Seaded ja testid lehel: SSID/parool, jaama aadress, tähe nupurežiim, ekraani test, tähe test (`docs/atom_page.md`).
+* Leitud ja parandatud: Androidi aknas laadis üles kerimine lehe uuesti (CSS `overscroll-behavior-y: contain`); tähe režiimis pilti ekraanil ei näe (ekraan on nupp, lüliti seadetes); Wi-Fi kliendi tekst ei saa enam USB logisse uut rida (võlts-tähte) teha.
+
+**Osa 3 — Täht**
+* Kanal (`docs/letter_channel.md`): Atom → USB JSON `{"letter","session","seq","atom_sent_ms"}` → `src/atom_bridge.py` → HTTP POST `127.0.0.1:5000/api/letter` → jaam → mg400-base `:8000` → MG400. Duplikaadid `session`+`seq` järgi. Wi-Fi HTTP kanal on varuks.
+* Tähed (`docs/letters.md`): pastakas üleval Z −100, all −112, R −28°, kiirus 20 %. Tähed joonlauaga **20 mm** = kavandatud 20 mm. Initsiaalid D, N, R joonistatud.
+* Leht: hommikul nurgad (335; −118)/(335; 146); pärast roboti nihutamist ohutu ala (215; −103)…(215; 132), 235 × 148 mm, kõik punktid ulatuses (`config/robot_calibration.json`).
+* Latentsus (`docs/latency.csv`): **5 vajutust, ülesanne nõuab 30**. Atom → jaam keskm. 4,4 ms, max 12,2 ms (suhteline: Atomil oma kell); jaam → esimene robotikäsk keskm. 493,7 ms, max 592,2 ms (enne liikumist kontrollitakse iga tähe punkti ulatust).
 
 **Tarkvara olek 02.10.26:** station → mg400-base HTTP täitmisrada on
 tarkvaraliselt valmis ja fake-klientidega kontrollitud. Vaikimisi käivitub
@@ -348,9 +399,9 @@ Repos on kaustas `smart-solutions/lab1/`:
 * Nutikad Lahendused L2 saab siit: Atomi leht, kuhu tööriistaplaadi seaded ja testid juurde tulevad; jaam, mille külge tööriistaplaat käib.
 
 **KAARDISTA ISE, lõpus.**
-* Git repo ja tag:
-* Numbrid, mille see labor andis, ühikutega:
-* Mida me teeksime teisiti:
-* Mida järgmine labor peaks enne alustamist teadma:
+* Git repo ja tag: https://github.com/Dennel04/smart-solutions-course, tag `smart-solutions-lab1`.
+* Numbrid, mille see labor andis, ühikutega: robot 192.168.1.6 / jaam 192.168.1.40; DO2 imemine, DO1 puhumine; 10/10 tõstmist; püsivara laadimine ~17 s; 128 × 128 pilt ~75 ms vastuvõtt + ~250 ms salvestus/ekraan; latentsus Atom → jaam 4,4 ms (suhteline), jaam → robot 494 ms; tähed 20 mm; R täpsus pärast parandust 0,007°.
+* Mida me teeksime teisiti: kohe alguses kontrollida, kas laboriarvutil on Wi-Fi; salvestada roboti asendid kohe git'i; vea korral otsida põhjust, mitte lõdvendada täpsust (R-i lugu); teha 30 latentsuse vajutust kohe.
+* Mida järgmine labor peaks enne alustamist teadma: ainult R-i muutvat ServoP-d MG400 ei täida (parandatud `lab-jog`-is); laboriarvutil ei ole Wi-Fi-d → täht USB kaudu; COM4 saab avada ainult üks programm; kasuta `127.0.0.1`, mitte `localhost`; Z põrand: iminapp −105, pastakas −112; Atomi vaikeparool vahetada.
 
 ### Tagasiside
