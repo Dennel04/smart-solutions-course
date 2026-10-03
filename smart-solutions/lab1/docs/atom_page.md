@@ -25,12 +25,26 @@ Püsivara suunab avalehele järgmised captive portal probe'i aadressid:
 - Automaatne avanemine Android-telefonis: TODO
 - Automaatne avanemine iPhone'is: TODO
 - Käitumine eri operatsioonisüsteemidega: TODO
+- 03.10.26 Android-telefon (Denys): leht avanes ise pärast `AtomFramer` võrguga liitumist. Atomi logi (`[atom-log] portal GET …`, sild `src/atom_bridge.py`) näitas, mida telefon küsis: `http://connectivitycheck.gstatic.com/generate_204` (7× ~minuti jooksul, Android kontrollib korduvalt), `…/favicon.ico`, lisaks taustaäpp `http://c.whatsapp.net/chat`. Kõik said vastuseks Atomi lehe.
+- 03.10.26 probleem: Androidi sisselogimisaknas laadis lehe ülespoole kerimine lehe uuesti ("tõmba värskendamiseks") ja valitud pilt kadus. Parandus: lehe CSS `overscroll-behavior-y: contain`; pilt saadeti Chrome'ist (`http://192.168.4.1`, "kasuta võrku nii nagu on").
+- iPhone: ei kontrollitud (meeskonnas ei olnud iPhone'i käepärast).
 
 ## Pildi saatmine
 
 - 128 × 128 pildi saatmise aeg: TODO
 - Mõõtmise kuupäev ja tingimused: TODO
 - Reaalne pildi saatmine AtomS3-le: TODO
+- 03.10.26: pilt saadeti Android-telefonist Chrome'iga, `SEND → SLOT`, pesa 1; pilt ilmus Atomi ekraanile. Atomi logi (aeg mõõdetakse Atomis `millis()` järgi, alates esimesest vastuvõetud tükist):
+
+  | Katse | Tähe nupurežiim | Vastu võetud 32768 B | Salvestus + ekraan |
+  |---|---|---|---|
+  | 1 | sees (ekraanile ei joonistata) | 77 ms | 246 ms (ainult salvestus) |
+  | 2 | väljas | logirida katkes USB-s | — |
+  | 3 | väljas | 72 ms | 254 ms |
+
+  Üks 128 × 128 pilt (32 768 B RGB565) üle Atomi Wi-Fi: vastuvõtt ~75 ms, LittleFS-i salvestus + ekraan ~250 ms, kokku ~0,33 s Atomis. Telefoni poolt mõõdetud koguaeg (leht näitab `in N ms`) jäi üles kirjutamata.
+- Tähe nupurežiimis ei joonista võrk Atomi ekraanile (`netMayDraw()`): ekraan on tähe nupp. Pildi nägemiseks lülita seadetes režiim välja.
+- Teadaolev viga: osa Atomi USB logiridu katkeb (`portal G`, `po`), arvatavasti USB serialli puhvri ületäitumine; tähe JSON read ja mõõtmised ei ole sellest mõjutatud, kuid üks ajamõõtmise rida kadus.
 
 ## Seadete osa
 
@@ -76,7 +90,7 @@ korduskatsete lõppu.
 
 - [x] Laadi püsivara reaalsele AtomS3-le. *(03.10.26, PlatformIO, ühendatud püsivara)*
 - [x] Märgi kasutatud Wi-Fi SSID, Atom IP ja lehe URL. *(03.10.26)*
-- [ ] Kontrolli captive portalit Android-telefoniga.
+- [x] Kontrolli captive portalit Android-telefoniga. *(03.10.26)*
 - [ ] Kontrolli captive portalit iPhone'iga.
 - [ ] Kontrolli pildi saatmist ja kuvamist AtomS3 ekraanil.
 - [ ] Mõõda 128 × 128 pildi saatmise aeg.

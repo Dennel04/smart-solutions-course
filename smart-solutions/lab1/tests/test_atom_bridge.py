@@ -66,6 +66,15 @@ class AtomBridgeTests(unittest.TestCase):
             [("http://station:5000/api/letter", {"letter": "K", "session": "ab", "seq": 1, "atom_sent_ms": 5})],
         )
 
+    def test_atom_log_lines_are_printed_not_forwarded(self) -> None:
+        session = FakeSession()
+        forwarder = LetterForwarder("http://station:5000/", session=session, log=lambda _: None)
+        printed: list[str] = []
+        run_bridge([b"# portal GET http://connectivitycheck.gstatic.com/generate_204\n"], forwarder, log=printed.append)
+        forwarder.close()
+        self.assertEqual(session.posts, [])
+        self.assertEqual(printed, ["[atom-log] portal GET http://connectivitycheck.gstatic.com/generate_204"])
+
     def test_network_errors_are_retried(self) -> None:
         session = FakeSession(failures=2)
         forwarder = LetterForwarder("http://s:5000", session=session, log=lambda _: None)

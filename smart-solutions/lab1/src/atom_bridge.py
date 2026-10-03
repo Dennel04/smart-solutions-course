@@ -108,6 +108,9 @@ def run_bridge(lines, forwarder: LetterForwarder, log: Callable[[str], None] = p
         if not raw:
             continue
         text = raw.decode("utf-8", errors="replace").strip() if isinstance(raw, bytes) else raw.strip()
+        if text.startswith("# "):
+            log(f"[atom-log] {text[2:]}")   # firmware log: portal probes, frame timing
+            continue
         if not text.startswith("{"):
             continue
         try:

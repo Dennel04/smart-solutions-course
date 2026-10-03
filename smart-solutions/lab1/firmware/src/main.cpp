@@ -783,6 +783,9 @@ static void pumpButton() {
 
 // ---- HTTP handlers ---------------------------------------------------------
 static void handleRoot() {
+  // Lab 1 part 2: log which address the phone probed when it joined the AP
+  // (Android: /generate_204, iPhone: /hotspot-detect.html, ...).
+  logf("portal GET http://%s%s", server.hostHeader().c_str(), server.uri().c_str());
   server.send_P(200, "text/html", INDEX_HTML);
 }
 
@@ -884,11 +887,14 @@ static void processSettingsConnect() {
 }
 
 // Multipart file upload: binary-safe, streamed in chunks by the core WebServer.
+static uint32_t frameUploadStartMs = 0;   // first upload chunk, for the timing log
+
 static void handleFrameUpload() {
   HTTPUpload& up = server.upload();
   if (up.status == UPLOAD_FILE_START) {
     frameLen = 0;
     frameOk = false;
+    frameUploadStartMs = millis();
   } else if (up.status == UPLOAD_FILE_WRITE) {
     size_t n = up.currentSize;
     if (frameLen + n > FRAME_BYTES) n = FRAME_BYTES - frameLen;  // clamp overflow
@@ -909,10 +915,14 @@ static void handleFrameDone() {
   int slot = server.hasArg("slot") ? server.arg("slot").toInt() : curSlot;
   if (slot < 0 || slot >= NUM_SLOTS) slot = curSlot;
   markerId = server.hasArg("mid") ? server.arg("mid").toInt() : -1;
+  uint32_t recvMs = millis() - frameUploadStartMs;
+  uint32_t t = millis();
   saveSlot(slot);
   curSlot = slot;
   prefs.putInt("slot", curSlot);
   pushFrame();
+  logf("frame slot %d: %u B received in %lu ms, stored+shown in %lu ms", slot, (unsigned)frameLen,
+       (unsigned long)recvMs, (unsigned long)(millis() - t));
   server.send(200, "text/plain", "OK slot " + String(slot));
 }
 

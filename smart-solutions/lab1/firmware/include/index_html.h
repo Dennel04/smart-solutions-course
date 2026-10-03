@@ -18,6 +18,8 @@ static const char INDEX_HTML[] PROGMEM = R"=====(<!DOCTYPE html>
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
+  /* phones: scrolling back up must not pull-to-refresh (it reloads the page and loses the picked image) */
+  html,body{overscroll-behavior-y:contain}
   body{
     background:var(--bg);
     color:var(--ink);
@@ -447,7 +449,9 @@ async function sendToDevice(){
   try{
     const fd = new FormData();
     fd.append('frame', new Blob([dat],{type:'application/octet-stream'}), 'frame.dat');
+    const t0 = performance.now();
     const r = await fetch('/frame?slot='+activeSlot, { method:'POST', body: fd });
+    const ms = Math.round(performance.now() - t0);
     if(r.ok){
       sessionImg[activeSlot] = img;                       // keep the full-res original
       sessionFrame[activeSlot] = { ox, oy, scale };       // ...and its framing
@@ -455,7 +459,7 @@ async function sendToDevice(){
       editing = false;
       lastFilled[activeSlot] = true;
       buildSlotBar();
-      setStatus('Stored on slot '+(activeSlot+1)+' ('+dat.length+' B) — full-res original kept for reframing.', 'ok');
+      setStatus('Stored on slot '+(activeSlot+1)+' ('+dat.length+' B) in '+ms+' ms — full-res original kept for reframing.', 'ok');
     }
     else setStatus('Device error: HTTP '+r.status, 'err');
   }catch(e){
