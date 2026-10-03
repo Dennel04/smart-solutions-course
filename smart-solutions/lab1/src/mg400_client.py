@@ -177,9 +177,13 @@ class MG400Client:
         r: float,
         *,
         tolerance: float = 0.5,
+        r_tolerance: float = 2.0,
         timeout: float = 15.0,
     ) -> dict[str, Any]:
-        if tolerance <= 0 or timeout <= 0:
+        """Move and wait until X/Y/Z are within `tolerance` mm and R within
+        `r_tolerance` degrees. R has its own limit: 03.10.26 the arm settled
+        0.68 deg off in R and a 0.15 mm limit on R timed out every letter."""
+        if tolerance <= 0 or r_tolerance <= 0 or timeout <= 0:
             raise ValueError("tolerance and timeout must be positive")
         target = (float(x), float(y), float(z), float(r))
         self.move(*target)
@@ -189,8 +193,10 @@ class MG400Client:
             self.require_safe_status(status)
             pose = self.pose_from_status(status)
             if all(
-                abs(actual - wanted) <= tolerance
-                for actual, wanted in zip(pose, target)
+                abs(actual - wanted) <= limit
+                for actual, wanted, limit in zip(
+                    pose, target, (tolerance, tolerance, tolerance, r_tolerance)
+                )
             ):
                 return status
             if self._monotonic() >= deadline:
