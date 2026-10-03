@@ -163,3 +163,4 @@ Baaspakett eeldab, et DO2 juhib imemist ja DO1 puhumist. See ei ole veel meie la
   - Z põrand ainult koodis → käivitusvõti `--z-floor` ja muutmine töö ajal (meil −105 iminapaga, −112 pastakaga);
   - liigesepiire ei kontrollitud → pöördkinemaatika mudel (`kinematics.py`, L2 = 175,07 mm) peatab käe enne alarme 34 (J3 > 105°) ja 73 (parallelogramm, raadius < ~195 mm Z −16 juures); nupp **Recover** (`/api/recover`: ClearError + Continue); `/api/check` punkti kontrolliks enne liigutust;
   - `localhost` Windowsis proovib enne IPv6 → +200 ms päringu kohta; kasutame `127.0.0.1`.
+  - Pull request õppejõu repole (03.10.26): https://github.com/KKallas/mg400-base/pull/2
