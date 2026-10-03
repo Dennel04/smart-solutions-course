@@ -25,6 +25,7 @@ from text_job import (
     build_robot_plan,
     build_text_job,
     estimate_seconds,
+    letter_on_paper,
     parse_request,
     preview_svg,
 )
@@ -256,6 +257,26 @@ class TextJobTests(unittest.TestCase):
     def test_estimate_grows_with_lower_speed(self) -> None:
         strokes = [[(0, 0), (50, 0), (50, 50)]]
         self.assertGreater(estimate_seconds(strokes, 5), estimate_seconds(strokes, 50))
+
+
+class LetterOnPaperTests(unittest.TestCase):
+    strokes = [[(0.2, 1.0), (0.2, 0.0), (0.85, 0.0)]]
+
+    def test_wraps_to_next_line_and_restarts_when_full(self) -> None:
+        calibration = text_calibration()
+        cursor = None
+        lines_seen = set()
+        for _ in range(200):
+            plan, cursor = letter_on_paper(self.strokes, calibration, cursor, 20)
+            lines_seen.add(round(cursor[1], 3))
+            for action in plan:
+                if action["action"] == "MOVE_ROBOT":
+                    self.assertTrue(point_reachable(action["x"], action["y"]))
+        self.assertGreater(len(lines_seen), 2)
+
+    def test_needs_a_calibrated_sheet(self) -> None:
+        with self.assertRaises(TextJobError):
+            letter_on_paper(self.strokes, validate_robot_calibration(synthetic_document()), None, 20)
 
 
 class PaperCalibrationTests(unittest.TestCase):

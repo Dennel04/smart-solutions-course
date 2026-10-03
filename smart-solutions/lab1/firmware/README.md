@@ -13,6 +13,44 @@
 
 Source: [https://github.com/KKallas/ESP32-Image-Server](https://github.com/KKallas/ESP32-Image-Server)
 
+## Ühendatud püsivara — 03.10.26
+
+Sama AtomS3 teeb nüüd mõlema aine töö: Andmehõive tark pumbakast (rõhuandur
+G5, pumba otsus, JSON protokoll iga 10 ms) ja Nutikate lahenduste leht
+(Wi-Fi, captive portal, pildid, täht). Andmehõive moodulid on kopeeritud
+`src/pump/` ja `include/` alla muutmata (ainult `pollCommand` → `parseCommand`,
+sest serial-rida loeb nüüd `main.cpp`).
+
+- **Tuum 1** (`loop()`): nupp, serial-sisend, andur + pump + telemeetria iga
+  10 ms, ekraan. Ei blokeeri kunagi, seega PC 500 ms watchdog ei rakendu Wi-Fi
+  tõttu.
+- **Tuum 0** (`netTask`): Wi-Fi, veebileht, DNS, tähe HTTP saatja, žestide
+  tegevused (võivad blokeerida sekundeid).
+- Serial: JSON read on andmed (telemeetria, täht, zero); iga inimloetav logi
+  algab `# `-ga.
+- Tähe nupurežiim (vaikimisi sees): ekraanil suur täht + rõhk + pump. Režiim
+  välja: pildid ja sloti žestid nagu varem.
+- Lehe „Settings & tests“ osas on rõhu/pumba/tähe olek (uueneb 1 s).
+
+Kontrollitud 03.10.26 reaalsel AtomS3-l: telemeetria 203 rida 2 s jooksul,
+`t` vahed täpselt 10 ms; SoftAP `AtomFramer` 192.168.4.1 tõusis; `ip` käsk
+töötas USB kaudu. Pumba 10 tõstmist ühendatud püsivaraga: TODO.
+
+Build Windowsis: Arduino-ESP32 käsurida ületab ArduinoJsoni lisamisel
+Windowsi 32 767 märgi piiri („CreateProcess: No such file or directory“).
+Lahendus ilma adminiõigusteta: lühike junction ja `PLATFORMIO_CORE_DIR`:
+
+```powershell
+cmd /c mklink /J C:\Users\<kasutaja>\pio C:\Users\<kasutaja>\.platformio
+$env:PLATFORMIO_CORE_DIR = "C:\Users\<kasutaja>\pio"
+pio run -t upload --upload-port COM4
+```
+
+- RAM: 84 388 / 327 680 B (25,8%), Flash: 1 219 901 / 3 342 336 B (36,5%)
+
+Tagasi Andmehõive püsivarale (kaitsmise varuplaan):
+`data-acquisition-course/data-acquisition/lab1/src/firmware` → `pio run -t upload`.
+
 ## Kontrollitud build — 12.09.26
 
 - PlatformIO Core: 6.2.0

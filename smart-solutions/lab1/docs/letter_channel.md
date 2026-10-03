@@ -13,6 +13,28 @@ Põhjus:
 - jaam on niikuinii Python/Flask rakendus;
 - HTTP vastus annab Atomile selge kinnituse, kas sündmus jõudis jaama.
 
+## Lisandus 03.10.26: USB kanal laboriarvutile
+
+Laboriarvutil, kus jookseb `mg400 serve`, **ei ole Wi-Fi adapterit** (ainult
+kaks Ethernet porti: ülikooli võrk ja robot). Seega Atom ei saa sellele
+arvutile HTTP-ga tähte saata. HTTP kanal jääb kehtima, kui jaam jookseb
+Wi-Fi-ga sülearvutis.
+
+Ühendatud püsivara (`firmware/`) saadab iga tähe korraga kahte teed:
+
+1. sama JSON rea USB-serialisse:
+   `{"letter":"K","session":"…","seq":3,"atom_sent_ms":81234}`;
+2. HTTP POST jaama aadressile, kui see on seadetes olemas.
+
+Laboriarvutis loeb USB rida kas `src/atom_bridge.py` (ainult tähed) või
+Andmehõive `logger.py --station http://127.0.0.1:5000` (pump ja tähed sama
+COM-pordi kaudu; COM-porti saab avada ainult üks programm). Kui täht jõuab
+mõlemat teed pidi, tunneb jaam teise koopia `session`+`seq` järgi ära ega
+joonista kaks korda.
+
+`logger.py` loeb esimese sekundi jooksul (nullpunkti kontroll) ainult rõhku,
+seega vajuta tähte alles pärast logger'i käivitumist.
+
 ## Osapooled
 
 ### AtomS3

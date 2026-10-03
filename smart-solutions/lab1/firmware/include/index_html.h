@@ -196,6 +196,7 @@ static const char INDEX_HTML[] PROGMEM = R"=====(<!DOCTYPE html>
 
     <div class="group">
       <span class="label">Settings &amp; tests</span>
+      <div class="status" id="labStatus">pressure: …</div>
       <label class="settings-field">
         <span>Wi-Fi name (SSID)</span>
         <input id="settingsSsid" type="text" autocomplete="off">
@@ -210,7 +211,7 @@ static const char INDEX_HTML[] PROGMEM = R"=====(<!DOCTYPE html>
       </label>
       <label class="settings-check">
         <input id="letterButtonMode" type="checkbox">
-        <span>Letter button mode: short selects A–Z, long sends. Off keeps slot gestures.</span>
+        <span>Letter button mode (lab screen: letter + pressure): short selects A–Z, long sends. Off keeps slot gestures and shows images.</span>
       </label>
       <div class="row">
         <button id="saveSettings">SAVE SETTINGS</button>
@@ -808,6 +809,17 @@ document.getElementById('connectSettings').onclick = ()=>saveSettings(true);
 document.getElementById('testDisplay').onclick = testDisplayStatus;
 document.getElementById('testLetterSend').onclick = testLetterSend;
 
+// ---- smart pump box + letter (merged firmware) ----
+async function loadLab(){
+  try{
+    const lab = (await (await fetch('/state')).json()).lab;
+    if(!lab) return;
+    document.getElementById('labStatus').textContent =
+      'p '+lab.p.toFixed(1)+' kPa · mode '+lab.mode+' · pump '+(lab.pump?'ON':'off')+
+      ' ('+lab.why+') · letter '+lab.letter+' '+lab.letter_state;
+  }catch(_){ }
+}
+
 // ---- boot ----
 resizeView();
 buildSlotBar();
@@ -816,6 +828,8 @@ loadGestures();
 loadPeers();
 loadSettings();
 setInterval(loadPeers, 5000);
+loadLab();
+setInterval(loadLab, 1000);
 setStatus('Load an image to begin.');
 </script>
 </body>

@@ -115,6 +115,22 @@ class StationTextTests(unittest.TestCase):
         self.assertEqual(moves[-1][2], 30.0)
         self.assertTrue(all(m[3] == 0.0 for m in moves))
 
+    def test_pen_moves_settle_tighter_than_xy_moves(self) -> None:
+        self.configure(dry_run=False)
+        tolerances: list[tuple[float, float]] = []
+        original = FakeMG400Client.move_and_wait
+
+        def recording(client, x, y, z, r, *, tolerance, timeout):
+            tolerances.append((z, tolerance))
+            return original(client, x, y, z, r, tolerance=tolerance, timeout=timeout)
+
+        with mock.patch.object(FakeMG400Client, "move_and_wait", recording):
+            self.client.post("/api/text/draw", json={"text": "L", "size_mm": 20})
+            self.wait_for_worker()
+        self.assertEqual(tolerances[0], (30.0, station.CONFIG.pen_tolerance))
+        self.assertIn(station.CONFIG.move_tolerance, {t for _, t in tolerances})
+        self.assertLess(station.CONFIG.pen_tolerance, station.CONFIG.move_tolerance)
+
     def test_execute_refuses_disabled_robot(self) -> None:
         self.configure(dry_run=False)
         FakeMG400Client.next_status = safe_status(enabled=False)
@@ -143,6 +159,43 @@ class StationTextTests(unittest.TestCase):
         finally:
             station.EXECUTION_LOCK.release()
         self.assertEqual(response.status_code, 409)
+
+    def letter(self, letter: str, seq: int):
+        return self.client.post(
+            "/api/letter", json={"letter": letter, "session": "tw", "seq": seq}
+        )
+
+    def test_atom_letters_are_typed_left_to_right_on_the_sheet(self) -> None:
+        self.configure(dry_run=True)
+        station.LETTER_CURSOR = None
+        self.assertEqual(self.letter("A", 1).status_code, 202)
+        first = station.LETTER_CURSOR
+        self.assertEqual(self.letter("L", 2).status_code, 202)
+        second = station.LETTER_CURSOR
+        assert first is not None and second is not None
+        self.assertAlmostEqual(second[0] - first[0], station.CONFIG.letter_size_mm)
+        self.assertEqual(second[1], first[1])
+        self.client.post("/api/paper/cursor/reset")
+        self.assertIsNone(station.LETTER_CURSOR)
+
+    def test_atom_letter_on_paper_executes_in_robot_mm(self) -> None:
+        self.configure(dry_run=False)
+        station.LETTER_CURSOR = None
+        self.assertEqual(self.letter("L", 1).status_code, 202)
+        self.wait_for_worker()
+        moves = FakeMG400Client.instances[0].moves
+        self.assertEqual({m[2] for m in moves}, {30.0, 25.0})
+        # Paper frame of this sheet: reading direction = robot -Y.
+        xs = [m[0] for m in moves[1:-1]]
+        self.assertTrue(all(200.0 <= x <= 430.0 for x in xs), xs)
+        self.assertIn("check", FakeMG400Client.trace)
+
+    def test_preflight_failure_does_not_move_the_cursor(self) -> None:
+        self.configure(dry_run=False)
+        station.LETTER_CURSOR = None
+        FakeMG400Client.next_status = safe_status(enabled=False)
+        self.assertEqual(self.letter("L", 1).status_code, 503)
+        self.assertIsNone(station.LETTER_CURSOR)
 
     def test_atom_letter_falls_back_to_font(self) -> None:
         self.configure(dry_run=True, letter_font="futural")

@@ -120,6 +120,14 @@ Tekstitööd logitakse faili `data/text_events.csv`, mitte
 `data/letter_events.csv`-i, et Atomi 30 vajutuse latentsuse mõõtmine jääks
 puhtaks.
 
+## Atomi tähed lehel („kirjutusmasin“)
+
+Kui `paper` sektsioon on täidetud, paneb jaam iga Atomi tähe eelmise kõrvale
+lehele, lugejale püsti: vasakult paremale, rea lõpus uus rida, täis lehel
+algusest. Lahtri suurus `--letter-size` (vaikimisi 20 mm). Kursor:
+`GET /api/paper/cursor`, uuesti algusest: `POST /api/paper/cursor/reset`.
+Ilma lehe kalibratsioonita kehtib vana `workspace` kast.
+
 ## Atomi tähed
 
 `letters.json` sisaldab käsitsi tehtud A, L ja N. Muud tähed A–Z võetakse nüüd

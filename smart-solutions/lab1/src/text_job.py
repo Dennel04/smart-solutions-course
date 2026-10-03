@@ -312,3 +312,52 @@ def preview_svg(job: TextJob) -> str:
         position = stroke[-1]
     parts.append("</svg>")
     return "".join(parts)
+
+
+def letter_on_paper(
+    strokes: list[list[tuple[float, float]]],
+    calibration: RobotCalibration,
+    cursor: Point | None,
+    size_mm: float,
+) -> tuple[list[MotionAction], Point]:
+    """Typewriter placement for Atom letters on the calibrated sheet.
+
+    ``strokes`` is a normalized 0..1 letter. ``cursor`` is the paper point
+    (left, top) of the next letter cell, None = top-left of the reachable
+    area. Letters go left to right, then to the next line; a full sheet starts
+    again at the top. Returns the robot plan and the cursor after the letter.
+    """
+    if not math.isfinite(size_mm) or size_mm <= 0:
+        raise TextJobError("letter size must be a positive number")
+    paper = calibration.paper
+    try:
+        width, height = paper_size(paper.size, paper.orientation)
+        frame = _frame(calibration, width, height)
+        if frame is None:
+            raise TextJobError("sheet is not calibrated")
+        box = largest_reachable_box(frame, paper.margin_mm)
+    except PaperError as exc:
+        raise TextJobError(str(exc)) from exc
+    if box is None or box.width < size_mm or box.height < size_mm:
+        raise TextJobError(f"no {size_mm:g} mm letter cell fits in the reachable part of the sheet")
+
+    left, top = cursor if cursor is not None else (box.x, box.y + box.height)
+    if left + size_mm > box.x + box.width + 1e-6:
+        left, top = box.x, top - size_mm * 1.5
+    if top - size_mm < box.y - 1e-6:
+        left, top = box.x, box.y + box.height
+
+    def to_robot(u: float, v: float) -> Point:
+        return frame.to_robot(left + u * size_mm, top - size_mm + v * size_mm)
+
+    robot_strokes = [[to_robot(u, v) for u, v in stroke] for stroke in strokes]
+    for stroke in robot_strokes:
+        if not all(segment_reachable(a, b) for a, b in zip(stroke, stroke[1:])):
+            raise TextJobError("letter cell leaves the MG400 reach")
+    actions: list[MotionAction] = [{"action": "PEN_UP"}]
+    for stroke in robot_strokes:
+        actions.append({"action": "MOVE_ROBOT", "x": stroke[0][0], "y": stroke[0][1]})
+        actions.append({"action": "PEN_DOWN"})
+        actions.extend({"action": "MOVE_ROBOT", "x": x, "y": y} for x, y in stroke[1:])
+        actions.append({"action": "PEN_UP"})
+    return actions, (left + size_mm, top)

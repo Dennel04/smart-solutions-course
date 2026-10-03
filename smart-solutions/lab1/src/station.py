@@ -45,6 +45,7 @@ from text_job import (
     TextJobError,
     build_robot_plan,
     build_text_job,
+    letter_on_paper,
     parse_request,
     preview_svg,
 )
@@ -64,8 +65,14 @@ class Config:
     network_timeout: float = 1.0
     move_timeout: float = 15.0
     move_tolerance: float = 0.5
+    # Pen up/down must settle before the next XY move: with the looser XY
+    # tolerance the arm started the line while Z was still falling and
+    # overshot by 0.7 mm at 2 % and 1.3 mm at 4 % speed (lab, 03.10.2026).
+    pen_tolerance: float = 0.15
     # Font used for A-Z letters that letters.json does not define (None = 422).
     letter_font: str | None = None
+    # Atom letters on a calibrated sheet: cell size (capital height), mm.
+    letter_size_mm: float = 20.0
 
 
 @dataclass
@@ -94,6 +101,9 @@ LETTER_PATHS: LetterPaths = load_letter_paths(CONFIG.letters_path)
 MG400_CLIENT_FACTORY = MG400Client
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 TEXT_JOB_SEQ = 0
+# Typewriter cursor for Atom letters on the sheet: paper (left, top) of the
+# next letter cell; None = top-left of the reachable area.
+LETTER_CURSOR: tuple[float, float] | None = None
 
 
 def utc_iso() -> str:
@@ -250,7 +260,11 @@ def _execute_plan(
             current_y,
             current_z,
             r,
-            tolerance=CONFIG.move_tolerance,
+            tolerance=(
+                CONFIG.pen_tolerance
+                if action in ("PEN_UP", "PEN_DOWN")
+                else CONFIG.move_tolerance
+            ),
             timeout=CONFIG.move_timeout,
         )
 
@@ -320,6 +334,26 @@ def _letter_strokes(letter: str):
         raise ValueError(f"letter path not configured: {letter} ({exc})") from exc
 
 
+def _advance_letter_cursor(next_cursor: tuple[float, float] | None) -> None:
+    global LETTER_CURSOR
+    if next_cursor is not None:
+        LETTER_CURSOR = next_cursor
+
+
+@app.get("/api/paper/cursor")
+def paper_cursor():
+    cursor = LETTER_CURSOR
+    return jsonify(ok=True, cursor=None if cursor is None else {"x": cursor[0], "top": cursor[1]})
+
+
+@app.post("/api/paper/cursor/reset")
+def paper_cursor_reset():
+    """Next Atom letter starts again at the top-left of the sheet."""
+    global LETTER_CURSOR
+    LETTER_CURSOR = None
+    return jsonify(ok=True, cursor=None)
+
+
 @app.post("/api/letter")
 def receive_letter():
     # Timestamp as early as possible after Flask has accepted the request.
@@ -357,6 +391,28 @@ def receive_letter():
         )
 
     plan = build_motion_plan(strokes)
+    # With a calibrated sheet the letter goes next to the previous one, upright
+    # for the reader; otherwise into the fixed workspace box as before.
+    next_cursor = None
+    layout_calibration, _ = _calibration_or_none()
+    if layout_calibration is not None and layout_calibration.paper.is_complete:
+        try:
+            plan, next_cursor = letter_on_paper(
+                strokes, layout_calibration, LETTER_CURSOR, CONFIG.letter_size_mm
+            )
+        except TextJobError as exc:
+            append_log(
+                letter=letter,
+                session=session,
+                seq=seq,
+                atom_sent_ms=atom_sent_ms,
+                station_received_iso=received_iso,
+                station_received_monotonic_ns=received_mono,
+                robot_command_monotonic_ns=None,
+                status="layout_error",
+                note=str(exc),
+            )
+            return jsonify(ok=False, error=str(exc), letter=letter, robot_started=False), 422
     execution_lock_acquired = False
     execution_key = (session, seq)
     execution_record: ExecutionRecord | None = None
@@ -435,15 +491,20 @@ def receive_letter():
     if not CONFIG.dry_run:
         try:
             calibration = load_robot_calibration(CONFIG.calibration_path)
-            calibration.require_complete()
+            if next_cursor is None:
+                calibration.require_complete()
+            else:
+                calibration.require_text_ready()
             client = MG400_CLIENT_FACTORY(
                 CONFIG.mg400_url, network_timeout=CONFIG.network_timeout
             )
             # Complete the safety gate while this request owns the busy lock.
-            # No MG400 POST is made during preflight.
+            # No MG400 motion command is sent during preflight.
             status = client.get_status()
             client.require_safe_status(status)
             client.pose_from_status(status)
+            if next_cursor is not None:
+                _check_plan_with_server(plan, calibration, client)
         except (CalibrationError, MG400Error, ValueError) as exc:
             with SEQ_LOCK:
                 # The event was not accepted; the same Atom seq may retry.
@@ -495,6 +556,7 @@ def receive_letter():
                 return jsonify(ok=False, error=str(exc), robot_started=False), 503
             EXECUTION_EVENTS[execution_key].state = "started"
             LAST_SEQ[session] = max(seq, LAST_SEQ.get(session, seq))
+            _advance_letter_cursor(next_cursor)
         return (
             jsonify(
                 ok=True,
@@ -511,6 +573,7 @@ def receive_letter():
             202,
         )
 
+    _advance_letter_cursor(next_cursor)
     append_log(
         letter=letter,
         session=session,
@@ -726,6 +789,12 @@ def parse_args() -> argparse.Namespace:
         default="futural",
         help="font for Atom letters missing from letters.json ('none' = reject them)",
     )
+    p.add_argument(
+        "--letter-size",
+        type=float,
+        default=20.0,
+        help="Atom letter cell size in mm when the sheet is calibrated (typewriter mode)",
+    )
     mode = p.add_mutually_exclusive_group()
     mode.add_argument(
         "--execute",
@@ -749,6 +818,7 @@ if __name__ == "__main__":
         calibration_path=args.calibration,
         mg400_url=args.mg400_url,
         letter_font=None if args.letter_font.lower() == "none" else args.letter_font,
+        letter_size_mm=args.letter_size,
     )
     LETTER_PATHS = load_letter_paths(CONFIG.letters_path)
     if CONFIG.letter_font is not None:

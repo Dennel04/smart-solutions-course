@@ -16,6 +16,17 @@
 // need one.
 //
 // Serial console (115200, USB-CDC): wifi <ssid>:<password> / ip / status / ap.
+//
+// MERGED FIRMWARE (03.10.26): the same AtomS3 also runs the Andmehõive smart
+// pump box (pressure sensor on G5, pump decision, JSON protocol at 10 ms) --
+// modules copied from data-acquisition-course, see src/pump/. Two tasks:
+//   * loop() on core 1: button, serial input, sensor + pump + telemetry every
+//     10 ms, the lab screen. Never blocks, so the PC watchdog (500 ms) and
+//     the pump decision are never starved by WiFi.
+//   * netTask on core 0: WiFi, captive portal, web server, the letter HTTP
+//     sender and gesture actions (those can block for seconds).
+// Serial output is shared: JSON lines are data (telemetry, letters), every
+// human-readable log line starts with "# " so the PC side can skip it.
 
 #include <M5Unified.h>
 #include <WiFi.h>
@@ -25,6 +36,15 @@
 #include <Preferences.h>
 #include <LittleFS.h>
 #include <esp_system.h>
+#include <stdarg.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+#include <freertos/queue.h>
+
+#include "sensor.h"
+#include "pump_logic.h"
+#include "comms.h"
+#include "zero.h"
 
 #include "names_discovery.h"
 #include "overlay.h"
@@ -103,6 +123,63 @@ static uint32_t letterNextAttemptAt = 0;
 static bool letterDisplayRestorePending = false;
 static uint32_t letterDisplayRestoreAt = 0;
 
+// ---- two-task plumbing -----------------------------------------------------
+static SemaphoreHandle_t serialMux;   // one whole line at a time on USB
+static SemaphoreHandle_t displayMux;  // SPI panel is shared by both tasks
+static QueueHandle_t gestureQueue;    // core 1 button -> core 0 actions
+static QueueHandle_t commandQueue;    // core 1 serial text commands -> core 0
+
+struct GestureEvent { int8_t gesture; uint32_t atMs; };
+struct TextCommand { char line[164]; };
+
+// Human-readable log line, always prefixed "# " (JSON readers skip it).
+static void logf(const char* fmt, ...) {
+  char buf[256];
+  va_list args;
+  va_start(args, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, args);
+  va_end(args);
+  size_t n = strlen(buf);
+  while (n && (buf[n - 1] == '\n' || buf[n - 1] == '\r')) buf[--n] = 0;
+  xSemaphoreTake(serialMux, portMAX_DELAY);
+  Serial.print("# ");
+  Serial.println(buf);
+  xSemaphoreGive(serialMux);
+}
+static void logln(const String& line = "") { logf("%s", line.c_str()); }
+
+// A data line (JSON) exactly as given, no prefix.
+static void dataLine(const String& line) {
+  xSemaphoreTake(serialMux, portMAX_DELAY);
+  Serial.println(line);
+  xSemaphoreGive(serialMux);
+}
+
+struct DisplayLock {
+  DisplayLock() { xSemaphoreTakeRecursive(displayMux, portMAX_DELAY); }
+  ~DisplayLock() { xSemaphoreGiveRecursive(displayMux); }
+};
+
+// ---- smart pump box state (owned by loop() on core 1) ----------------------
+static constexpr uint32_t LAB_LOOP_MS = 10;      // README part 4: every 10 ms
+static constexpr uint32_t LAB_SCREEN_MS = 150;   // flicker-free redraw rate
+static pump::Controller pumpController;
+static volatile pump::Mode pumpMode = pump::Mode::Off;
+static float atmosphericKpa = 0.0f;
+static uint32_t nextLabLoopAt = 0;
+static uint32_t nextLabScreenAt = 0;
+static uint32_t nextBatteryAt = 0;
+static M5Canvas labCanvas(&M5.Display);
+// Snapshot for the web page (written on core 1, read on core 0).
+static volatile float labPressureKpa = 0.0f;
+static volatile bool labPumpOn = false;
+static char labReason[12] = "off";
+static volatile int batteryMvCached = 0;
+static const char* volatile letterHeading = "SELECTED";
+
+// In letter (lab) mode loop() owns the panel; image drawing only in slot mode.
+static bool netMayDraw() { return !letterButtonMode; }
+
 static bool apActive() {
   auto m = WiFi.getMode();
   return m == WIFI_AP || m == WIFI_AP_STA;
@@ -168,6 +245,8 @@ static String normalizeStationUrl(String station) {
 // order to the panel's native order itself (reading it as a plain uint16
 // rotates the channels: red->blue, green->red, blue->green).
 static void pushFrame() {
+  if (!netMayDraw()) return;
+  DisplayLock lock;
   M5.Display.startWrite();
   M5.Display.pushImage(0, 0, FRAME_W, FRAME_H, (const m5gfx::swap565_t*)frameBuf);
   M5.Display.endWrite();
@@ -183,11 +262,11 @@ static void refreshFilled() {
 // Write frameBuf (and the current marker id) to slot n.
 static void saveSlot(int n) {
   File f = LittleFS.open(slotPath(n), "w");
-  if (!f) { Serial.println("save: open failed"); return; }
+  if (!f) { logln("save: open failed"); return; }
   size_t w = f.write(frameBuf, FRAME_BYTES);
   f.close();
   prefs.putInt(midKey(n).c_str(), markerId);
-  if (w != FRAME_BYTES) Serial.printf("save: short write %u/%u\n", (unsigned)w, (unsigned)FRAME_BYTES);
+  if (w != FRAME_BYTES) logf("save: short write %u/%u\n", (unsigned)w, (unsigned)FRAME_BYTES);
   else { slotFilled[n] = true; }
 }
 
@@ -229,16 +308,16 @@ static void readSlotUrls(int slot, String out[GESTURES]) {
 // press. Never aim this at our own IP — the single-threaded WebServer would
 // deadlock on a self-request; self actions are handled locally in doAction().
 static void fireGet(const String& url) {
-  Serial.println("GET " + url);
+  logln("GET " + url);
   HTTPClient http;
   http.setConnectTimeout(2000);
   http.setTimeout(3000);
   if (http.begin(url)) {
     int code = http.GET();
-    Serial.printf("  -> %d\n", code);
+    logf("  -> %d\n", code);
     http.end();
   } else {
-    Serial.println("  begin failed");
+    logln("  begin failed");
   }
 }
 
@@ -253,11 +332,11 @@ static void doAction(String url) {
   for (size_t i = 0; i < url.length(); i++) if (!isDigit(url[i])) { numeric = false; break; }
   if (numeric) {
     int n = url.toInt();
-    if (n >= 1 && n <= NUM_SLOTS) { if (!loadSlot(n - 1)) Serial.printf("slot %d empty\n", n); }
+    if (n >= 1 && n <= NUM_SLOTS) { if (!loadSlot(n - 1)) logf("slot %d empty\n", n); }
     return;
   }
   if (url.startsWith("/show?slot=")) {
-    if (!loadSlot(url.substring(11).toInt())) Serial.println("self slot empty");
+    if (!loadSlot(url.substring(11).toInt())) logln("self slot empty");
     return;
   }
   if (url.startsWith("http://") || url.startsWith("https://")) { fireGet(url); return; }
@@ -270,14 +349,14 @@ static void doAction(String url) {
     for (size_t i = 0; i < rest.length(); i++) if (!isDigit(rest[i])) restNum = false;
     if (restNum) {
       int sl = rest.toInt();
-      if (nm == disco::name()) { if (!loadSlot(sl - 1)) Serial.println("self slot empty"); return; }
+      if (nm == disco::name()) { if (!loadSlot(sl - 1)) logln("self slot empty"); return; }
       IPAddress ip;
       if (disco::lookup(nm, ip)) fireGet("http://" + ip.toString() + "/show?slot=" + String(sl - 1));
-      else Serial.println("action: name not found: " + nm);
+      else logln("action: name not found: " + nm);
       return;
     }
   }
-  Serial.println("action: unsupported target: " + url);
+  logln("action: unsupported target: " + url);
 }
 
 // ---- battery ---------------------------------------------------------------
@@ -292,6 +371,8 @@ static int batteryPercent(int mv) {
 
 // ---- on-screen status ------------------------------------------------------
 static void showStatus() {
+  if (!netMayDraw()) return;
+  DisplayLock lock;
   M5.Display.fillScreen(TFT_BLACK);
   M5.Display.setTextColor(TFT_GREEN, TFT_BLACK);
   M5.Display.setTextSize(1);
@@ -324,16 +405,11 @@ static void redraw() {
 }
 
 // Tähevaade kasutab ekraani ajutiselt, kuid ei muuda frameBuf'i ega salvestatud slotte.
+// Merged firmware: the lab screen (loop(), core 1) draws the letter together
+// with the pressure, so this only records what the letter area should say.
 static void showLetterPanel(const char* heading, char letter) {
-  M5.Display.fillScreen(TFT_BLACK);
-  M5.Display.setTextColor(TFT_GREEN, TFT_BLACK);
-  M5.Display.setTextSize(2);
-  M5.Display.setCursor(6, 8);
-  M5.Display.println(heading);
-  M5.Display.setTextSize(7);
-  M5.Display.setCursor(43, 43);
-  M5.Display.print(letter);
-  M5.Display.setTextSize(1);
+  letterHeading = heading;
+  selectedLetter = letter;
 }
 
 static void showSelectedLetter() {
@@ -351,17 +427,25 @@ static bool letterSendBusy() {
 }
 
 // Uus kasutaja sündmus saab seq väärtuse ainult siin; korduskatsed seda ei muuda.
-static bool queueLetterEvent(char letter) {
+static bool queueLetterEvent(char letter, uint32_t pressedAtMs) {
   if (letterSendBusy()) return false;
   pendingLetter.letter = letter;
   pendingLetter.session = letterSession;
   pendingLetter.seq = ++letterSequence;
-  pendingLetter.atomSentMs = millis();
+  pendingLetter.atomSentMs = pressedAtMs;
+  // USB channel: the same event as one JSON line. A PC bridge forwards it to
+  // the station; if WiFi also delivers it, the station's session+seq check
+  // drops the second copy.
+  String letterValue(letter);
+  dataLine("{\"letter\":" + jsonString(letterValue)
+           + ",\"session\":" + jsonString(pendingLetter.session)
+           + ",\"seq\":" + String(pendingLetter.seq)
+           + ",\"atom_sent_ms\":" + String(pendingLetter.atomSentMs) + "}");
   letterAttempt = 0;
   letterNextAttemptAt = millis();
   letterSendState = LetterSendState::Pending;
   letterDisplayRestorePending = false;
-  Serial.printf("LETTER queue %c session=%s seq=%lu\n", letter,
+  logf("LETTER queue %c session=%s seq=%lu\n", letter,
                 pendingLetter.session.c_str(), (unsigned long)pendingLetter.seq);
   showLetterPanel("SENDING", letter);
   return true;
@@ -373,7 +457,7 @@ static LetterAttemptResult sendLetterToStation(const LetterEvent& event, String&
   String url = normalizeStationUrl(station);
   if (!url.length()) {
     detail = "station not configured";
-    Serial.println("LETTER failed: station not configured");
+    logln("LETTER no station address: USB line only");
     return LetterAttemptResult::StationMissing;
   }
 
@@ -383,13 +467,13 @@ static LetterAttemptResult sendLetterToStation(const LetterEvent& event, String&
                  + ",\"seq\":" + String(event.seq)
                  + ",\"atom_sent_ms\":" + String(event.atomSentMs) + "}";
 
-  Serial.printf("LETTER attempt %u %s\n", letterAttempt, url.c_str());
+  logf("LETTER attempt %u %s\n", letterAttempt, url.c_str());
   HTTPClient http;
   http.setConnectTimeout(1000);
   http.setTimeout(2000);
   if (!http.begin(url)) {
     detail = "HTTP begin failed";
-    Serial.println("LETTER HTTP begin failed");
+    logln("LETTER HTTP begin failed");
     return LetterAttemptResult::RetryableError;
   }
 
@@ -401,14 +485,14 @@ static LetterAttemptResult sendLetterToStation(const LetterEvent& event, String&
 
   if (code == 200 || code == 202) {
     detail = responseBody;
-    Serial.printf("LETTER ACK %d session=%s seq=%lu\n", code,
+    logf("LETTER ACK %d session=%s seq=%lu\n", code,
                   event.session.c_str(), (unsigned long)event.seq);
     return LetterAttemptResult::Ack;
   }
 
   if (code <= 0) detail = HTTPClient::errorToString(code);
   else detail = "HTTP " + String(code) + " " + responseBody;
-  Serial.printf("LETTER error %s\n", detail.c_str());
+  logf("LETTER error %s\n", detail.c_str());
   return LetterAttemptResult::RetryableError;
 }
 
@@ -433,14 +517,15 @@ static void processLetterSender() {
     return;
   }
   if (result == LetterAttemptResult::StationMissing) {
-    letterSendState = LetterSendState::Failed;
-    showLetterPanel("NO STATION", pendingLetter.letter);
+    // No station address: the USB line written at queue time is the channel.
+    letterSendState = LetterSendState::Success;
+    showLetterPanel("SENT USB", pendingLetter.letter);
     scheduleLetterDisplayRestore();
     return;
   }
   if (letterAttempt >= LETTER_MAX_ATTEMPTS) {
     letterSendState = LetterSendState::Failed;
-    Serial.printf("LETTER failed session=%s seq=%lu after %u attempts\n",
+    logf("LETTER failed session=%s seq=%lu after %u attempts\n",
                   pendingLetter.session.c_str(), (unsigned long)pendingLetter.seq,
                   letterAttempt);
     showLetterPanel("FAILED", pendingLetter.letter);
@@ -450,7 +535,7 @@ static void processLetterSender() {
 
   letterSendState = LetterSendState::WaitingRetry;
   letterNextAttemptAt = millis() + LETTER_RETRY_DELAY_MS;
-  Serial.printf("LETTER retry scheduled %u/%u\n", letterAttempt + 1,
+  logf("LETTER retry scheduled %u/%u\n", letterAttempt + 1,
                 LETTER_MAX_ATTEMPTS);
 }
 
@@ -458,25 +543,25 @@ static void processLetterSender() {
 static void reportIP() {
   if (WiFi.status() == WL_CONNECTED) {
     String ip = WiFi.localIP().toString();
-    Serial.printf("IP %s  http://%s/  (STA \"%s\", RSSI %d)\n",
+    logf("IP %s  http://%s/  (STA \"%s\", RSSI %d)\n",
                   ip.c_str(), ip.c_str(), WiFi.SSID().c_str(), WiFi.RSSI());
   } else if (staConnecting) {
-    Serial.println("joining... (no IP from DHCP yet — try 'ip' again)");
+    logln("joining... (no IP from DHCP yet — try 'ip' again)");
   } else if (apActive()) {
     String ip = WiFi.softAPIP().toString();
-    Serial.printf("IP %s  http://%s/  (SoftAP \"%s\")\n", ip.c_str(), ip.c_str(), AP_SSID);
+    logf("IP %s  http://%s/  (SoftAP \"%s\")\n", ip.c_str(), ip.c_str(), AP_SSID);
   } else {
-    Serial.println("not connected");
+    logln("not connected");
   }
 }
 
 static void printHelp() {
-  Serial.println("commands:");
-  Serial.println("  wifi <ssid>:<password>  - join a network (saved, auto-reconnects)");
-  Serial.println("  ip                      - show current IP");
-  Serial.println("  status                  - mode / ssid / ip / rssi");
-  Serial.println("  ap                      - forget wifi, start SoftAP");
-  Serial.println("  help");
+  logln("commands:");
+  logln("  wifi <ssid>:<password>  - join a network (saved, auto-reconnects)");
+  logln("  ip                      - show current IP");
+  logln("  status                  - mode / ssid / ip / rssi");
+  logln("  ap                      - forget wifi, start SoftAP");
+  logln("  help");
 }
 
 // ---- WiFi mode control -----------------------------------------------------
@@ -486,7 +571,7 @@ static void startAP() {
   WiFi.mode(WIFI_AP);
   WiFi.softAP(AP_SSID, AP_PASS);
   dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
-  Serial.printf("SoftAP \"%s\"  http://%s/\n", AP_SSID, WiFi.softAPIP().toString().c_str());
+  logf("SoftAP \"%s\"  http://%s/\n", AP_SSID, WiFi.softAPIP().toString().c_str());
   if (!frameOk) showStatus();  // keep a restored frame on screen; status is on the button
 }
 
@@ -502,7 +587,7 @@ static void startSTA(const String& ssid, const String& pass, bool save) {
   WiFi.begin(ssid.c_str(), pass.c_str());
   staConnecting = true;
   staDeadline = millis() + STA_TIMEOUT_MS;
-  Serial.printf("joining \"%s\"... (waiting for DHCP)\n", ssid.c_str());
+  logf("joining \"%s\"... (waiting for DHCP)\n", ssid.c_str());
   if (!frameOk) showStatus();  // keep a restored frame on screen; status is on the button
 }
 
@@ -511,12 +596,12 @@ static void pollSTA() {
   if (!staConnecting) return;
   if (WiFi.status() == WL_CONNECTED) {
     staConnecting = false;
-    Serial.println("connected.");
+    logln("connected.");
     reportIP();
     if (frameOk) pushFrame(); else showStatus();  // don't wipe a restored frame
   } else if ((int32_t)(millis() - staDeadline) >= 0) {
     staConnecting = false;
-    Serial.println("join timed out — starting SoftAP.");
+    logln("join timed out — starting SoftAP.");
     startAP();
   }
 }
@@ -528,16 +613,16 @@ static void handleSerialLine(String line) {
   if (line.equalsIgnoreCase("ip"))     { reportIP();  return; }
   if (line.equalsIgnoreCase("status")) { reportIP();  return; }
   if (line.equalsIgnoreCase("help"))   { printHelp(); return; }
-  if (line.equalsIgnoreCase("name"))   { Serial.println("name: " + disco::name()); return; }
+  if (line.equalsIgnoreCase("name"))   { logln("name: " + disco::name()); return; }
   if (line.length() > 5 && line.substring(0, 5).equalsIgnoreCase("name ")) {
     String nm = line.substring(5); nm.trim();
-    if (nm.length()) { disco::setName(nm); Serial.println("renamed: " + disco::name()); }
+    if (nm.length()) { disco::setName(nm); logln("renamed: " + disco::name()); }
     return;
   }
   if (line.equalsIgnoreCase("ap")) {
     prefs.remove("ssid");
     prefs.remove("pass");
-    Serial.println("forgot saved wifi.");
+    logln("forgot saved wifi.");
     startAP();
     return;
   }
@@ -549,24 +634,41 @@ static void handleSerialLine(String line) {
   } else if (line.indexOf(':') >= 0) {
     creds = line;
   } else {
-    Serial.println("unknown command — type 'help'");
+    logln("unknown command — type 'help'");
     return;
   }
   creds.trim();
   int colon = creds.indexOf(':');               // split on the FIRST colon
-  if (colon < 0) { Serial.println("usage: wifi <ssid>:<password>"); return; }
+  if (colon < 0) { logln("usage: wifi <ssid>:<password>"); return; }
   String ssid = creds.substring(0, colon); ssid.trim();
   String pass = creds.substring(colon + 1);      // password may contain colons
-  if (!ssid.length()) { Serial.println("empty ssid"); return; }
+  if (!ssid.length()) { logln("empty ssid"); return; }
   startSTA(ssid, pass, true);
 }
 
+static void handlePumpCommand(const String& line);
+
+// Core 1: '{...}' lines are pump commands (data-acquisition protocol), handled
+// here at once; text console commands go to the network task.
 static void pumpSerial() {
   while (Serial.available()) {
     char c = (char)Serial.read();
     if (c == '\r') continue;
-    if (c == '\n') { handleSerialLine(lineBuf); lineBuf = ""; }
-    else if (lineBuf.length() < 160) lineBuf += c;
+    if (c != '\n') {
+      if (lineBuf.length() < 160) lineBuf += c;
+      continue;
+    }
+    String line = lineBuf;
+    lineBuf = "";
+    line.trim();
+    if (!line.length()) continue;
+    if (line[0] == '{') {
+      handlePumpCommand(line);
+    } else {
+      TextCommand cmd;
+      strlcpy(cmd.line, line.c_str(), sizeof(cmd.line));
+      if (xQueueSend(commandQueue, &cmd, 0) != pdTRUE) logln("serial: command queue full");
+    }
   }
 }
 
@@ -581,32 +683,38 @@ static void runGesture(int g) {
   String urls[GESTURES];
   readSlotUrls(curSlot, urls);
   String url = urls[g];
-  Serial.printf("gesture %d -> \"%s\"\n", g, url.c_str());
+  logf("gesture %d -> \"%s\"\n", g, url.c_str());
   if (url.length()) doAction(url);
   else if (g == 1) showStatus();
 }
 
 // Tähe nupurežiim on eraldi valik, et olemasolevad sloti žestid säiliksid.
-static void runButtonAction(int g) {
+static void runButtonAction(int g, uint32_t atMs) {
   if (!letterButtonMode) {
     runGesture(g);
     return;
   }
   if (g == 0) {
     selectedLetter = selectedLetter == 'Z' ? 'A' : selectedLetter + 1;
-    Serial.printf("LETTER selected %c\n", selectedLetter);
+    logf("LETTER selected %c\n", selectedLetter);
     showSelectedLetter();
   } else if (g == 1) {
-    if (!queueLetterEvent(selectedLetter)) {
-      Serial.println("LETTER queue rejected: sender busy");
+    if (!queueLetterEvent(selectedLetter, atMs)) {
+      logln("LETTER queue rejected: sender busy");
     }
   } else {
-    Serial.println("LETTER double click ignored in letter button mode");
+    logln("LETTER double click ignored in letter button mode");
   }
 }
 
 // Tähe nupurežiimis töödeldakse lühike vajutus kohe vabastamisel. Tavarežiimi
 // short/long/double loogika ja double-click'i ooteaken jäävad muutmata.
+// Runs on core 1 (needs M5.update()); actions run on core 0 via gestureQueue.
+static void postGesture(int g, uint32_t atMs) {
+  GestureEvent ev{(int8_t)g, atMs};
+  if (xQueueSend(gestureQueue, &ev, 0) != pdTRUE) logln("button: gesture queue full");
+}
+
 static void pumpButton() {
   if (M5.BtnA.wasPressed())  pressStart = millis();
   if (M5.BtnA.wasReleased()) {
@@ -614,20 +722,20 @@ static void pumpButton() {
     if (letterButtonMode) {
       shortPending = false;
       if (dur >= LONG_MIN_MS) {
-        runButtonAction(1);                            // long
+        postGesture(1, millis());                            // long
       } else if (dur < SHORT_MAX_MS) {
-        runButtonAction(0);                            // short kohe pärast release'i
+        postGesture(0, millis());                            // short kohe pärast release'i
       }
       return;
     }
 
     if (dur >= LONG_MIN_MS) {
       shortPending = false;
-      runButtonAction(1);                              // long
+      postGesture(1, millis());                              // long
     } else if (dur < SHORT_MAX_MS) {
       if (shortPending && (millis() - firstShortAt) <= DOUBLE_MS) {
         shortPending = false;
-        runButtonAction(2);                            // double
+        postGesture(2, millis());                            // double
       } else {
         shortPending = true;
         firstShortAt = millis();
@@ -636,7 +744,7 @@ static void pumpButton() {
   }
   if (!letterButtonMode && shortPending && (millis() - firstShortAt) > DOUBLE_MS) {
     shortPending = false;
-    runButtonAction(0);                                // single short
+    postGesture(0, millis());                                // single short
   }
 }
 
@@ -727,7 +835,7 @@ static void handleLetterTest() {
   }
 
   selectedLetter = value[0];
-  queueLetterEvent(selectedLetter);
+  queueLetterEvent(selectedLetter, millis());
   String response = "{\"queued\":true,\"state\":\"pending\",\"letter\":"
                   + jsonString(value) + ",\"session\":"
                   + jsonString(pendingLetter.session) + ",\"seq\":"
@@ -813,7 +921,7 @@ static void handleButtonsPost() {
 // GET /state: current device state. Keeps markerId + battery for atom-manager,
 // adds the current slot and which slots are filled.
 static void handleState() {
-  int mv = batteryMilliVolts();
+  int mv = batteryMvCached;
   String filled = "[";
   for (int i = 0; i < NUM_SLOTS; i++) {
     filled += slotFilled[i] ? "true" : "false";
@@ -828,7 +936,16 @@ static void handleState() {
            + ",\"hasFrame\":" + (frameOk ? "true" : "false")
            + ",\"battery\":{\"mv\":" + String(mv)
            + ",\"pct\":" + String(batteryPercent(mv)) + "}"
-           + ",\"overlay\":" + overlay::json() + "}";
+           + ",\"overlay\":" + overlay::json()
+           + ",\"lab\":{\"p\":" + String((float)labPressureKpa, 1)
+           + ",\"mode\":" + jsonString(pumpMode == pump::Mode::Suction ? "suction"
+                                         : pumpMode == pump::Mode::Blow ? "blow" : "off")
+           + ",\"pump\":" + (labPumpOn ? "true" : "false")
+           + ",\"why\":" + jsonString(labReason)
+           + ",\"zero\":" + String(atmosphericKpa, 2)
+           + ",\"letter_mode\":" + (letterButtonMode ? "true" : "false")
+           + ",\"letter\":" + jsonString(String(selectedLetter))
+           + ",\"letter_state\":" + jsonString(String((const char*)letterHeading)) + "}}";
   server.send(200, "application/json", s);
 }
 
@@ -863,6 +980,133 @@ static void handleNamePost() {
   server.send(200, "text/plain", disco::name());
 }
 
+// ---- network task (core 0) --------------------------------------------------
+static void netTask(void*) {
+  for (;;) {
+    server.handleClient();
+    processSettingsConnect();
+    processLetterSender();
+    pollSTA();
+    if (apActive()) dnsServer.processNextRequest();
+    disco::loop();   // UDP announce + peer table upkeep
+
+    GestureEvent ev;
+    while (xQueueReceive(gestureQueue, &ev, 0) == pdTRUE) runButtonAction(ev.gesture, ev.atMs);
+    TextCommand cmd;
+    while (xQueueReceive(commandQueue, &cmd, 0) == pdTRUE) handleSerialLine(String(cmd.line));
+
+    vTaskDelay(1);   // let the core-0 idle task run (task watchdog)
+  }
+}
+
+// ---- smart pump box (core 1) -------------------------------------------------
+static float readAbsoluteKpaAveraged() {
+  long sum = 0;
+  constexpr int kSamples = 32;
+  for (int i = 0; i < kSamples; ++i) {
+    sum += sensor::readRawAdc();
+    delay(5);
+  }
+  return sensor::voltsToAbsoluteKpa(sensor::countsToVolts(sum / kSamples));
+}
+
+static void labSetup() {
+  sensor::begin();
+  const char* source = "";
+  atmosphericKpa = zero::atBoot(readAbsoluteKpaAveraged(), &source);
+  logf("atmospheric zero: %.2f kPa absolute (%s)", atmosphericKpa, source);
+  pumpController.setMode(pump::Mode::Off);
+  labCanvas.setColorDepth(M5.Display.getColorDepth());
+  labCanvas.createSprite(M5.Display.width(), M5.Display.height());
+  nextLabLoopAt = millis();
+}
+
+static void handlePumpCommand(const String& line) {
+  comms::Command cmd;
+  if (!comms::parseCommand(line, cmd)) return;
+  switch (cmd.type) {
+    case comms::Command::Type::SetMode:
+      pumpMode = cmd.mode;
+      pumpController.setMode(cmd.mode);
+      break;
+    case comms::Command::Type::SetBand:
+      pumpController.setBand(cmd.band);
+      break;
+    case comms::Command::Type::SetLimits:
+      pumpController.setSafetyLimits(cmd.limits);
+      break;
+    case comms::Command::Type::Stop:
+      pumpMode = pump::Mode::Off;
+      pumpController.setMode(pump::Mode::Off);
+      break;
+    case comms::Command::Type::Zero: {
+      float z = atmosphericKpa;
+      const char* why = "";
+      const bool ok = zero::onCommand(readAbsoluteKpaAveraged(), labPumpOn, &z, &why);
+      if (ok) atmosphericKpa = z;
+      char buf[96];
+      snprintf(buf, sizeof(buf), "{\"zero\":%.2f,\"ok\":%s,\"why\":\"%s\"}",
+               atmosphericKpa, ok ? "true" : "false", why);
+      dataLine(buf);
+      break;
+    }
+    default:
+      break;
+  }
+}
+
+// Letter big, pressure and pump under it: one screen for both lab demos.
+static void drawLabScreen() {
+  labCanvas.fillScreen(TFT_BLACK);
+  labCanvas.setTextColor(TFT_GREEN, TFT_BLACK);
+  labCanvas.setTextSize(1.5f);
+  labCanvas.setCursor(2, 2);
+  labCanvas.print((const char*)letterHeading);
+  labCanvas.setTextSize(5);
+  labCanvas.setCursor(48, 22);
+  labCanvas.print(selectedLetter);
+  labCanvas.setTextSize(1.5f);
+  labCanvas.setTextColor(TFT_WHITE, TFT_BLACK);
+  labCanvas.setCursor(2, 70);
+  labCanvas.printf("p: %.1f kPa\n", (float)labPressureKpa);
+  labCanvas.printf("mode: %s\n", pumpMode == pump::Mode::Suction ? "suction"
+                                 : pumpMode == pump::Mode::Blow ? "blow" : "off");
+  labCanvas.setTextColor(labPumpOn ? TFT_ORANGE : TFT_WHITE, TFT_BLACK);
+  labCanvas.printf("pump: %s %s\n", labPumpOn ? "ON" : "off", labReason);
+  DisplayLock lock;
+  labCanvas.pushSprite(0, 0);
+}
+
+static void labTick() {
+  const uint32_t now = millis();
+  if ((int32_t)(now - nextLabLoopAt) < 0) return;
+  nextLabLoopAt += LAB_LOOP_MS;
+  // After a long stall do not fire a burst of catch-up cycles.
+  if ((int32_t)(now - nextLabLoopAt) > (int32_t)(5 * LAB_LOOP_MS)) nextLabLoopAt = now + LAB_LOOP_MS;
+
+  const int raw = sensor::readRawAdc();
+  const float relKpa = sensor::toRelativeKpa(
+      sensor::voltsToAbsoluteKpa(sensor::countsToVolts(raw)), atmosphericKpa);
+  char reason[12] = {0};
+  const bool pumpOn = pumpController.update(relKpa, now, reason);
+  labPressureKpa = relKpa;
+  labPumpOn = pumpOn;
+  strlcpy(labReason, reason, sizeof(labReason));
+
+  xSemaphoreTake(serialMux, portMAX_DELAY);
+  comms::sendTelemetry(now, raw, relKpa, pumpMode, pumpOn);
+  xSemaphoreGive(serialMux);
+
+  if ((int32_t)(now - nextBatteryAt) >= 0) {
+    nextBatteryAt = now + 1000;
+    batteryMvCached = batteryMilliVolts();
+  }
+  if (letterButtonMode && (int32_t)(now - nextLabScreenAt) >= 0) {
+    nextLabScreenAt = now + LAB_SCREEN_MS;
+    drawLabScreen();
+  }
+}
+
 void setup() {
   auto cfg = M5.config();
   M5.begin(cfg);
@@ -873,13 +1117,19 @@ void setup() {
   analogReadResolution(12);
 
   Serial.begin(115200);
+  serialMux = xSemaphoreCreateMutex();
+  displayMux = xSemaphoreCreateRecursiveMutex();
+  gestureQueue = xQueueCreate(8, sizeof(GestureEvent));
+  commandQueue = xQueueCreate(4, sizeof(TextCommand));
   prefs.begin("wifi", false);
   letterSession = makeBootSession();
-  letterButtonMode = prefs.getBool("letterMode", false);
+  // Lab mode (letter button + pressure screen) is the default for the demo.
+  letterButtonMode = prefs.getBool("letterMode", true);
+  labSetup();
 
   // Mount flash and restore the last-shown slot immediately, so the panel comes
   // straight up on its page — no boot animation, no status screen, no WiFi wait.
-  if (!LittleFS.begin(true)) Serial.println("LittleFS mount failed — slots won't persist");
+  if (!LittleFS.begin(true)) logln("LittleFS mount failed — slots won't persist");
   refreshFilled();
   curSlot = prefs.getInt("slot", 0);
   if (curSlot < 0 || curSlot >= NUM_SLOTS) curSlot = 0;
@@ -924,22 +1174,19 @@ void setup() {
     else server.send(404, "text/plain", "Not found");
   });
   server.begin();
-  if (letterButtonMode) showSelectedLetter();
 
-  Serial.println();
-  Serial.printf("ATOM FRAMER ready — name \"%s\".\n", disco::name().c_str());
-  Serial.printf("LETTER session=%s\n", letterSession.c_str());
+  logln();
+  logf("ATOM FRAMER ready — name \"%s\".\n", disco::name().c_str());
+  logf("LETTER session=%s\n", letterSession.c_str());
   printHelp();
+
+  // Network side on core 0; loop() stays on core 1 for the 10 ms pump cycle.
+  xTaskCreatePinnedToCore(netTask, "net", 12288, nullptr, 1, nullptr, 0);
 }
 
 void loop() {
   M5.update();
-  server.handleClient();
-  processSettingsConnect();
-  processLetterSender();
-  pumpSerial();
-  pollSTA();
-  if (apActive()) dnsServer.processNextRequest();
-  disco::loop();   // UDP announce + peer table upkeep
-  pumpButton();    // short / long / double click -> the current slot's actions
+  pumpButton();    // short / long / double click -> gestureQueue
+  pumpSerial();    // pump JSON commands here, text commands -> commandQueue
+  labTick();       // sensor + pump + telemetry every 10 ms, lab screen
 }
