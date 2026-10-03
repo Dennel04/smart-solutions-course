@@ -24,7 +24,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
+from fonts import FontError, available_fonts, load_font, normalized_letter
 from letter_paths import (
     DEFAULT_LETTERS_PATH,
     LetterPaths,
@@ -40,6 +41,13 @@ from robot_calibration import (
     load_robot_calibration,
 )
 from robot_mapping import map_normalized_point
+from text_job import (
+    TextJobError,
+    build_robot_plan,
+    build_text_job,
+    parse_request,
+    preview_svg,
+)
 
 
 app = Flask(__name__)
@@ -56,6 +64,8 @@ class Config:
     network_timeout: float = 1.0
     move_timeout: float = 15.0
     move_tolerance: float = 0.5
+    # Font used for A-Z letters that letters.json does not define (None = 422).
+    letter_font: str | None = None
 
 
 @dataclass
@@ -82,6 +92,8 @@ LAST_SEQ: dict[str, int] = {}
 EXECUTION_EVENTS: dict[tuple[str, int], ExecutionRecord] = {}
 LETTER_PATHS: LetterPaths = load_letter_paths(CONFIG.letters_path)
 MG400_CLIENT_FACTORY = MG400Client
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+TEXT_JOB_SEQ = 0
 
 
 def utc_iso() -> str:
@@ -192,7 +204,10 @@ def _execute_plan(
     on_first_move: Callable[[int], None],
 ) -> None:
     """Execute one complete normalized plan after a fresh safety check."""
-    calibration.require_complete()
+    if any(item["action"] == "MOVE_NORMALIZED" for item in plan):
+        calibration.require_complete()
+    else:
+        calibration.require_text_ready()
     status = client.get_status()
     client.require_safe_status(status)
     current_x, current_y, current_z, _ = client.pose_from_status(status)
@@ -215,6 +230,8 @@ def _execute_plan(
         elif action == "MOVE_NORMALIZED":
             point = map_normalized_point(calibration, item["x"], item["y"])
             current_x, current_y = point.x, point.y
+        elif action == "MOVE_ROBOT":
+            current_x, current_y = float(item["x"]), float(item["y"])
         else:
             raise ValueError(f"unknown motion action: {action}")
         if not first_move_recorded:
@@ -282,6 +299,18 @@ def _run_execution(
             EXECUTION_LOCK.release()
 
 
+def _letter_strokes(letter: str):
+    try:
+        return get_letter_path(letter, LETTER_PATHS)
+    except ValueError:
+        if CONFIG.letter_font is None:
+            raise
+    try:
+        return normalized_letter(letter, load_font(CONFIG.letter_font))
+    except FontError as exc:
+        raise ValueError(f"letter path not configured: {letter} ({exc})") from exc
+
+
 @app.post("/api/letter")
 def receive_letter():
     # Timestamp as early as possible after Flask has accepted the request.
@@ -295,7 +324,7 @@ def receive_letter():
         return jsonify(ok=False, error=str(exc)), 400
 
     try:
-        strokes = get_letter_path(letter, LETTER_PATHS)
+        strokes = _letter_strokes(letter)
     except ValueError as exc:
         append_log(
             letter=letter,
@@ -516,6 +545,165 @@ def receive_letter():
     )
 
 
+@app.get("/")
+def index():
+    return send_from_directory(STATIC_DIR, "index.html")
+
+
+@app.get("/api/fonts")
+def fonts():
+    result = []
+    for name in available_fonts():
+        try:
+            result.append({"name": name, "title": load_font(name).title})
+        except FontError as exc:
+            LOGGER.warning("skipping broken font %s: %s", name, exc)
+    return jsonify(ok=True, fonts=result)
+
+
+def _calibration_or_none() -> tuple[RobotCalibration | None, str | None]:
+    try:
+        return load_robot_calibration(CONFIG.calibration_path), None
+    except CalibrationError as exc:
+        return None, str(exc)
+
+
+def _text_job_from_request():
+    calibration, calibration_error = _calibration_or_none()
+    job = build_text_job(parse_request(request.get_json(silent=True)), calibration)
+    if calibration_error:
+        job.warnings.append(f"calibration file: {calibration_error}")
+    speed = calibration.motion.speed_percent if calibration is not None else None
+    return job, calibration, speed
+
+
+@app.post("/api/text/preview")
+def text_preview():
+    """Lay the text out and return an SVG preview; never touches the robot."""
+    try:
+        job, _, speed = _text_job_from_request()
+    except TextJobError as exc:
+        return jsonify(ok=False, error=str(exc)), 422
+    return jsonify(ok=True, dry_run=CONFIG.dry_run, svg=preview_svg(job), **job.summary(speed))
+
+
+@app.post("/api/text/draw")
+def text_draw():
+    """Draw text on the calibrated sheet; dry-run unless the station runs --execute."""
+    global TEXT_JOB_SEQ
+    received_mono = monotonic_ns()
+    received_iso = utc_iso()
+    try:
+        job, calibration, speed = _text_job_from_request()
+        plan = build_robot_plan(job) if job.calibrated or not CONFIG.dry_run else None
+    except TextJobError as exc:
+        return jsonify(ok=False, error=str(exc), robot_started=False), 422
+    label = " ".join(job.request.text.split())[:40]
+
+    if CONFIG.dry_run:
+        if plan is not None:
+            print(format_motion_plan(plan), flush=True)
+        return (
+            jsonify(
+                ok=True,
+                dry_run=True,
+                robot_started=False,
+                action_count=None if plan is None else len(plan),
+                **job.summary(speed),
+            ),
+            202,
+        )
+
+    assert plan is not None and calibration is not None
+    if not EXECUTION_LOCK.acquire(blocking=False):
+        return (
+            jsonify(ok=False, error="station is already drawing", robot_started=False),
+            409,
+        )
+    with SEQ_LOCK:
+        TEXT_JOB_SEQ += 1
+        key = ("text", TEXT_JOB_SEQ)
+        EXECUTION_EVENTS[key] = ExecutionRecord("preflight")
+    try:
+        calibration.require_text_ready()
+        client = MG400_CLIENT_FACTORY(CONFIG.mg400_url, network_timeout=CONFIG.network_timeout)
+        status = client.get_status()
+        client.require_safe_status(status)
+        _check_plan_with_server(plan, calibration, client)
+    except (CalibrationError, MG400Error, ValueError) as exc:
+        with SEQ_LOCK:
+            EXECUTION_EVENTS.pop(key, None)
+        EXECUTION_LOCK.release()
+        return jsonify(ok=False, error=str(exc), robot_started=False), 503
+
+    worker = threading.Thread(
+        target=_run_execution,
+        kwargs={
+            "key": key,
+            "letter": label,
+            "atom_sent_ms": None,
+            "received_iso": received_iso,
+            "received_mono": received_mono,
+            "plan": plan,
+            "calibration": calibration,
+            "client": client,
+        },
+        name=f"mg400-text-{key[1]}",
+        daemon=False,
+    )
+    with SEQ_LOCK:
+        try:
+            worker.start()
+        except RuntimeError as exc:
+            EXECUTION_EVENTS.pop(key, None)
+            EXECUTION_LOCK.release()
+            return jsonify(ok=False, error=str(exc), robot_started=False), 503
+        EXECUTION_EVENTS[key].state = "started"
+    return (
+        jsonify(
+            ok=True,
+            dry_run=False,
+            robot_started=True,
+            job=key[1],
+            execution_status="started",
+            action_count=len(plan),
+            **job.summary(speed),
+        ),
+        202,
+    )
+
+
+def _check_plan_with_server(
+    plan: list[MotionAction], calibration: RobotCalibration, client: MG400Client
+) -> None:
+    """Every plan point at both pen heights through mg400-base's joint model."""
+    points = {
+        (round(item["x"], 2), round(item["y"], 2))
+        for item in plan
+        if item["action"] == "MOVE_ROBOT"
+    }
+    for z in (calibration.pose.pen_down_z, calibration.pose.pen_up_z):
+        for x, y in sorted(points):
+            reachable = client.check_pose(x, y, z)  # type: ignore[arg-type]
+            if reachable is None:
+                LOGGER.warning("mg400-base has no /api/check; using the reach ring only")
+                return
+            if not reachable:
+                raise MG400Error(
+                    f"point X {x:.1f} Y {y:.1f} Z {z:.1f} hits an MG400 joint limit; "
+                    "move the sheet closer to the robot's middle reach"
+                )
+
+
+@app.get("/api/text/<int:job_id>")
+def text_status(job_id: int):
+    with SEQ_LOCK:
+        record = EXECUTION_EVENTS.get(("text", job_id))
+        if record is None:
+            return jsonify(ok=False, error="unknown job"), 404
+        return jsonify(ok=True, job=job_id, execution_status=record.state, error=record.error)
+
+
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()
     p.add_argument("--host", default="0.0.0.0")
@@ -524,6 +712,11 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--letters", type=Path, default=DEFAULT_LETTERS_PATH)
     p.add_argument("--calibration", type=Path, default=DEFAULT_CALIBRATION_PATH)
     p.add_argument("--mg400-url", default="http://127.0.0.1:8000")
+    p.add_argument(
+        "--letter-font",
+        default="futural",
+        help="font for Atom letters missing from letters.json ('none' = reject them)",
+    )
     mode = p.add_mutually_exclusive_group()
     mode.add_argument(
         "--execute",
@@ -546,8 +739,11 @@ if __name__ == "__main__":
         dry_run=not args.execute,
         calibration_path=args.calibration,
         mg400_url=args.mg400_url,
+        letter_font=None if args.letter_font.lower() == "none" else args.letter_font,
     )
     LETTER_PATHS = load_letter_paths(CONFIG.letters_path)
+    if CONFIG.letter_font is not None:
+        load_font(CONFIG.letter_font)  # fail at start-up, not on the first key press
     ensure_log()
     # Debug/reloader off: the station must have one process and one event queue.
     app.run(host=args.host, port=args.port, debug=False, use_reloader=False)

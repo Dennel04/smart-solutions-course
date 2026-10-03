@@ -13,5 +13,14 @@
   },
   "motion": {
     "speed_percent": null
+  },
+  "paper": {
+    "corner_x": null,
+    "corner_y": null,
+    "edge_x": null,
+    "edge_y": null,
+    "size": "A4",
+    "orientation": "portrait",
+    "margin_mm": 15
   }
 }

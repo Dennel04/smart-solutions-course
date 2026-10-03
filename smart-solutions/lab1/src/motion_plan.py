@@ -29,13 +29,15 @@ def build_motion_plan(strokes: LetterPath) -> list[MotionAction]:
 
 
 def format_motion_plan(actions: list[MotionAction]) -> str:
-    """Format a plan for dry-run stdout without robot coordinates."""
+    """Format a plan for dry-run stdout (text jobs carry robot XY in mm)."""
     lines: list[str] = []
     for action in actions:
         if action["action"] == "MOVE_NORMALIZED":
             lines.append(
                 f"MOVE_NORMALIZED {action['x']:.3f} {action['y']:.3f}"
             )
+        elif action["action"] == "MOVE_ROBOT":
+            lines.append(f"MOVE_ROBOT {action['x']:.2f} {action['y']:.2f}")
         else:
             lines.append(action["action"])
     return "\n".join(lines)

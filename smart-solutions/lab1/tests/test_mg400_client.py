@@ -141,5 +141,29 @@ class MG400ClientTests(unittest.TestCase):
         self.assertEqual(len(session.calls), 1)
 
 
+class MissingRouteResponse(FakeResponse):
+    status_code = 404
+
+
+class CheckPoseTests(unittest.TestCase):
+    def test_reachable_flag_is_returned(self) -> None:
+        session = FakeSession([{"ok": True, "reachable": False, "reason": "J3"}])
+        client = MG400Client(session=session)  # type: ignore[arg-type]
+        self.assertFalse(client.check_pose(300, 0, -100))
+        method, url, kwargs = session.calls[0]
+        self.assertEqual((method, url), ("POST", "http://127.0.0.1:8000/api/check"))
+        self.assertEqual(kwargs["json"], {"x": 300, "y": 0, "z": -100})
+
+    def test_upstream_server_without_check_returns_none(self) -> None:
+        session = FakeSession([])
+        session.request = lambda *a, **k: MissingRouteResponse({})  # type: ignore[method-assign]
+        self.assertIsNone(MG400Client(session=session).check_pose(300, 0, -100))  # type: ignore[arg-type]
+
+    def test_malformed_check_reply_is_an_error(self) -> None:
+        client = MG400Client(session=FakeSession([{"ok": True}]))  # type: ignore[arg-type]
+        with self.assertRaises(MG400Error):
+            client.check_pose(300, 0, -100)
+
+
 if __name__ == "__main__":
     unittest.main()

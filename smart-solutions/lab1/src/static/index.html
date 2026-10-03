@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MG400 tekstijoonistus</title>
+<style>
+  :root { --bg: #f6f7f9; --panel: #fff; --text: #16181d; --muted: #646a75; --line: #d8dbe0;
+          --accent: #3e63dd; --danger: #d13c3c; --ok: #2b8a3e; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #15171b; --panel: #1e2126; --text: #e8eaee; --muted: #9aa1ad; --line: #353a42;
+            --accent: #7b9cff; --danger: #ff6b6b; --ok: #5cc471; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.45 system-ui, sans-serif; background: var(--bg); color: var(--text); }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px; display: grid; gap: 16px;
+         grid-template-columns: minmax(0, 360px) minmax(0, 1fr); }
+  @media (max-width: 760px) { main { grid-template-columns: minmax(0, 1fr); } }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+  textarea, select, input { width: 100%; font: inherit; color: inherit; background: var(--bg);
+         border: 1px solid var(--line); border-radius: 6px; padding: 7px 8px; }
+  textarea { min-height: 90px; resize: vertical; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .check { display: flex; gap: 8px; align-items: center; color: var(--text); font-size: 14px; }
+  .check input { width: auto; }
+  .buttons { display: flex; gap: 10px; margin-top: 16px; }
+  button { font: inherit; border: 0; border-radius: 6px; padding: 9px 14px; cursor: pointer;
+           background: var(--accent); color: #fff; }
+  button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  button:disabled { opacity: .5; cursor: default; }
+  #preview { background: #fff; border-radius: 6px; max-height: 75vh; display: flex; justify-content: center; }
+  #preview svg { max-height: 75vh; width: auto; max-width: 100%; }
+  #stats { font-size: 14px; color: var(--muted); margin-top: 10px; }
+  .warn { color: var(--danger); }
+  .good { color: var(--ok); }
+  .mode { font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <section>
+    <h1>MG400 tekstijoonistus</h1>
+    <div class="mode" id="mode">…</div>
+    <label for="text">Tekst</label>
+    <textarea id="text">TERE!
+Nutikad lahendused</textarea>
+    <div class="row">
+      <div><label for="font">Font</label><select id="font"></select></div>
+      <div><label for="align">Joondus</label>
+        <select id="align"><option value="left">vasak</option><option value="center">kesk</option><option value="right">parem</option></select></div>
+    </div>
+    <div class="row">
+      <div><label for="size_mm">Suurtähe kõrgus, mm</label><input id="size_mm" type="number" min="3" step="0.5" value="20"></div>
+      <div><label for="line_spacing">Reavahe ×</label><input id="line_spacing" type="number" min="1" step="0.1" value="1.6"></div>
+    </div>
+    <label class="check"><input id="fit" type="checkbox"> Sobita suurim suurus lehele</label>
+    <div class="row">
+      <div><label for="size">Leht</label>
+        <select id="size"><option>A4</option><option>A5</option><option>A3</option><option>Letter</option></select></div>
+      <div><label for="orientation">Suund</label>
+        <select id="orientation"><option value="portrait">püsti</option><option value="landscape">rõhtne</option></select></div>
+    </div>
+    <div class="row">
+      <div><label for="area">Ala</label>
+        <select id="area"><option value="reachable">roboti ulatuses</option><option value="sheet">kogu leht</option></select></div>
+      <div><label for="margin_mm">Veeris, mm</label><input id="margin_mm" type="number" min="0" step="1" value="15"></div>
+    </div>
+    <div class="buttons">
+      <button class="secondary" id="previewBtn">Eelvaade</button>
+      <button id="drawBtn">Joonista</button>
+    </div>
+    <div id="stats"></div>
+  </section>
+  <section><div id="preview"></div></section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+let dryRun = true;
+
+function body() {
+  const n = (id) => Number($(id).value);
+  return {
+    text: $("text").value, font: $("font").value, align: $("align").value,
+    size_mm: n("size_mm"), fit: $("fit").checked, line_spacing: n("line_spacing"),
+    size: $("size").value, orientation: $("orientation").value,
+    area: $("area").value, margin_mm: n("margin_mm"),
+  };
+}
+
+function showStats(r) {
+  if (!r.ok) { $("stats").innerHTML = `<span class="warn">${escapeHtml(r.error)}</span>`; return; }
+  const reach = r.reachable === null ? "ulatust ei kontrollitud (leht kalibreerimata)"
+    : r.reachable ? '<span class="good">kõik roboti ulatuses</span>'
+    : `<span class="warn">${r.unreachable_segments} lõiku väljaspool ulatust</span>`;
+  const time = r.estimated_seconds == null ? "" : ` · ~${Math.round(r.estimated_seconds / 60 * 10) / 10} min`;
+  $("stats").innerHTML =
+    `Suurus <b>${r.size_mm} mm</b> · ${r.lines.length} rida · ${r.points} punkti · ` +
+    `${Math.round(r.drawn_mm)} mm joont${time}<br>${reach}` +
+    r.warnings.map((w) => `<br><span class="warn">${escapeHtml(w)}</span>`).join("");
+  if ($("fit").checked) $("size_mm").value = r.size_mm;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+async function post(path) {
+  const res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body()) });
+  return res.json();
+}
+
+async function preview() {
+  const r = await post("/api/text/preview");
+  if (r.ok) $("preview").innerHTML = r.svg;
+  showStats(r);
+  return r;
+}
+
+async function draw() {
+  const r = await preview();
+  if (!r.ok) return;
+  if (!dryRun && !confirm("Robot hakkab liikuma. E-stop käeulatuses ja käed eemal?")) return;
+  $("drawBtn").disabled = true;
+  let started = false;
+  try {
+    const d = await post("/api/text/draw");
+    if (!d.ok) { showStats(d); return; }
+    if (d.dry_run) { $("stats").innerHTML += `<br>Dry-run: ${d.action_count ?? 0} käsku, robot ei liikunud.`; return; }
+    started = true;
+    poll(d.job);
+  } finally { if (!started) $("drawBtn").disabled = false; }
+}
+
+async function poll(job) {
+  const r = await (await fetch(`/api/text/${job}`)).json();
+  $("mode").textContent = `Töö ${job}: ${r.execution_status}${r.error ? " — " + r.error : ""}`;
+  if (r.execution_status === "started") setTimeout(() => poll(job), 1000);
+  else $("drawBtn").disabled = false;
+}
+
+async function init() {
+  const [fonts, health] = await Promise.all([
+    fetch("/api/fonts").then((r) => r.json()), fetch("/health").then((r) => r.json()),
+  ]);
+  for (const f of fonts.fonts) $("font").add(new Option(f.title, f.name, f.name === "futural", f.name === "futural"));
+  dryRun = health.execution_mode !== "execute";
+  $("mode").textContent = dryRun ? "Režiim: dry-run (robot ei liigu)" : "Režiim: EXECUTE — robot liigub";
+  $("drawBtn").textContent = dryRun ? "Joonista (dry-run)" : "Joonista";
+  $("fit").addEventListener("change", () => { $("size_mm").disabled = $("fit").checked; });
+  $("previewBtn").addEventListener("click", preview);
+  $("drawBtn").addEventListener("click", draw);
+  preview();
+}
+init();
+</script>
+</body>
+</html>

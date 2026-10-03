@@ -160,6 +160,13 @@ Pärast edukat õhukatset mõõda pliiatsi tegelik joonistamise Z, lisa varasema
 kasuta uut mõõdetud `pen_down_z` väärtust. Ära märgi tähte joonistatuks enne
 reaalset kontrolli.
 
+## L. Teksti joonistamine (fondid, suurus, A4)
+
+Täida `config/robot_calibration.json` sektsioon `paper` mõõdetud lehe
+punktidega (juhend: `docs/text_drawing.md`). Käivita station ja ava
+`http://<robotiarvuti>:5000/`. Vaata kõigepealt **Eelvaade**: punane ala on
+roboti ulatusest väljas. Esimene tekst joonistatakse samuti õhus 20% kiirusel.
+
 ## Ohutus
 
 - E-stop peab olema käeulatuses.

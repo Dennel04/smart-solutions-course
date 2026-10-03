@@ -41,11 +41,29 @@ class MotionCalibration:
 
 
 @dataclass(frozen=True)
+class PaperCalibration:
+    """Kaks õpetatud punkti lehe alumisel serval (vt src/paper.py)."""
+
+    corner_x: float | None = None
+    corner_y: float | None = None
+    edge_x: float | None = None
+    edge_y: float | None = None
+    size: str = "A4"
+    orientation: str = "portrait"
+    margin_mm: float = 15.0
+
+    @property
+    def is_complete(self) -> bool:
+        return None not in (self.corner_x, self.corner_y, self.edge_x, self.edge_y)
+
+
+@dataclass(frozen=True)
 class RobotCalibration:
     version: int
     workspace: WorkspaceCalibration
     pose: PoseCalibration
     motion: MotionCalibration
+    paper: PaperCalibration = PaperCalibration()
 
     @property
     def is_complete(self) -> bool:
@@ -67,6 +85,19 @@ class RobotCalibration:
         if not self.is_complete:
             raise IncompleteCalibrationError(
                 "roboti kalibratsioon on puudulik; mõõda väärtused laboris"
+            )
+
+    def require_text_ready(self) -> None:
+        """Teksti joonistamiseks on vaja pliiatsi poosi, kiirust ja lehte."""
+        values = (
+            self.pose.r,
+            self.pose.pen_up_z,
+            self.pose.pen_down_z,
+            self.motion.speed_percent,
+        )
+        if any(value is None for value in values) or not self.paper.is_complete:
+            raise IncompleteCalibrationError(
+                "teksti kalibratsioon on puudulik; mõõda pose, motion ja paper laboris"
             )
 
 
@@ -127,7 +158,40 @@ def validate_robot_calibration(document: object) -> RobotCalibration:
     if motion.speed_percent is not None and not 0 < motion.speed_percent <= 100:
         raise CalibrationError("motion.speed_percent peab olema vahemikus 0 < väärtus <= 100")
 
-    return RobotCalibration(version, workspace, pose, motion)
+    paper = _paper(document)
+    return RobotCalibration(version, workspace, pose, motion, paper)
+
+
+def _paper(document: dict[str, object]) -> PaperCalibration:
+    """Valikuline sektsioon: vanad failid ilma paper-osata jäävad kehtima."""
+    if "paper" not in document:
+        return PaperCalibration()
+    data = _object(document, "paper")
+    size = data.get("size", "A4")
+    orientation = data.get("orientation", "portrait")
+    if size not in ("A5", "A4", "A3", "Letter"):
+        raise CalibrationError("paper.size peab olema A5, A4, A3 või Letter")
+    if orientation not in ("portrait", "landscape"):
+        raise CalibrationError("paper.orientation peab olema portrait või landscape")
+    margin = _nullable_number({"margin_mm": data.get("margin_mm", 15.0)}, "margin_mm", "paper")
+    if margin is None or margin < 0:
+        raise CalibrationError("paper.margin_mm peab olema mittenegatiivne arv")
+    paper = PaperCalibration(
+        corner_x=_nullable_number(data, "corner_x", "paper"),
+        corner_y=_nullable_number(data, "corner_y", "paper"),
+        edge_x=_nullable_number(data, "edge_x", "paper"),
+        edge_y=_nullable_number(data, "edge_y", "paper"),
+        size=str(size),
+        orientation=str(orientation),
+        margin_mm=margin,
+    )
+    if paper.is_complete:
+        baseline = math.hypot(paper.edge_x - paper.corner_x, paper.edge_y - paper.corner_y)  # type: ignore[operator]
+        if baseline < 50.0:
+            raise CalibrationError(
+                "paper.edge peab olema nurgast vähemalt 50 mm kaugusel lehe alumisel serval"
+            )
+    return paper
 
 
 def load_robot_calibration(

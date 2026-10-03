@@ -76,6 +76,12 @@ class FakeMG400Client:
         self.status["pose"] = [x, y, z, r]
         return dict(self.status)
 
+    unreachable: set[tuple[float, float, float]] = set()
+
+    def check_pose(self, x: float, y: float, z: float) -> bool | None:
+        self.trace.append("check")
+        return (round(x, 2), round(y, 2), z) not in self.unreachable
+
     def stop(self) -> dict[str, object]:
         self.stop_calls += 1
         return {"ok": True}

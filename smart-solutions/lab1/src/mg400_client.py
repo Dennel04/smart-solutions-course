@@ -117,6 +117,32 @@ class MG400Client:
         # envelope. Missing "ok" is valid here; an explicit false is not.
         return self._request("GET", "/api/status", require_ok=False)
 
+    def check_pose(self, x: float, y: float, z: float) -> bool | None:
+        """Ask mg400-base whether a pose hits a joint/parallelogram limit.
+
+        Returns None when the server has no /api/check (upstream mg400-base);
+        the caller then relies on its own conservative reach ring.
+        """
+        try:
+            response = self.session.request(
+                "POST",
+                f"{self.base_url}/api/check",
+                json={"x": x, "y": y, "z": z},
+                timeout=self.network_timeout,
+            )
+        except requests.RequestException as exc:
+            raise MG400Error(f"mg400-base request failed: POST /api/check: {exc}") from exc
+        if getattr(response, "status_code", 200) in (404, 405):
+            return None
+        try:
+            response.raise_for_status()
+            body = response.json()
+        except (requests.RequestException, ValueError) as exc:
+            raise MG400Error(f"mg400-base request failed: POST /api/check: {exc}") from exc
+        if not isinstance(body, dict) or not isinstance(body.get("reachable"), bool):
+            raise MG400Error("mg400-base /api/check returned no reachable flag")
+        return body["reachable"]
+
     def set_speed(self, ratio: float) -> dict[str, Any]:
         return self._request("POST", "/api/speed", json={"ratio": ratio})
 

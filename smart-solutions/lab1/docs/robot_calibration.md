@@ -33,6 +33,18 @@ Ka täielik ja valideeritud kalibratsioon tähendab ainult seda, et abstraktse p
 - [ ] Käivita tarkvaratestid uuesti.
 - [ ] Kontrolli teisendatud punkte enne reaalset MG400 käivitust.
 
+## Lehe kalibratsioon teksti jaoks (lisatud 03.10.2026)
+
+Teksti joonistamiseks on failis valikuline sektsioon `paper`: lehe alumise
+vasaku nurga (`corner_x`, `corner_y`) ja sama serva teise punkti (`edge_x`,
+`edge_y`) roboti koordinaadid, `size`, `orientation` ja `margin_mm`. Vana fail
+ilma `paper` sektsioonita jääb kehtivaks. Mõõtmise juhend ja ulatuse piirid:
+`text_drawing.md`.
+
+- [ ] Mõõda lehe alumise vasaku nurga X ja Y.
+- [ ] Mõõda sama alumise serva teise punkti X ja Y (≥ 50 mm nurgast).
+- [ ] Kontrolli eelvaates, et tekst on roboti ulatuses.
+
 ## Veel tegemata
 
 - Reaalsete väärtuste mõõtmine: TODO
