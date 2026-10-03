@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="720" viewBox="0 0 920 720" font-family="Arial, Helvetica, sans-serif" font-size="13">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#333"/>
+    </marker>
+  </defs>
+  <rect width="920" height="720" fill="#ffffff"/>
+  <text x="460" y="26" text-anchor="middle" font-size="16" font-weight="bold">Nutikad Lahendused Lab 1 — Atomi täht → robot joonistab (03.10.26)</text>
+
+  <!-- laboriarvuti group -->
+  <rect x="300" y="170" width="600" height="295" rx="8" fill="#f7f7f7" stroke="#999" stroke-dasharray="6 4"/>
+  <text x="310" y="188" font-weight="bold" fill="#555">Laboriarvuti (jaam) — Ethernet 2: 192.168.1.40/24, Wi-Fi puudub</text>
+
+  <!-- lines first (under the boxes) -->
+  <line x1="150" y1="122" x2="150" y2="188" stroke="#333" stroke-width="1.6" marker-end="url(#a)" marker-start="url(#a)"/>
+  <text x="160" y="146">Wi-Fi AP "AtomFramer", 192.168.4.1</text>
+  <text x="160" y="162">captive portal: seaded, testid, pilt</text>
+
+  <line x1="270" y1="245" x2="328" y2="245" stroke="#333" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="276" y="237" font-size="11">USB</text>
+  <text x="276" y="261" font-size="11">115200</text>
+
+  <line x1="530" y1="245" x2="628" y2="245" stroke="#333" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="536" y="237" font-size="11">HTTP POST</text>
+  <text x="536" y="261" font-size="11">:5000/api/letter</text>
+
+  <path d="M 270 300 L 628 300" fill="none" stroke="#777" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#a)"/>
+  <text x="320" y="318" fill="#555" font-size="11">varuvariant: Wi-Fi HTTP POST /api/letter</text><text x="320" y="332" fill="#555" font-size="11">(ainult Wi-Fi-ga sülearvutil)</text>
+
+  <line x1="745" y1="312" x2="745" y2="348" stroke="#333" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="755" y="328" font-size="11">HTTP 127.0.0.1:8000</text>
+  <text x="755" y="342" font-size="11">/api/check, /api/move</text>
+
+  <line x1="745" y1="452" x2="745" y2="538" stroke="#333" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="735" y="488" text-anchor="end" font-size="11">Ethernet → 192.168.1.6 (LAN1)</text>
+  <text x="735" y="502" text-anchor="end" font-size="11">29999 käsud · 30003 liikumine</text>
+  <text x="735" y="516" text-anchor="end" font-size="11">30004 tagasiside 8 ms</text>
+
+  <line x1="628" y1="585" x2="522" y2="585" stroke="#333" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="528" y="577" font-size="11">DO2 imemine</text>
+  <text x="528" y="602" font-size="11">DO1 puhumine</text>
+
+  <polyline points="745,632 745,690 150,690 150,634" fill="none" stroke="#333" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="450" y="708" text-anchor="middle" font-size="11">flants: pastakas alla −110…−112 mm, üles −100 mm, R −28°</text>
+
+  <!-- boxes -->
+  <rect x="30" y="50" width="240" height="72" rx="8" fill="#eef5ff" stroke="#3a6ea5" stroke-width="1.5"/>
+  <text x="150" y="80" text-anchor="middle" font-weight="bold">Telefon</text>
+  <text x="150" y="100" text-anchor="middle" font-size="12">Atomi leht avaneb ise</text>
+
+  <rect x="30" y="190" width="240" height="122" rx="8" fill="#fff4e0" stroke="#c07a00" stroke-width="1.5"/>
+  <text x="150" y="214" text-anchor="middle" font-weight="bold">AtomS3 (firmware/)</text>
+  <text x="40" y="236" font-size="12">ekraan = nupp</text>
+  <text x="40" y="253" font-size="12">lühike: vali täht A–Z</text>
+  <text x="40" y="270" font-size="12">pikk: saada {"letter":"A",…}</text>
+  <text x="40" y="287" font-size="12">tuum 1: pump · tuum 0: Wi-Fi</text>
+  <text x="40" y="304" font-size="11" fill="#666">külgnupp = RESET</text>
+
+  <rect x="330" y="205" width="200" height="80" rx="8" fill="#e9f7ec" stroke="#2e8b57" stroke-width="1.5"/>
+  <text x="430" y="231" text-anchor="middle" font-weight="bold">src/atom_bridge.py</text>
+  <text x="430" y="251" text-anchor="middle" font-size="12">loeb COM4 JSON rea</text>
+  <text x="430" y="268" text-anchor="middle" font-size="12">(või logger.py --station)</text>
+
+  <rect x="630" y="190" width="230" height="122" rx="8" fill="#e9f7ec" stroke="#2e8b57" stroke-width="1.5"/>
+  <text x="745" y="214" text-anchor="middle" font-weight="bold">src/station.py (Flask :5000)</text>
+  <text x="640" y="236" font-size="12">täht → punktid (letters.json)</text>
+  <text x="640" y="253" font-size="12">leht 2 punkti järgi kalibreeritud</text>
+  <text x="640" y="270" font-size="12">duplikaat session+seq järgi</text>
+  <text x="640" y="287" font-size="12">logi: data/letter_events.csv</text>
+  <text x="640" y="304" font-size="11" fill="#666">--execute, muidu dry-run</text>
+
+  <rect x="630" y="350" width="230" height="102" rx="8" fill="#e9f7ec" stroke="#2e8b57" stroke-width="1.5"/>
+  <text x="745" y="374" text-anchor="middle" font-weight="bold">mg400 serve (:8000)</text>
+  <text x="640" y="394" font-size="12">mg400-base, fork lab-jog</text>
+  <text x="640" y="411" font-size="12">Z põrand, liigesepiirid 34/73</text>
+  <text x="640" y="428" font-size="12">jog, Sync, Recover</text>
+  <text x="640" y="445" font-size="11" fill="#666">üks programm saadab liikumist</text>
+
+  <rect x="630" y="540" width="230" height="92" rx="8" fill="#f0f0f0" stroke="#444" stroke-width="1.5"/>
+  <text x="745" y="566" text-anchor="middle" font-weight="bold">Dobot MG400</text>
+  <text x="745" y="586" text-anchor="middle" font-size="12">API-režiim, 192.168.1.6</text>
+  <text x="745" y="604" text-anchor="middle" font-size="12">ulatus 440 mm, hädastopp alusel</text>
+
+  <rect x="330" y="540" width="190" height="92" rx="8" fill="#f0f0f0" stroke="#444" stroke-width="1.5"/>
+  <text x="425" y="566" text-anchor="middle" font-weight="bold">Pumbakast 24 V</text>
+  <text x="425" y="586" text-anchor="middle" font-size="12">iminapp (tõstmine)</text>
+  <text x="425" y="604" text-anchor="middle" font-size="12">Andmehõive L1</text>
+
+  <rect x="30" y="540" width="240" height="92" rx="8" fill="#f3ecff" stroke="#6a4c9c" stroke-width="1.5"/>
+  <text x="150" y="566" text-anchor="middle" font-weight="bold">Pastakahoidik + paber</text>
+  <text x="150" y="586" text-anchor="middle" font-size="12">3D printimise L1</text>
+  <text x="150" y="604" text-anchor="middle" font-size="12">leht 264 mm, nurgad X 335</text>
+</svg>

@@ -134,6 +134,7 @@ Baaspakett eeldab, et DO2 juhib imemist ja DO1 puhumist. See ei ole veel meie la
 - Ühendus: Ethernet → MG400 LAN1
 - Etherneti liidese täpne nimi: TODO
 - Mask: TODO
+- 03.10.26 laboriarvuti (Denys): liides `Ethernet 2`, IPv4 `192.168.1.40`, mask `255.255.255.0` (/24), gateway tühi. Aadress on .40, mitte juhendi .50 — sama alamvõrk, robotiga töötab. Laboriarvutil Wi-Fi adapterit ei ole.
 
 ### MG400 ühendus
 
@@ -145,6 +146,7 @@ Baaspakett eeldab, et DO2 juhib imemist ja DO1 puhumist. See ei ole veel meie la
 - Liikumine veebilehelt: töötas
 - Kontrollitud kiirus: 20%
 - Eraldi pordikontroll: TODO
+- 03.10.26 pordikontroll (`Test-NetConnection 192.168.1.6 -Port …`): 29999 avatud, 30003 avatud, 30004 avatud. `ping 192.168.1.6`: 4/4, 0–1 ms.
 
 ### Pump
 
@@ -156,3 +158,8 @@ Baaspakett eeldab, et DO2 juhib imemist ja DO1 puhumist. See ei ole veel meie la
 
 - Võimalikud vead: TODO
 - Tehtud parandused: TODO
+- 03.10.26: baaspaketis leitud puudused ja meie parandused (fork https://github.com/Dennel04/mg400-base, haru `lab-jog`):
+  - liugurid saatsid käsu iga liigutuse ajal → nüüd liigub robot alles liuguri lahtilaskmisel; lisatud jog-nupud ja päris Sync (liugurid võtavad roboti tegeliku asendi);
+  - Z põrand ainult koodis → käivitusvõti `--z-floor` ja muutmine töö ajal (meil −105 iminapaga, −112 pastakaga);
+  - liigesepiire ei kontrollitud → pöördkinemaatika mudel (`kinematics.py`, L2 = 175,07 mm) peatab käe enne alarme 34 (J3 > 105°) ja 73 (parallelogramm, raadius < ~195 mm Z −16 juures); nupp **Recover** (`/api/recover`: ClearError + Continue); `/api/check` punkti kontrolliks enne liigutust;
+  - `localhost` Windowsis proovib enne IPv6 → +200 ms päringu kohta; kasutame `127.0.0.1`.

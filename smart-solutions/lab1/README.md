@@ -97,6 +97,12 @@ Esimene asi on tellimus. Esimesel päeval uusi osi ei ole: mõtle välja, mida s
 
 *Kui plaan muutub, uuenda ka vahendeid, või tee draw.io skeem, mis näitab, kuidas asjad omavahel töötavad.*
 
+**Süsteemi skeem 03.10.26** (nii, nagu ahel laboris päriselt töötas — täht läheb USB kaudu, sest laboriarvutil Wi-Fi-t ei ole):
+
+![Lab 1 süsteem 03.10.26](docs/system_03.10.26.svg)
+
+Elav fail: [`docs/system_03.10.26.drawio`](docs/system_03.10.26.drawio) (ava https://app.diagrams.net → File → Open). Varasem kavand Wi-Fi kanaliga: [`docs/system.drawio`](docs/system.drawio).
+
 **KAARDISTA ISE — mida sa päriselt kasutasid.**
 
 ### Taustainfo
