@@ -355,6 +355,11 @@ def letter_on_paper(
         left, top = box.x, top - size_mm * 1.5
     if top - size_mm < box.y - 1e-6:
         left, top = box.x, box.y + box.height
+    # The cursor can be set over HTTP: the wraps above only handle the right
+    # and bottom edges, so a cell left of or above the area is refused here
+    # instead of putting the pen down off the sheet.
+    if left < box.x - 1e-6 or top > box.y + box.height + 1e-6:
+        raise TextJobError("letter cell is outside the sheet's drawing area")
 
     def to_robot(u: float, v: float) -> Point:
         return frame.to_robot(left + u * size_mm, top - size_mm + v * size_mm)

@@ -274,6 +274,17 @@ class LetterOnPaperTests(unittest.TestCase):
                     self.assertTrue(point_reachable(action["x"], action["y"]))
         self.assertGreater(len(lines_seen), 2)
 
+    def test_cursor_outside_the_drawing_area_is_refused(self) -> None:
+        # POST /api/paper/cursor takes any x/top; a letter cell left of or
+        # above the area would put the pen down off the sheet.
+        calibration = text_calibration()
+        _, start = letter_on_paper(self.strokes, calibration, None, 20)
+        left, top = start[0] - 20, start[1]          # first cell of the area
+        for bad in ((left - 50, top), (left, top + 50), (-1e6, top), (left, 1e6)):
+            with self.assertRaises(TextJobError, msg=bad):
+                letter_on_paper(self.strokes, calibration, bad, 20)
+        letter_on_paper(self.strokes, calibration, (left, top), 20)    # still fine
+
     def test_needs_a_calibrated_sheet(self) -> None:
         with self.assertRaises(TextJobError):
             letter_on_paper(self.strokes, validate_robot_calibration(synthetic_document()), None, 20)
