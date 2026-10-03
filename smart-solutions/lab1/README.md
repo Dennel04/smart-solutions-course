@@ -39,6 +39,8 @@ Esimene asi on tellimus. Esimesel päeval uusi osi ei ole: mõtle välja, mida s
 
 **KAARDISTA ISE — eesmärk nii, nagu ta tegelikult välja tuli.**
 
+*03.10.26:* Meie prototüüp-pastakahoidikuga (3D printimise L1) õppida robotit juhtima nii, et ta kirjutab tähti ja teksti; uurida, kuidas robot töötab, ja testida 3D-prinditud pastakahoidikut: kui hästi ta joonistab, kui leht ei ole tugevalt kinni. Tulemus: tähed on kohati natuke ebaühtlased, aga üldiselt on tulemus väga hea — Atomil vajutatud täht jõuab jaama ja robot joonistab selle paberile (initsiaalid D, N, R; 20 mm tähed).
+
 ### Kontrollnimekiri
 
 **Peab olema tehtud**
