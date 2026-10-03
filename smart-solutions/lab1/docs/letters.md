@@ -74,6 +74,7 @@ jaamast K ja sõna „hello“.
 Meeskonna initsiaalid: **D** (Denys) joonistatud; **N** (Nikita) ja **R** (Raimo) TODO.
 Joonlauaga mõõtmine (kavandatud tähe kõrgus 20 mm): TODO.
 *Mõõdetud 03.10.26:* joonistatud tähed on joonlauaga umbes 20–25 mm kõrged (kavandatud 20 mm).
+*03.10.26 pärastlõuna:* **N** ja **R** joonistatud (seq 19 R, 21–23 N; pärast roboti nihutamist uus lehe kalibreering). Initsiaalid D, N, R olemas. Pärast R-i parandust (mg400-base pöörab R-i `MovJ`-ga) ja uut kalibreeringut mõõtis Denys joonlauaga: tähed **20 mm** kõrged = kavandatud 20 mm.
 
 Esimesel katsel vajus pastakas pliiatsi alla laskmisel ~0,7 mm (2 %) ja ~1,3 mm (4 %)
 sihtkõrgusest madalamale, sest järgmine joon algas enne, kui Z oli peatunud. Parandus:
