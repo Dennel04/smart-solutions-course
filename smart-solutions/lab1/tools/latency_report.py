@@ -10,7 +10,7 @@ relative to the fastest press of the session: offset = min(station - atom) is
 taken as "0 ms", every other press shows how much slower it was. The
 station -> robot hop is on one clock and is absolute.
 
-    python tools/latency_report.py --session <id> [--last 30]
+    python tools/latency_report.py [--session <id>] [--after-seq N] [--last 30]
 """
 
 from __future__ import annotations
@@ -28,12 +28,15 @@ def main() -> None:
     p.add_argument("--out", type=Path, default=LAB / "docs" / "latency.csv")
     p.add_argument("--session", help="Atom session id (default: the last one in the file)")
     p.add_argument("--last", type=int, default=30, help="use the last N presses of the session")
+    p.add_argument("--after-seq", type=int, default=None,
+                   help="only presses with a larger Atom seq (start of the measured run)")
     a = p.parse_args()
 
     with a.events.open(encoding="utf-8") as f:
         rows = [r for r in csv.DictReader(f) if r["atom_sent_ms"] and r["station_received_monotonic_ns"]]
     session = a.session or rows[-1]["session"]
-    rows = [r for r in rows if r["session"] == session][-a.last:]
+    rows = [r for r in rows if r["session"] == session
+            and (a.after_seq is None or int(r["seq"]) > a.after_seq)][-a.last:]
     if not rows:
         raise SystemExit(f"no presses for session {session}")
 
