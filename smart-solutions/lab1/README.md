@@ -63,10 +63,11 @@ Esimene asi on tellimus. Esimesel päeval uusi osi ei ole: mõtle välja, mida s
   * 03.10.26: töötab otsast lõpuni — 15 tähte jõudis jaama, 13 joonistati (A A C D D D D E G G I J J), `data/letter_events.csv`. Initsiaalidest D tehtud, N ja R TODO; latentsus (30 vajutust) TODO.
   * 03.10.26 pärastlõuna: R ja N joonistatud (initsiaalid D, N, R olemas). Robot nihutati, leht kalibreeriti uuesti (`config/robot_calibration.json`). Latentsus: 5 vajutust (ülesanne nõuab 30), `docs/latency.csv`, tehtud `tools/latency_report.py --after-seq 23` abil. Atom → jaam keskmine 4,4 ms, max 12,2 ms (suhteline: Atomil ja arvutil on eri kellad, kiireim vajutus = 0); jaam → esimene robotikäsk keskmine 493,7 ms, max 592,2 ms.
   * Lõpptulemus: õppejõuga lepiti kokku, et selle labori jaoks piisab viiest reaalsest latentsusmõõtmisest. Seetõttu 30 vajutuse seeriat ei tehtud; `docs/latency.csv` sisaldab viit päris mõõtmist.
-- [ ] Repo ja arenduspäevik täidetud, tag `smart-solutions-lab1`.
+- [x] Repo ja arenduspäevik täidetud, tag `smart-solutions-lab1`.
   * Lab 1 dokumentatsioon on valmis. Fotod ja videod lisab ning lõpliku tag'i loob Denys enne esitamist.
   * 08.10.26: kolm fotot tähtede joonistamisest lisatud kausta `docs/images/` (vt Osa 3). Videod ja tag: TODO.
   * 08.10.26: video lisatud: Atomil valitakse täht ja vajutatakse, robot joonistab selle (`docs/videos/atom-letter-robot-draws.mp4`, 19 s). Tag: TODO.
+  * 08.10.26: tag `smart-solutions-lab1` loodud.
 
 **KAARDISTA ISE — kuupäevad ja sinu enda sammud.**
 
@@ -85,7 +86,7 @@ Esimene asi on tellimus. Esimesel päeval uusi osi ei ole: mõtle välja, mida s
 - [x] Tee esimene liigutus ainult 20% kiirusel. *(12.09.26; joonistus 03.10.26 alustati 2 %-ga)*
 - [x] Kontrolli pumbakasti DO liinid juhendi ja multimeetriga. *(02.10.26: DO impulsid + rõhuandur; DO2 imemine, DO1 puhumine)*
 - [x] Ära ühenda 24 V pumbakasti juhtmeid enne kontrolli.
-- [ ] Pane kõik reaalsed tulemused README-sse ja vajalikesse docs failidesse.
+- [x] Pane kõik reaalsed tulemused README-sse ja vajalikesse docs failidesse. *(08.10.26: tulemused README-s ja `docs/`-is, fotod `docs/images/`, video `docs/videos/`)*
 
 ### Sisendid
 
