@@ -65,6 +65,7 @@ Esimene asi on tellimus. Esimesel päeval uusi osi ei ole: mõtle välja, mida s
   * Lõpptulemus: õppejõuga lepiti kokku, et selle labori jaoks piisab viiest reaalsest latentsusmõõtmisest. Seetõttu 30 vajutuse seeriat ei tehtud; `docs/latency.csv` sisaldab viit päris mõõtmist.
 - [ ] Repo ja arenduspäevik täidetud, tag `smart-solutions-lab1`.
   * Lab 1 dokumentatsioon on valmis. Fotod ja videod lisab ning lõpliku tag'i loob Denys enne esitamist.
+  * 08.10.26: kolm fotot tähtede joonistamisest lisatud kausta `docs/images/` (vt Osa 3). Videod ja tag: TODO.
 
 **KAARDISTA ISE — kuupäevad ja sinu enda sammud.**
 
@@ -249,6 +250,13 @@ Kirjuta üles:
 **Osa 3 — Täht**
 * Kanal (`docs/letter_channel.md`): Atom → USB JSON `{"letter","session","seq","atom_sent_ms"}` → `src/atom_bridge.py` → HTTP POST `127.0.0.1:5000/api/letter` → jaam → mg400-base `:8000` → MG400. Duplikaadid `session`+`seq` järgi. Wi-Fi HTTP kanal on varuks.
 * Tähed (`docs/letters.md`): pastakas üleval Z −100, all −112, R −28°, kiirus 20 %. Tähed joonlauaga **20 mm** = kavandatud 20 mm. Initsiaalid D, N, R joonistatud.
+
+  ![MG400 joonistab pastakahoidikuga tähti paberile](docs/images/robot-drawing-letters.jpg)
+
+  ![Joonistatud tähed ja joonlaud kaadris](docs/images/robot-drawing-letters-ruler.jpg)
+
+  ![Tähed N O P Q R ja pastaka ots lähedalt](docs/images/robot-drawing-letters-closeup.jpg)
+
 * Leht: hommikul nurgad (335; −118)/(335; 146); pärast roboti nihutamist ohutu ala (215; −103)…(215; 132), 235 × 148 mm, kõik punktid ulatuses (`config/robot_calibration.json`).
 * Latentsus (`docs/latency.csv`): algne ülesanne nõudis 30 vajutust, kuid õppejõuga lepiti kokku, et selle labori jaoks piisab viiest reaalsest mõõtmisest. Fail sisaldab viis mõõtmist: Atom → jaam keskm. 4,4 ms, max 12,2 ms (suhteline: Atomil oma kell); jaam → esimene robotikäsk keskm. 493,7 ms, max 592,2 ms (enne liikumist kontrollitakse iga tähe punkti ulatust).
 
