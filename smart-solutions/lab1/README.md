@@ -66,7 +66,7 @@ Esimene asi on tellimus. Esimesel päeval uusi osi ei ole: mõtle välja, mida s
 - [x] Repo ja arenduspäevik täidetud, tag `smart-solutions-lab1`.
   * Lab 1 dokumentatsioon on valmis. Fotod ja videod lisab ning lõpliku tag'i loob Denys enne esitamist.
   * 08.10.26: kolm fotot tähtede joonistamisest lisatud kausta `docs/images/` (vt Osa 3). Videod ja tag: TODO.
-  * 08.10.26: video lisatud: Atomil valitakse täht ja vajutatakse, robot joonistab selle (`docs/videos/atom-letter-robot-draws.mp4`, 19 s). Tag: TODO.
+  * 08.10.26: video lisatud: Atomil valitakse täht ja vajutatakse, robot joonistab selle (`docs/videos/atom-letter-robot-draws.mp4`, filmitud 03.10.26, 19 s). Tag: TODO.
   * 08.10.26: tag `smart-solutions-lab1` loodud.
 
 **KAARDISTA ISE — kuupäevad ja sinu enda sammud.**
@@ -259,7 +259,7 @@ Kirjuta üles:
 
   ![Tähed N O P Q R ja pastaka ots lähedalt](docs/images/robot-drawing-letters-closeup.jpg)
 
-  Video (19 s): Atomil valitakse täht ja vajutatakse, robot joonistab selle paberile. Pildil klõpsates avaneb video.
+  Video (filmitud 03.10.26, 19 s): Atomil valitakse täht ja vajutatakse, robot joonistab selle paberile. Pildil klõpsates avaneb video.
 
   [![Video: Atomi täht → robot joonistab](docs/videos/atom-letter-robot-draws.jpg)](docs/videos/atom-letter-robot-draws.mp4)
 
