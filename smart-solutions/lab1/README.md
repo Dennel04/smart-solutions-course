@@ -66,6 +66,7 @@ Esimene asi on tellimus. Esimesel päeval uusi osi ei ole: mõtle välja, mida s
 - [ ] Repo ja arenduspäevik täidetud, tag `smart-solutions-lab1`.
   * Lab 1 dokumentatsioon on valmis. Fotod ja videod lisab ning lõpliku tag'i loob Denys enne esitamist.
   * 08.10.26: kolm fotot tähtede joonistamisest lisatud kausta `docs/images/` (vt Osa 3). Videod ja tag: TODO.
+  * 08.10.26: video lisatud: Atomil valitakse täht ja vajutatakse, robot joonistab selle (`docs/videos/atom-letter-robot-draws.mp4`, 19 s). Tag: TODO.
 
 **KAARDISTA ISE — kuupäevad ja sinu enda sammud.**
 
@@ -256,6 +257,10 @@ Kirjuta üles:
   ![Joonistatud tähed ja joonlaud kaadris](docs/images/robot-drawing-letters-ruler.jpg)
 
   ![Tähed N O P Q R ja pastaka ots lähedalt](docs/images/robot-drawing-letters-closeup.jpg)
+
+  Video (19 s): Atomil valitakse täht ja vajutatakse, robot joonistab selle paberile. Pildil klõpsates avaneb video.
+
+  [![Video: Atomi täht → robot joonistab](docs/videos/atom-letter-robot-draws.jpg)](docs/videos/atom-letter-robot-draws.mp4)
 
 * Leht: hommikul nurgad (335; −118)/(335; 146); pärast roboti nihutamist ohutu ala (215; −103)…(215; 132), 235 × 148 mm, kõik punktid ulatuses (`config/robot_calibration.json`).
 * Latentsus (`docs/latency.csv`): algne ülesanne nõudis 30 vajutust, kuid õppejõuga lepiti kokku, et selle labori jaoks piisab viiest reaalsest mõõtmisest. Fail sisaldab viis mõõtmist: Atom → jaam keskm. 4,4 ms, max 12,2 ms (suhteline: Atomil oma kell); jaam → esimene robotikäsk keskm. 493,7 ms, max 592,2 ms (enne liikumist kontrollitakse iga tähe punkti ulatust).
