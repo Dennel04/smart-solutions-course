@@ -27,12 +27,20 @@ also lives here.
 smart-solutions/
   lab1/
     README.md    <- official Estonian assignment, copied verbatim, filled in as work happens (KAARDISTA ISE sections)
-    src/         <- station code: MG400 base-package setup/overrides, letter channel, letter->path logic
-    firmware/    <- AtomS3 PlatformIO project (ESP32-Image-Server based: WiFi AP, captive portal, settings/test page)
-    data/        <- positions.json (taught robot positions), latency/pick-test CSV logs
-    docs/        <- atom_page.md, letters.md, letter_channel.md, bom.md, pick_test.csv, latency.csv, photos, draw.io diagram
+    src/         <- station code: MG400 base-package client, letter channel (atom_bridge.py), letter->path logic,
+                    text layout, paper/robot calibration, station.py (web UI in static/)
+    firmware/    <- AtomS3 PlatformIO project (ESP32-Image-Server based: WiFi AP, captive portal, settings/test page,
+                    letter button, pump/pressure code in src/pump/)
+    config/      <- letters.json, Hershey fonts (fonts/), robot_calibration.json (pen R and Z up/down, speed, paper corners)
+    data/        <- positions.json (taught robot positions), letter_events.csv (letters received/drawn)
+    docs/        <- atom_page.md, letters.md, letter_channel.md, bom.md, pick_test.csv, latency.csv,
+                    mg400_setup.md, robot_calibration.md, robot_runbook.md, text_drawing.md,
+                    draw.io diagrams (system.drawio, system_03.10.26.drawio/.svg), images/ (photos)
+    tests/       <- pytest: letter paths, motion plan, calibration, mapping, MG400 client, station dry-run/execute
+    tools/       <- build_fonts.py (fonts -> config/fonts), latency_report.py (docs/latency.csv)
 study-ru/
-  lab1-translation.md   <- personal Russian translation, NOT part of the graded submission
+  lab1-translation.md     <- personal Russian translation, NOT part of the graded submission
+  lab1-kaardista-fakty.md <- Russian facts sheet used to fill KAARDISTA ISE sections, NOT graded
 ```
 
 Each later lab under `smart-solutions/labN/` follows the same pattern.
