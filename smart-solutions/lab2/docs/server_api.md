@@ -222,10 +222,10 @@ Production-vaikeväärtus on TODO — real test required.
    andmebaasioperatsiooniga. Sama tööd ei anta paralleelselt teisele pollile.
 2. Atom salvestab aktiivse töö ID enne selle edastamist jaamale. Ta kasutab
    kõigis korduskatsetes muutmata ID-d.
-3. AtomS3 tarkvaraalus lisab Labori 1 serial-JSON sõnumile stabiilse `job_id`.
-   Tulevane jaama adapter peab hoidma töö ID järgi vastuvõtu- ja täitmislogi.
-   Kui ID on juba lokaalselt vastu võetud või lõpetatud, ei käivita ta uut
-   MG400 töötajat. See adapter on TODO — Atom/MG400 integration required.
+3. AtomS3 lisab Labori 1 serial-JSON sõnumile stabiilse `job_id`. Lab 2
+   tarkvaraline jaamaadapter hoiab ID ja `session + seq` olekut SQLite'is.
+   Kui ID on juba lokaalselt lõpetatud, tagastab ta salvestatud tulemuse ega
+   kutsu executor'it uuesti. Päris MG400 executor integration on TODO.
 4. `claimed` tähendab ainult seda, et server andis töö Atomile. Server ei
    näita `executing` olekut, sest praegune API ei saa seda usaldusväärselt teada.
 5. Atom salvestab terminaltulemuse enne aktiivse claim'i kustutamist ja saadab
@@ -234,15 +234,66 @@ Production-vaikeväärtus on TODO — real test required.
 6. Server ei muuda vastuolulist terminalolekut vaikides. Konflikt logitakse ja
    tagastatakse veana inimese uurimiseks.
 
+## Atom → station protokoll
+
+Põhitransport on sama põhimõttega nagu Lab 1 laboriarvutis: üks programm omab
+AtomS3 USB serial-porti, baud on seadistatav (vaikimisi 115200) ja iga sõnum
+on üks reavahetusega lõpetatud JSON objekt. Lab 2 firmware saadab:
+
+```json
+{"letter":"A","session":"post-office","seq":1,"atom_sent_ms":1234,"job_id":"example-job-id"}
+```
+
+| Väli | Reegel |
+| :--- | :--- |
+| `letter` | täpselt üks suurtäht `A`–`Z`; mock executor kontrollib lisaks, et Lab 1 `letters.json` sisaldab trajektoori |
+| `session` | mittetühi kuni 64 märgi pikkune Lab 1-ga ühilduv session |
+| `seq` | mittenegatiivne täisarv; koos session'iga vana kanali duplicate key |
+| `atom_sent_ms` | valikuline mittenegatiivne Atomi uptime; seda ei võrrelda station'i kellaga |
+| `job_id` | kohustuslik serveri stabiilne ID, 1–80 märki (`A–Z`, `a–z`, number, `.`, `_`, `-`) |
+
+Lisaväljad lükatakse tagasi. Seega ei võta adapter vastu koordinaate, kiirust,
+pumba väärtust, trajektoori ega muud direct-motion käsku.
+
+Station → Atom vastus kasutab täpselt firmware poolt loetavat envelope'i:
+
+```json
+{"post_office_result":{"id":"example-job-id","status":"done"}}
+```
+
+või:
+
+```json
+{"post_office_result":{"id":"example-job-id","status":"refused","reason":"robot_not_enabled"}}
+```
+
+Stabiilsed station'i keeldumispõhjused on `invalid_message`, `invalid_letter`,
+`duplicate_conflict`, `robot_not_enabled`, `executor_busy`,
+`ambiguous_after_restart` ja `execution_failed`. Vigase JSON-i või puuduva
+`job_id` puhul ei ole ID-d võimalik kajastada ning adapter vastab tühja `id`
+väärtusega; firmware ei käsitle seda aktiivse töö terminaltulemusena.
+
+SQLite'i kirje luuakse olekus `in_progress` enne executor'i väljakutset.
+Terminaltulemus püsib restardi üle. Sama `job_id` ja sama payload tagastavad
+sama tulemuse; sama ID teise payload'iga või sama `session + seq` teise ID-ga
+annab `duplicate_conflict`. Pärast protsessi restarti muutub pooleli olnud
+`in_progress` fail-safe olekuks `refused / ambiguous_after_restart` ning seda
+ei käivitata automaatselt uuesti.
+
+Praegune `MockLetterExecutor` ei impordi MG400 klienti ega loo robotivõrgu
+ühendust. Adapteri default on lokaalselt keelatud; `--allow-mock-jobs` lubab
+ainult kontrollitud mock-täitmise. Tulevane päris executor peab eraldi tõendama
+lokaalse enable'i, roboti teadaoleva safe/ready oleku ja ainsa motion-saatja
+omandi. Päris USB, AtomS3 ja MG400 otsast lõpuni kontroll on TODO.
+
 ## Vigased ja keeldutud tööd
 
 - kasutaja API lükkab skeemile mittevastava või whitelist'i mittekuuluva töö
   tagasi enne järjekorda lisamist;
 - kui Atom või jaam avastab lisapiirangu rikkumise, raporteerib ta `refused`
   ja masinloetava `reason` väärtuse;
-- soovituslikud põhjused: `unknown_job`, `invalid_arg`, `expired`,
-  `station_offline`, `robot_not_locally_enabled`, `robot_busy`,
-  `safety_gate_failed`, `local_mapping_missing`;
+- serveri/Atomi põhjused ja station'i stabiilne nimekiri on eri piiride
+  masinloetavad väärtused; station'i väärtused on fikseeritud ülal;
 - hostile input'it käsitletakse andmetena: pikkus, tüüp, lubatud märgid,
   struktuur ja vahemikud valideeritakse; seda ei panda shell-käsku, failiteesse
   ega HTML-i ilma turvalise kodeerimiseta;

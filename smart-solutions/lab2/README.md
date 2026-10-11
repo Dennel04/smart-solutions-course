@@ -94,6 +94,12 @@ tulemust; füüsilise katse juurde lisatakse kuupäev, meetod ja failiviide.
   aktiivse ID ja saatmata terminaltulemuse püsivalt enne retry'd.
 - [x] AtomS3 minimaalne seadeteleht salvestab serveri URL-i, bearer-võtme ja
   polling-intervalli; saladust ei tagastata ega logita.
+- [x] Lab 2 station-adapter valideerib firmware serial-JSON lepingu ja kasutab
+  Lab 1 `session + seq` korduskaitset koos stabiilse `job_id` väärtusega.
+- [x] Station'i SQLite store säilitab terminaltulemuse ja muudab restardist
+  jäänud poolelioleva töö `ambiguous_after_restart` keeldumiseks.
+- [x] Mock executor ning lokaalne end-to-end demo kontrollivad server → mock
+  Atom → station → server ahelat ilma AtomS3 või MG400-ta.
 - [x] Ohutuskokkuleppe mustand on failis `docs/safety.md`.
 - [x] BOM-i kontroll-leht on failis `docs/bom.md`.
 - [x] Mõõtmiste CSV-mallid sisaldavad ainult päiseid, kuni päris mõõtmised on tehtud.
@@ -220,11 +226,41 @@ Seejärel vaata tulemust kasutajalehelt või `GET /api/jobs/<id>` kaudu.
 Kunstliku pollingu viite jaoks kasuta näiteks `--poll-delay 2`. Keeldumise
 simulatsiooniks kasuta `--outcome refused`.
 
+## Kohalik station-adapter
+
+Kood asub kaustas `src/`. See kasutab Lab 1 USB sõnumi välju
+`letter/session/seq/atom_sent_ms`, lisab kohustusliku serveri `job_id` ning
+tagastab firmware'ile `post_office_result` JSON rea. Adapter ei kopeeri Lab 1
+Flask UI-d ega motion-koodi: mock executor kontrollib toetatud tähte otse Lab 1
+kanonilisest `config/letters.json` failist.
+
+Reaalset porti kasutava software-only mock adapteri näidiskäsk:
+
+```bash
+python -m src.station_adapter --port COM4 --baud 115200 --allow-mock-jobs
+```
+
+Ilma `--allow-mock-jobs` liputa on lokaalne täitmine keelatud. Ka lipuga
+kasutatakse ainult mock executor'it; MG400 klienti ei impordita ega ühendata.
+Serial-porti tohib omada ainult üks programm. Porti kadumisel proovib adapter
+uuesti ühenduda, vigane üksikrida ei lõpeta protsessi.
+
+Täielik lokaalne tarkvarademo loob ajutise Flask/SQLite postkontori, pollib
+töö mock Atomina, saadab firmware-formaadis rea station-adapterile ning
+tagastab sama ID terminaltulemuse serverisse:
+
+```bash
+python -m src.e2e_demo
+```
+
+Demo kasutab ainult ajutisi placeholder-saladusi ja kustutatavaid SQLite
+faile. See ei ava serial-porti, võrguühendust ega MG400 klienti.
+
 Testid ja import-/süntaksikontroll:
 
 ```bash
 pytest -q
-python -m compileall -q server tests
+python -m compileall -q server src tests
 ```
 
 ## Arenduspäevik

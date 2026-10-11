@@ -73,11 +73,12 @@ saadetakse Lab 1-ga ühilduv JSON-rida väljadega `letter`,
 Käesolev alus ootab station'ilt terminalvastust:
 
 ```json
-{"post_office_result":{"id":"job-id","status":"done","reason":""}}
+{"post_office_result":{"id":"job-id","status":"done"}}
 ```
 
-See vastus on lokaalse station-adapteri leping, mitte väide, et Lab 1 station
-on juba muudetud. Päris otsast lõpuni integratsioon on TODO.
+Lab 2 software-adapter rakendab selle lepingu kaustas `../src/` ning kasutab
+mock executor'it. See ei muuda Lab 1 station'it ega tõenda päris USB või MG400
+integratsiooni; riistvara otsast lõpuni kontroll on TODO.
 
 Terminaltulemus salvestatakse enne aktiivse claim'i kustutamist ja seda
 korratakse pärast võrgu taastumist sama ID-ga kuni server vastab edukalt.
@@ -90,7 +91,7 @@ ei saadeta tähte uuesti: töö muudetakse `ambiguous_after_reboot` põhjusega
 - [ ] püsivara laadimine päris AtomS3-le;
 - [ ] Wi-Fi/setup-AP ja seadete püsimine taaskäivituse järel;
 - [ ] päris hosti CA ja HTTPS-polling;
-- [ ] Lab 1 station-adapter ning `letter` otsast lõpuni tulemus;
+- [ ] päris USB-ga AtomS3 → station ning Lab 1 MG400 executor'i otsast lõpuni tulemus;
 - [ ] võrgu katkestus ja NVS retry päris seadmel;
 - [ ] pollingu latentsus ja valitud production-intervall;
 - [ ] rõhuanduri ADC/pinge/kPa hook'id ja kalibratsioon;
