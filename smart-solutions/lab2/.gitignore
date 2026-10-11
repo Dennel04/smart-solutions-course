@@ -1,3 +1,9 @@
 __pycache__/
 .pytest_cache/
 server/post_office.sqlite3*
+.env
+.env.*
+!.env.example
+firmware/.pio/
+firmware/include/private_config.h
+firmware/include/post_office_ca_private.h

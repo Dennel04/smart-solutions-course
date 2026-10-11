@@ -1,17 +1,19 @@
 # AtomS3 lehe Lab 2 laiendus
 
-Lab 2 ei tee uut Atomi lehte. Aluseks jääb Labori 1 püsivara sama
-`Settings & tests` osa, pildi saatmine, captive portal, tähe nupurežiim ning
-lokaalne Atom → jaam kanal.
+Lab 2 PlatformIO projektis on nüüd minimaalne `Settings & tests` veebileht,
+postkontori klient ja lokaalse kanali tarkvaraline piir. Labori 1 pildi saatmise,
+pumba/rõhu ning täieliku captive-portali lehe ühendamine on veel TODO; Lab 1
+püsivara ei ole tervikuna kopeeritud.
 
 AtomS3 püsivara kohustuslik projektitöövoog on PlatformIO: reprodutseeritav
 `platformio.ini`, lähtekoodipuu ja sõltuvused ning build/upload PlatformIO
 kaudu. Arduino IDE ei ole selle repo peamine firmware-töövoog. Kui XIAO
 ESP32S3 Sense püsivara hakkab selles repos elama, peab ka see olema eraldi
-PlatformIO projekt. Reaalne build ja seadmetele laadimine on veel TODO.
+PlatformIO projekt. AtomS3 build on tarkvaraliselt kontrollitud; seadmele
+laadimine on veel TODO.
 
-> Siin kirjeldatakse kavandatavat laiendust. Püsivara muudatusi ja
-> riistvarakontrolli ei ole selles etapis tehtud.
+> Siin eristatakse teostatud tarkvaraalust ja kontrollimata riistvaratööd.
+> Ükski allolev punkt ei tõenda päris AtomS3, station'i ega MG400 integratsiooni.
 
 ## Uued postkontori seaded
 
@@ -19,7 +21,8 @@ PlatformIO projekt. Reaalne build ja seadmetele laadimine on veel TODO.
 | :--- | :--- | :--- |
 | `Post-office server address` | production HTTPS baasaadress | seadmes; valideerida skeem ja pikkus |
 | `Atom authentication key` | Atomi API autentimine | seadmes; UI ei loe olemasolevat võtit tagasi ega logi seda |
-| `Polling interval` | tööde küsimise intervall millisekundites | seadmes; lubatud min/max on TODO — real network test required |
+| `Polling interval` | tööde küsimise intervall millisekundites | seadmes; tarkvarapiir 250–60 000 ms, lõplik väärtus vajab võrgukatset |
+| `Allow local HTTP development` | lubab teadlikult ainult lokaalse `http://` arenduse | production'is väljas; HTTPS vajab päris hosti CA-d |
 
 Serveri aadress ei ole sama mis Labori 1 lokaalse jaama aadress. Atom pollib
 dropletit väljamineva HTTPS-ühendusega ja edastab saadud kõrgtaseme töö
@@ -31,17 +34,16 @@ muudeta. Võtme teadlikuks eemaldamiseks peab olema eraldi kinnitatav tegevus.
 
 ## Postkontori test
 
-Lehele lisatakse nupp `TEST POST-OFFICE REQUEST`, mis teeb ühe autentitud
-testpäringu ilma robotit liigutamata. Leht näitab vähemalt:
+Lehel on nupp `TEST SERVER HEALTH`, mis teeb ühe autentitud `GET /health`
+testpäringu ilma polli või claim'ita. Minimaalne alus näitab HTTP tulemust ja
+turvalist lühivastust. Round-trip aja ning viimase õnnestunud polli kuvamine on
+veel TODO.
 
 - päringu olekut ja HTTP tulemust;
 - serveri vastuse lühikest turvalist sisu või veakoodi;
-- request'i round-trip aega;
-- viimase õnnestunud polli aega;
-- Atomi raporteeritud online/offline olekut;
 - saladusi ega täielikku autoriseerimispäist ei näidata.
 
-Testnupp ei loo `letter` ega `pick_place` tööd ja ei käivita MG400 rada.
+Testnupp ei loo ega claim'i `letter`/`pick_place` tööd ja ei käivita MG400 rada.
 
 ## Rõhuanduri seaded
 
@@ -72,10 +74,10 @@ kehtiva kalibratsiooni puudumisel; selle asemel näidatakse selget TODO/error ol
 
 ## Tarkvaraline kontroll enne laborit
 
-- [ ] Serveri aadressi skeem ja pikkus valideeritakse.
-- [ ] Polling-intervalli tüüp ja piirid valideeritakse.
-- [ ] Võtit ei tagastata seadete GET-vastuses ega logita.
-- [ ] Testpäring ei loo tööd ega kutsu jaama/MG400 täitmisrada.
+- [x] Serveri aadressi skeem ja pikkus valideeritakse.
+- [x] Polling-intervalli tüüp ja piirid valideeritakse.
+- [x] Võtit ei tagastata seadete GET-vastuses ega logita.
+- [x] Testpäring ei polli/claim'i tööd ega kutsu jaama/MG400 täitmisrada.
 - [ ] Rõhukonstandid salvestatakse ainult täieliku valideerimise järel.
 - [ ] Rõhutest seob raw ADC, V ja kPa sama proovi ID/ajaga.
 

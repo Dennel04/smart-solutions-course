@@ -222,14 +222,15 @@ Production-vaikeväärtus on TODO — real test required.
    andmebaasioperatsiooniga. Sama tööd ei anta paralleelselt teisele pollile.
 2. Atom salvestab aktiivse töö ID enne selle edastamist jaamale. Ta kasutab
    kõigis korduskatsetes muutmata ID-d.
-3. Tulevane jaama adapter peab hoidma töö ID järgi vastuvõtu- ja täitmislogi.
+3. AtomS3 tarkvaraalus lisab Labori 1 serial-JSON sõnumile stabiilse `job_id`.
+   Tulevane jaama adapter peab hoidma töö ID järgi vastuvõtu- ja täitmislogi.
    Kui ID on juba lokaalselt vastu võetud või lõpetatud, ei käivita ta uut
    MG400 töötajat. See adapter on TODO — Atom/MG400 integration required.
 4. `claimed` tähendab ainult seda, et server andis töö Atomile. Server ei
    näita `executing` olekut, sest praegune API ei saa seda usaldusväärselt teada.
-5. Kui Atom ei tea pärast katkestust, kas tulemus jõudis serverisse, küsib ta
-   esmalt `GET /api/atom/jobs/{id}` ja saadab sama terminaltulemuse sama ID-ga
-   uuesti. Serveri tulemusuuendus on idempotentne.
+5. Atom salvestab terminaltulemuse enne aktiivse claim'i kustutamist ja saadab
+   sama terminaltulemuse sama ID-ga uuesti kuni `POST /api/atom/result` saab
+   eduka vastuse. Serveri tulemusuuendus on idempotentne.
 6. Server ei muuda vastuolulist terminalolekut vaikides. Konflikt logitakse ja
    tagastatakse veana inimese uurimiseks.
 
@@ -257,14 +258,14 @@ Production-vaikeväärtus on TODO — real test required.
   postkontori Lab 2 semantikasse;
 - Atom säilitab aktiivse töö ID, viimase jaamalt saadud oleku ja saatmata
   terminaltulemuse üle ajutise internetikatkestuse;
-- ühenduse taastumisel kontrollib Atom serveri olekut ja kordab sama tulemuse
-  saatmist eksponentsiaalse või piiratud backoff'iga;
+- ühenduse taastumisel kordab Atom sama tulemuse saatmist sama ID-ga fikseeritud
+  kahe sekundi retry-intervalliga;
 - uut tööd ei claim'ita, kuni eelmise töö lõppolek on lahendatud;
-- pärast Atom'i restarti tuleb püsivast salvestusest taastada lahendamata töö
-  ID või jätta süsteem ohutult käsitsi lahendatavasse olekusse. Teostusviis on TODO.
+- pärast Atom'i restarti ei käivitata ebaselget aktiivset claim'i uuesti. See
+  muudetakse `ambiguous_after_reboot` põhjusega saatmata `refused` tulemuseks.
 
-Serveripoolne sama tulemuse kordussaatmine on teostatud ja idempotentne.
-AtomS3 püsiv puhver ning päris katkestuskatse on veel TODO.
+Serveripoolne idempotentsus ning AtomS3 NVS-puhvri tarkvaraalus on teostatud.
+Päris seadme katkestuskatse on veel TODO.
 
 ## Kohalik teostus ja konfiguratsioon
 

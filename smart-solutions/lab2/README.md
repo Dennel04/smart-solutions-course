@@ -55,9 +55,9 @@ ole selle repo peamine projektitöövoog.
 
 Kui XIAO ESP32S3 Sense tööriistakaamera püsivara lisatakse sellesse reposse,
 tehakse ka see eraldi PlatformIO projektina samade reprodutseeritavuse
-nõuetega. Labori 1 püsivara ei kopeerita siia enne, kui Lab 2 tegelik
-firmware-töö algab. Mõlema seadme päris build/upload ja riistvarakontroll on
-TODO — real hardware required.
+nõuetega. Lab 2 AtomS3 eraldiseisev tarkvaraalus on nüüd kaustas `firmware/`;
+Labori 1 püsivara ei ole tervikuna kopeeritud. AtomS3 `pio run` build on
+kontrollitud, kuid seadmele upload, XIAO build ja kõik riistvarakatsed on TODO.
 
 ## Kontrollnimekiri
 
@@ -88,6 +88,12 @@ tulemust; füüsilise katse juurde lisatakse kuupäev, meetod ja failiviide.
   idempotentsuse, tulemused ja `last_seen` oleku.
 - [x] Atomi olemasoleva lehe Lab 2 väljad ja testid on kirjeldatud failis
   `docs/atom_page.md`.
+- [x] AtomS3 PlatformIO projekt build'ib ning hostitestid katavad töö- ja
+  konfiguratsioonivalideerimist ning ühe aktiivse claim'i reeglit.
+- [x] Atom pollib millis-ajastusega, lubab ainult `letter` töö ning salvestab
+  aktiivse ID ja saatmata terminaltulemuse püsivalt enne retry'd.
+- [x] AtomS3 minimaalne seadeteleht salvestab serveri URL-i, bearer-võtme ja
+  polling-intervalli; saladust ei tagastata ega logita.
 - [x] Ohutuskokkuleppe mustand on failis `docs/safety.md`.
 - [x] BOM-i kontroll-leht on failis `docs/bom.md`.
 - [x] Mõõtmiste CSV-mallid sisaldavad ainult päiseid, kuni päris mõõtmised on tehtud.
