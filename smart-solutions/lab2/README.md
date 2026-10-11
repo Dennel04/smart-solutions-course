@@ -55,11 +55,12 @@ abil. Lab 2 muudatused peavad jääma reprodutseeritavasse PlatformIO projekti:
 `platformio.ini`, lähtekoodipuu ja fikseeritavad sõltuvused. Arduino IDE ei
 ole selle repo peamine projektitöövoog.
 
-Kui XIAO ESP32S3 Sense tööriistakaamera püsivara lisatakse sellesse reposse,
-tehakse ka see eraldi PlatformIO projektina samade reprodutseeritavuse
-nõuetega. Lab 2 AtomS3 eraldiseisev tarkvaraalus on nüüd kaustas `firmware/`;
-Labori 1 püsivara ei ole tervikuna kopeeritud. AtomS3 `pio run` build on
-kontrollitud, kuid seadmele upload, XIAO build ja kõik riistvarakatsed on TODO.
+XIAO ESP32S3 Sense tööriistakaamera on eraldi PlatformIO projektis
+`firmware-xiao-camera/`; see ei ole AtomS3 projektiga kokku segatud. Mõlemal on
+oma `platformio.ini`, lähtekoodipuu ja native-testid. Lab 2 AtomS3 projekt on
+kaustas `firmware/`; Labori 1 püsivara ei ole tervikuna kopeeritud. Mõlema
+projekti `pio run` build on tarkvaraliselt kontrollitud, kuid seadmetele upload
+ja kõik riistvarakatsed on TODO.
 
 ## Kontrollnimekiri
 
@@ -111,6 +112,10 @@ tulemust; füüsilise katse juurde lisatakse kuupäev, meetod ja failiviide.
   snapshot backend on automaattestitavad ilma riistvarata.
 - [x] Software kaadriloendurid ja väljastatud baitide/FPS/Mbit/s arvutus on
   valmis; need ei ole päris kaameramõõtmised.
+- [x] XIAO ESP32S3 Sense tool-camera on eraldi PlatformIO projekt ametliku
+  `seeed_xiao_esp32s3` boardiga; build ja native-testid läbivad.
+- [x] XIAO `/status` ja `/snapshot.jpg` leping sobib station'i olemasoleva
+  snapshot backendiga; Wi-Fi saladused jäävad ignored private header'isse.
 
 ### Vajab õppejõult dropleti/hosti
 

@@ -8,3 +8,6 @@ data/station_jobs.sqlite3*
 firmware/.pio/
 firmware/include/private_config.h
 firmware/include/post_office_ca_private.h
+firmware-xiao-camera/.pio/
+firmware-xiao-camera/include/wifi_private.h
+firmware-xiao-camera/captures/

@@ -56,14 +56,25 @@ loetavuse, viite ja koormuse katse järel.
 ## XIAO ESP32S3 Sense backend
 
 `XiaoCamera` küsib seadistatavalt HTTP- või HTTPS-snapshot URL-ilt täieliku
-JPEG-i. IP-aadressi ega URL-i ei ole lähtekoodi kirjutatud. Tühja URL-iga on
-allikas ohutult `unavailable`; võrguviga käivitab piiratud sagedusega uue
-katse. Vastuse suurus on piiratud ja poolik või mitte-JPEG vastus lükatakse
-tagasi.
+JPEG-i. XIAO eraldi PlatformIO projekt `firmware-xiao-camera/` annab täpselt
+`GET /snapshot.jpg` endpoint'i koos `image/jpeg` content type'i ja no-cache
+päisega. IP-aadressi ega URL-i ei ole kummagi poole lähtekoodi kirjutatud.
+Tühja URL-iga on station'i allikas ohutult `unavailable`; võrguviga käivitab
+piiratud sagedusega uue katse. Vastuse suurus on piiratud ja poolik või
+mitte-JPEG vastus lükatakse tagasi.
 
-XIAO firmware ei kuulu selle sammu sisse. Kui hiljem tekib autentimine, tuleb
-saladus anda runtime-konfiguratsioonist, mitte reposse kirjutada. Status API
-näitab ainult seda, kas URL on seadistatud, ega tagasta URL-i ennast.
+XIAO `GET /status` annab camera/Wi-Fi oleku, kohaliku IP, driver'i tuvastatud
+sensorimudeli, väljastatud kaadrite loenduri ja uptime'i, kuid mitte Wi-Fi
+parooli. Firmware SSID/parool tuleb ignored `wifi_private.h` failist. Station'i
+status API näitab ainult seda, kas snapshot URL on seadistatud, ega tagasta
+URL-i ennast.
+
+Firmware kasutab ametlikku Seeed pin mapping'ut, boardi 8 MB PSRAM-i ja
+`esp_camera` automaatset sensorituvastust. Driver toetab nii varasemat OV2640
+kui uuemat OV3660 revision'it; meeskonna päris revision on veel TODO. Pidevat
+XIAO MJPEG handler'it ei lisatud, sest olemasolev station backend vajab ainult
+snapshot'i ning loob lokaalse MJPEG voo ise. See hoiab XIAO status endpoint'i
+diagnostiliselt kasutatavana ja capture ownership'i üheselt mutex'i taga.
 
 ## Mock-režiim ja lokaalne leht
 
@@ -141,7 +152,8 @@ protsesside tegelikku koormusmõju. Tulemused lähevad pärast päriskatset fail
 
 - ühendada ja identifitseerida päris UHD USB-kaamera;
 - valida vaatevälja ja loetavuse põhjal capture- ja stream-resolutsioon;
-- teha XIAO PlatformIO firmware ning määrata lokaalne URL ja autentimine;
+- laadida valmis XIAO PlatformIO firmware päris seadmesse, kontrollida sensor
+  ning määrata lokaalne URL ja võimalik autentimine;
 - kontrollida mõlema allika reconnect'i päris katkestustega;
 - mõõta viide, FPS, ribalaius ning 0/1/2 kaamera juhtimislatentsus;
 - paigaldada kaamerad ja lisada ainult päriskatses saadud tulemused/fotod.
