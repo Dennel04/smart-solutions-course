@@ -11,3 +11,7 @@ firmware/include/post_office_ca_private.h
 firmware-xiao-camera/.pio/
 firmware-xiao-camera/include/wifi_private.h
 firmware-xiao-camera/captures/
+deploy/env
+deploy/backups/
+deploy/*.sqlite3
+deploy/*.sqlite3-*

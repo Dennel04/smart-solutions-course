@@ -116,6 +116,9 @@ tulemust; füüsilise katse juurde lisatakse kuupäev, meetod ja failiviide.
   `seeed_xiao_esp32s3` boardiga; build ja native-testid läbivad.
 - [x] XIAO `/status` ja `/snapshot.jpg` leping sobib station'i olemasoleva
   snapshot backendiga; Wi-Fi saladused jäävad ignored private header'isse.
+- [x] Production-paigalduse tarkvaraalus sisaldab localhost Gunicorn unit'it,
+  Caddy HTTPS reverse proxy näidist, kaitstud env-malli, SQLite backup'i ning
+  install/update/verify skripte. Päris droplet ja sertifikaat on endiselt TODO.
 
 ### Vajab õppejõult dropleti/hosti
 
@@ -291,6 +294,23 @@ pytest -q
 python -m compileall -q server src tests
 ```
 
+## Production-paigalduse alus
+
+Korduvkasutatavad production-mallid ja samm-sammuline värske Ubuntu dropleti
+paigaldus-, SSH/tulemüüri-, uuendus-, backup-, taastamis- ning kontrolljuhend
+on failis [`deploy/README.md`](deploy/README.md). Kavandatud avalik ahel on:
+
+```text
+Internet -> HTTPS Caddy -> 127.0.0.1:5001 Gunicorn/Flask -> SQLite
+AtomS3  -> outbound HTTPS polling -> sama Caddy host
+```
+
+Gunicorn ei kuula avalikul liidesel ning SQLite, env ja backup'id asuvad Git
+checkout'ist väljaspool. Dropletile ei lisata station'i, MG400 ega kaamerate
+route'e, proxy't, VPN-i või tunnelit. Need failid on kontrollitav deployment
+foundation, mitte väide päris dropleti valmimise kohta: DNS, sertifikaat,
+serveri hardening, firewall ja recovery drill vajavad endiselt päris hosti.
+
 ## Arenduspäevik
 
 **KAARDISTA ISE — päevik.** Üks sissekanne iga töösessiooni kohta, kirjutatud
@@ -307,7 +327,8 @@ ei muudeta.
 ## Väljundid ja lõpptulemused
 
 - Git repo ja tag: TODO — lisada alles esitamisel.
-- Postkontori dropletile paigaldamise ja taastamise dokumentatsioon: TODO — droplet required.
+- Postkontori paigaldus- ja taastamismallid: teostatud failis `deploy/README.md`;
+  päris dropleti paigaldus ja taastamiskatse on TODO — droplet required.
 - Lokaalne `letter` tarkvaraleping: teostatud; Atom/MG400 integration on TODO.
 - Mõõtmistulemused koos ühikutega: TODO — real measurement required.
 - Kahe kaamera samaaegsed näidispildid: TODO — real hardware required.

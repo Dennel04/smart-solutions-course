@@ -45,6 +45,25 @@ Põhireeglid:
 - production-transpordi siht on HTTPS; HTTP sobib ainult lokaalseks
   arenduseks ilma päris saladuste või robotitäitmiseta.
 
+## Production HTTP piir
+
+Kavandatud production-ahel on `Internet -> HTTPS Caddy -> Gunicorn/Flask ->
+SQLite`. Caddy on ainus avalik HTTP(S) endpoint ning Gunicorn kuulab ainult
+`127.0.0.1:5001`; rakenduse porti ei avata tulemüüris. WSGI entrypoint on
+`server.wsgi:app`. Kõik runtime väärtused tulevad kaitstud systemd
+EnvironmentFile'ist, mitte lähtekoodi või Git-i salvestatud saladustest.
+
+AtomS3 server URL on kujul `https://<TEAM_HOSTNAME>` ja kasutab sama Caddy
+HTTPS piiri väljaminevaks pollinguks. Postkontorisse ei lisata station'i,
+MG400, kaamera, stream'i, VPN-i ega tunneli endpoint'e. `/health` on minimaalne
+avalik tervisekontroll; ülejäänud marsruutide autentimine jääb allpool
+kirjeldatud Basic/bearer piiridesse.
+
+Systemd, Caddy, env, install/update/backup/verify mallid ning värske Ubuntu
+taastamisjuhend on failis [`../deploy/README.md`](../deploy/README.md). Need on
+tarkvaraliselt kontrollitud mallid; päris DNS-i, TLS-sertifikaati või dropleti
+käitamist ei ole veel tõendatud.
+
 ## Whitelist
 
 | `job` | Lubatud `arg` | Olek |

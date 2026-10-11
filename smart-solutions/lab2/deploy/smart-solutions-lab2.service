@@ -1,0 +1,27 @@
+[Unit]
+Description=Smart Solutions Lab 2 post-office
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=smart-solutions-lab2
+Group=smart-solutions-lab2
+WorkingDirectory=/opt/smart-solutions-lab2/app/smart-solutions/lab2
+EnvironmentFile=/etc/smart-solutions-lab2/env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/smart-solutions-lab2/venv/bin/gunicorn --workers 2 --threads 2 --timeout 30 --bind 127.0.0.1:5001 --access-logfile - --error-logfile - server.wsgi:app
+Restart=on-failure
+RestartSec=5
+UMask=0077
+
+# The source, venv and environment file remain read-only to the service.
+# SQLite and its journal/WAL files may be written only in the data directory.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/smart-solutions-lab2
+
+[Install]
+WantedBy=multi-user.target

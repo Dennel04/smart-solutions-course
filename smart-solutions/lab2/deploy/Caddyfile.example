@@ -1,0 +1,7 @@
+# Replace <TEAM_HOSTNAME> only after DNS points to the real droplet.
+# A normal public hostname enables Caddy automatic HTTPS. Use its publicly
+# trusted certificate flow rather than a locally issued certificate.
+<TEAM_HOSTNAME> {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:5001
+}
