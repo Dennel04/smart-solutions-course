@@ -62,6 +62,110 @@ kaustas `firmware/`; Labori 1 püsivara ei ole tervikuna kopeeritud. Mõlema
 projekti `pio run` build on tarkvaraliselt kontrollitud, kuid seadmetele upload
 ja kõik riistvarakatsed on TODO.
 
+## Tehtud töö
+
+See jaotis võtab kokku repos tegelikult valminud ja tarkvaraliselt kontrollitud
+Lab 2 osad. See ei kirjelda tulevikuplaani ega tõenda veel dropleti, robotit või
+füüsilisi seadmeid kasutavat katset.
+
+### Postkontori server
+
+- Valmis on Flaski ja SQLite'i kasutav postkontor, kus autentitud kasutaja saab
+  luua lubatud kõrgtaseme `letter` töid.
+- Atomil on kasutajaliidesest eraldatud bearer-võtmega polling- ja tulemuse API.
+- Server rakendab TTL-i ja aegumist, lubatud tööde whitelist'i, atomaarset
+  claim'i ning idempotentset tulemust. Tundmatuid töid, otseliikumiskäske ja
+  kasutaja antud trajektoore järjekorda ei lubata.
+- SQLite'is säilivad töö, tulemus ja Atomi `last_seen` olek. Sama töö
+  kordussaatmine ei käivita kontrollimatut uut täitmist.
+- Sama API-ga mock Atom võimaldab serveri töövoogu kontrollida ilma AtomS3R-i,
+  station'i või MG400-ta. Serveri käitumine on kaetud Python testidega.
+- Päris dropletile ei ole serverit veel paigaldatud.
+
+### AtomS3R Lab 2 püsivara
+
+- Kaustas `firmware/` on PlatformIO projekt: environment `atoms3r` kasutab
+  ühilduvat `m5stack-atoms3` board definition'it.
+- Seadete mudel sisaldab serveri URL-i, Atomi privaatvõtit ja polling-intervalli.
+  Rakendatud on väljaminev poll/result klient ning production-siht kasutab
+  HTTPS-i.
+- Aktiivse töö ID ja saatmata terminaltulemus säilitatakse püsivalt. Ühe
+  aktiivse töö piir, duplikaadikaitse ja restardi järel ebaselge claim'i
+  fail-safe käitumine väldivad automaatset kordustäitmist.
+- Atom → station piir saadab Lab 1 väljadega ühilduva serial-JSON sõnumi, millele
+  lisatakse stabiilne `job_id`. Native-testid ja PlatformIO build läbivad.
+- **Lab 2 püsivara ei ole füüsilisse AtomS3R-i üles laaditud ega seadmel
+  testitud.** Seadme olemasolu ei muuda upload'i või riistvarakatset tehtuks.
+
+### Station-adapter
+
+- Valmis on station'i Atom-job adapter, mis säilitab Lab 1 väljad
+  `letter/session/seq/atom_sent_ms` ja lisab serveri stabiilse `job_id`.
+- SQLite'i idempotentsus, `session + seq` duplikaadikaitse ja restardi
+  `ambiguous_after_restart` fail-safe väldivad ebaselge töö automaatset
+  korduskäivitust.
+- USB serial transport on eraldi abstraktsioon. Mock executor võimaldab
+  software-only kontrolli; vaikimisi on täitmine keelatud.
+- Adapter ei loo MG400 ühendust ega impordi robotiklienti. Kohalik software E2E
+  läbib kogu server → mock Atom → station → server tulemuse ahela.
+- Päris MG400 täitmine on TODO ja vajab eraldi lokaalset ohutuskontrolli.
+
+### Station'i kaamerad
+
+- Valmis on ühine kaameraabstraktsioon, USB OpenCV backend ja XIAO HTTP
+  snapshot backend.
+- Eraldi lokaalne station'i leht näitab kahte kaamerat ning pakub snapshot- ja
+  MJPEG route'e. Mock-kaamerad võimaldavad mõlemat rada riistvarata testida.
+- Tarkvaralised loendurid mõõdavad kaadrite arvu, väljastatud baite ning
+  arvutatud FPS/Mbit/s väärtusi; need ei ole füüsiliste kaamerate mõõtetulemused.
+- Kaamerakiht ja route'id on kaetud testidega. Päris USB- ja XIAO-kaameraid ei
+  ole selle Lab 2 töövooga füüsiliselt kontrollitud.
+
+### XIAO ESP32S3 Sense
+
+- Kaustas `firmware-xiao-camera/` on eraldi PlatformIO projekt ametliku
+  `seeed_xiao_esp32s3` boardiga.
+- Teostatud on camera init alus, toetatud sensori tuvastamine, PSRAM-i arvestav
+  seadistus, piiratud Wi-Fi reconnect/backoff ning endpoint'id `/status` ja
+  `/snapshot.jpg`.
+- HTTP leping sobib station'i XIAO snapshot backendiga. PlatformIO build ja
+  native-testid läbivad.
+- **Püsivara ei ole füüsilisse XIAO ESP32S3 Sense seadmesse üles laaditud ega
+  päris kaameraga testitud.**
+
+### Dropleti paigalduse alus
+
+- Valmis on olemasoleva Flaski rakenduse Gunicorn WSGI entrypoint, localhosti
+  bind'iga systemd unit ja Caddy HTTPS reverse proxy näidis.
+- Lisatud on placeholder'itega env/saladuste muster ning install-, update-,
+  verify- ja backup-skriptid. SQLite asub kavandis lähtekoodipuust väljas ning
+  backup kasutab SQLite'i turvalist backup API-t.
+- Paigalduse staatilised ja lokaalsed testid kontrollivad muu hulgas localhost
+  bind'i, fail-closed saladusi, Caddy piiri ja backup'i terviklikkust.
+- Päris dropletile paigaldust, avalikku HTTPS-katset, tulemüüri sisselülitamist
+  ega SSH hardening'ut ei ole tehtud.
+
+## Tarkvaralise kontrolli tulemused
+
+Kontrollid käivitati lokaalselt 12.10.26 seisuga commit'i
+`9ec062661591fd0f7c381134b2702bb76efd3849` sisule või vahetult enne selle
+loomist sama sisuga tööpuule:
+
+| Kontroll | Tegelik tulemus | Piirang |
+| :--- | :--- | :--- |
+| Lab 2 Python `pytest` | 63 testi läbis | software-only; sisaldab 7 deployment-testi |
+| `python -m src.e2e_demo` | `server_status=done`, sama `job_id` kogu ahelas, `hardware_used=false` | ajutine DB, mock Atom ja mock executor |
+| AtomS3R `pio run` | SUCCESS, environment `atoms3r` | build; upload'i ei tehtud |
+| AtomS3R `pio test -e native` | 12/12 testi läbis | hosti native-testid, mitte seadme test |
+| XIAO `pio run` | SUCCESS, board `seeed_xiao_esp32s3` | build; upload'i ei tehtud |
+| XIAO `pio test -e native` | 6/6 testi läbis | hosti native-testid, mitte kaamerakatse |
+| WSGI import ja deploy shell syntax | läbis | lokaalne/static kontroll |
+| `deploy/verify.sh` arendusmasinas | `SKIP` | systemd/Caddy production-kontroll vajab päris Ubuntu dropletit |
+| Mock-kaameraserver | leht ja API vastasid; mõlemad mock-kaamerad olid saadaval ning mõlemad snapshot'id vastasid | sünteetilised mock-kaadrid, mitte füüsiline mõõtmine |
+
+Need tulemused ei tõenda AtomS3R/XIAO upload'i, MG400 täitmist, päris kaamerate
+tööd, internetist kättesaadavat HTTPS-i, SSH hardening'ut ega tulemüüri olekut.
+
 ## Kontrollnimekiri
 
 Kõik punktid on alguses lahti. Märge tehakse alles pärast kontrollitavat
