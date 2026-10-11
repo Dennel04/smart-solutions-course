@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="et">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lab 2 postkontor</title>
+    <style>
+      body { font-family: sans-serif; margin: 2rem auto; max-width: 70rem; padding: 0 1rem; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 1px solid #bbb; padding: .4rem; text-align: left; vertical-align: top; }
+      .error { color: #a00; }
+      code { overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body>
+    <h1>Lab 2 postkontor</h1>
+    <p>
+      Atom: <strong>{{ atom.status }}</strong> ·
+      last seen: <code>{{ atom.last_seen or "never" }}</code>
+    </p>
+
+    <h2>Uus kõrgtaseme töö</h2>
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    <form method="post" action="{{ url_for('create_job_form') }}">
+      <label>Täht A–Z <input name="letter" maxlength="1" required></label>
+      <label>TTL sekundites <input name="ttl_seconds" type="number" min="1" value="{{ default_ttl }}" required></label>
+      <button type="submit">Lisa järjekorda</button>
+    </form>
+
+    <h2>Tööd</h2>
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Töö</th><th>Argument</th><th>Olek</th><th>Loodud</th><th>Tulemus / põhjus</th></tr>
+      </thead>
+      <tbody>
+        {% for job in jobs %}
+          <tr>
+            <td><code>{{ job.id }}</code></td>
+            <td>{{ job.job }}</td>
+            <td><code>{{ job.arg | tojson }}</code></td>
+            <td>{{ job.status }}</td>
+            <td>{{ job.created_at }}</td>
+            <td><code>{{ (job.result if job.result is not none else job.reason) | tojson }}</code></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6">Töid ei ole.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <p>See on postkontori UI. Siin ei ole station'i juhtimist ega kaameravooge.</p>
+  </body>
+</html>
