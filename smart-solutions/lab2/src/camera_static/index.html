@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="et">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab 2 kohalikud kaamerad</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+    body { margin: 0; background: #101418; color: #edf2f7; }
+    main { max-width: 1400px; margin: auto; padding: 24px; }
+    .notice { color: #a9b6c3; margin-bottom: 20px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+    section { background: #192129; border: 1px solid #31404e; border-radius: 12px; overflow: hidden; }
+    h2 { margin: 16px 16px 10px; }
+    img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: #050708; }
+    dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 14px 16px 18px; }
+    dt { color: #9fb0c0; }
+    dd { margin: 0; font-variant-numeric: tabular-nums; }
+    .available { color: #61d095; }
+    .unavailable { color: #ff8a80; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Lab 2 kaameravaade</h1>
+  <p class="notice">See leht töötab ainult station-arvutis. Kaamerapilti ei saadeta dropletisse.</p>
+  <div class="grid">
+    <section>
+      <h2>Table camera</h2>
+      <img id="table-image" src="/stream/table.mjpg" alt="Lauakaamera voog">
+      <dl id="table-status"></dl>
+    </section>
+    <section>
+      <h2>Tool camera</h2>
+      <img id="tool-image" src="/stream/tool.mjpg" alt="Tööriistakaamera voog">
+      <dl id="tool-status"></dl>
+    </section>
+  </div>
+</main>
+<script>
+  const escapeText = value => String(value ?? "—").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  function show(name, status) {
+    const resolution = status.resolution ? `${status.resolution.width} × ${status.resolution.height}` : "—";
+    const stateClass = status.available ? "available" : "unavailable";
+    const state = status.available ? "available" : (status.error || "unavailable");
+    document.getElementById(`${name}-status`).innerHTML =
+      `<dt>Olek</dt><dd class="${stateClass}">${escapeText(state)}</dd>` +
+      `<dt>Eraldus</dt><dd>${escapeText(resolution)}</dd>` +
+      `<dt>Kaader</dt><dd>${escapeText(status.last_frame?.counter)}</dd>` +
+      `<dt>Kaadri aeg</dt><dd>${escapeText(status.last_frame?.captured_at)}</dd>` +
+      `<dt>Captured FPS</dt><dd>${Number(status.metrics.capture_fps).toFixed(1)}</dd>` +
+      `<dt>Served FPS</dt><dd>${Number(status.metrics.served_fps).toFixed(1)}</dd>` +
+      `<dt>Väljund</dt><dd>${Number(status.metrics.mbit_per_s).toFixed(2)} Mbit/s</dd>`;
+  }
+  async function refresh() {
+    try {
+      const response = await fetch("/api/cameras", {cache: "no-store"});
+      const payload = await response.json();
+      show("table", payload.cameras.table);
+      show("tool", payload.cameras.tool);
+    } catch (_) {
+      for (const name of ["table", "tool"]) show(name, {available: false, error: "status unavailable", resolution: null, metrics: {capture_fps: 0, served_fps: 0, mbit_per_s: 0}});
+    }
+  }
+  for (const name of ["table", "tool"]) {
+    const image = document.getElementById(`${name}-image`);
+    image.addEventListener("error", () => setTimeout(() => { image.src = `/stream/${name}.mjpg?t=${Date.now()}`; }, 2000));
+  }
+  refresh();
+  setInterval(refresh, 1000);
+</script>
+</body>
+</html>

@@ -36,7 +36,8 @@ Põhireeglid:
 - jaam teeb kohaliku valideerimise ja on ainus komponent, mis tohib MG400-le
   liikumiskäske saata;
 - kaameravood ei lähe postkontorisse; need jäävad kohalikku võrku ja neid
-  vahendab vajadusel autentitud jaama leht;
+  vahendab eraldi station'i kaameraprotsess; selle lokaalsed route'id on
+  kirjeldatud failis [`cameras.md`](cameras.md) ega kuulu sellesse API-sse;
 - kasutajaleht ja Atomi API on loogiliselt eraldi marsruutide, autentimise ja
   õigustega;
 - Atomi autentimisvõti salvestatakse Atomis, mitte lähtekoodis ega repos;

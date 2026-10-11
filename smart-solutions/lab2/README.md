@@ -45,6 +45,8 @@ tööriistakaamera ---- kohalik Wi-Fi ----------> jaama leht
 ```
 
 Täpne protokoll on failis [`docs/server_api.md`](docs/server_api.md).
+Kohalik kaamera-arhitektuur ja tulevaste pärismõõtmiste metoodika on failis
+[`docs/cameras.md`](docs/cameras.md).
 
 ## Püsivara töövoog
 
@@ -103,6 +105,12 @@ tulemust; füüsilise katse juurde lisatakse kuupäev, meetod ja failiviide.
 - [x] Ohutuskokkuleppe mustand on failis `docs/safety.md`.
 - [x] BOM-i kontroll-leht on failis `docs/bom.md`.
 - [x] Mõõtmiste CSV-mallid sisaldavad ainult päiseid, kuni päris mõõtmised on tehtud.
+- [x] Station'i eraldi kohalik kaameraserver näitab kahte jagatud worker'iga
+  MJPEG-allikat ning ei lisa kaameraroute'e dropleti postkontorisse.
+- [x] Mock table/tool allikad, USB OpenCV backend ja seadistatava URL-iga XIAO
+  snapshot backend on automaattestitavad ilma riistvarata.
+- [x] Software kaadriloendurid ja väljastatud baitide/FPS/Mbit/s arvutus on
+  valmis; need ei ole päris kaameramõõtmised.
 
 ### Vajab õppejõult dropleti/hosti
 
@@ -255,6 +263,21 @@ python -m src.e2e_demo
 
 Demo kasutab ainult ajutisi placeholder-saladusi ja kustutatavaid SQLite
 faile. See ei ava serial-porti, võrguühendust ega MG400 klienti.
+
+## Kohalik kaameraleht
+
+Kaamerakiht asub `src/cameras/` ja eraldi kohalik Flask-rakendus failis
+`src/camera_server.py`. Riistvarata demo käivitatakse Lab 2 juurkaustast:
+
+```bash
+python -m src.camera_server --mock
+```
+
+Leht on aadressil `http://127.0.0.1:5002/`. See näitab kõrvuti Table camera
+ja Tool camera mock-pilte, allika olekut, resolutsiooni ning tarkvaralisi
+FPS/ribalaiuse loendureid. Demo ei pöördu dropleti, MG400 ega päris kaamera
+poole ja ei ava brauserit automaatselt. Päris USB- ja XIAO-seaded, kohalik
+autentimine ning kõik mõõtmised on TODO; täpsemalt vt `docs/cameras.md`.
 
 Testid ja import-/süntaksikontroll:
 

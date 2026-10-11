@@ -2,3 +2,4 @@ Flask>=3.1,<4
 requests>=2.32,<3
 pytest>=8,<9
 pyserial>=3.5,<4
+opencv-python-headless>=4.10,<5
