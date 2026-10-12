@@ -450,6 +450,53 @@ ei muudeta.
 * Otsustasime, ja miks:
 * Lahti järgmiseks korraks:
 
+**11.10.26 — Nikita**
+
+* Tegime: Valmistasin ette ja viisin software-foundation'i tasemele Flaski +
+  SQLite'i postkontori, autentitud Atomi polling/result API, TTL/expiry ja
+  idempotentsuse, AtomS3R PlatformIO polling-püsivara aluse, station'i
+  job-adapteri ja kaamerakihi, XIAO ESP32S3 Sense PlatformIO kaamerapüsivara
+  aluse ning Gunicorni, systemd ja Caddy näidetega dropleti paigaldusaluse.
+  Lisasin regressioonitestid ja software-only E2E kontrolli. Füüsilist
+  riistvara ega päris dropletit selles töös ei kasutatud.
+* Juhtus (numbrid): Python: `63 passed`; deployment-testid: `7/7`; Atomi
+  native-testid: `12/12`; XIAO native-testid: `6/6`; mõlemad PlatformIO buildid:
+  `SUCCESS`; software E2E: `server_status=done`, `hardware_used=false`.
+* Otsustasime, ja miks: Atom algatab dropleti suunas väljamineva pollingu ning
+  droplet ei loo otseühendust station'i ega MG400-ga. Internetist võetakse vastu
+  ainult kõrgtaseme töid, kaamerad jäävad lokaalsesse võrku ning direct
+  control/VPN kuulub Lab 3-sse. Atom ja XIAO kasutavad kohustuslikult
+  PlatformIO-d, saladused jäävad repost välja ning ebaselge või korduv töö
+  lõpetatakse fail-safe keeldumisega, mitte robotiliikumise kordamisega.
+* Lahti järgmiseks korraks: AtomS3R-i päris upload ja lokaalne polling-katse,
+  päris droplet, MG400 integratsioon, teine kõrgtaseme töö, füüsilised kaamerad
+  ning Andmehõive Lab 2 rõhukalibratsioon.
+
+**12.10.26 — Nikita**
+
+* Tegime: Viisin Lab 2 README Lab 1-ga samasse struktuuri ja stiili ning
+  kontrollisin kõigi kolme kursuse Lab 2 README vormingute kooskõla. Tegin Smart
+  Solutions pre-hardware auditi: kontrollisin faile `docs/server_api.md`,
+  `docs/atom_page.md`, `docs/safety.md`, `docs/bom.md`, mõõtmiste CSV-malle ja
+  juurfaili `AGENTS.md`. Lisasin süsteemiarhitektuuri failid
+  `docs/system.drawio` ja `docs/system.svg`, dokumenteerisin Andmehõive ja 3D
+  Printing sõltuvused ning märkisin puuduva teise kõrgtaseme töö selgeks
+  blocker'iks.
+* Juhtus (numbrid): `git diff --check` läbis; `4` measurement CSV-malli
+  sisaldavad ainult päiseid; lubatud kõrgtaseme robotitöid on `1` (`letter`);
+  teine töö on `TODO`; loodud süsteemiskeemi faile on `2` (`system.drawio` ja
+  `system.svg`). Need arvud on dokumentatsiooni- ja tarkvarafaktid, mitte
+  füüsilised mõõtmistulemused.
+* Otsustasime, ja miks: Lab 2 dokumentatsioon järgib Lab 1 vormingut ning
+  füüsilised tulemused jäävad TODO-ks kuni päris mõõtmiseni. Rõhukalibratsioon
+  tuleb Andmehõive Lab 2-st ning kaamerate füüsiline kinnitus ja FOV sõltuvad 3D
+  Printing Lab 2-st. `pick_place` ei ole teostatud töö enne tegelikku lubamist
+  ja kontrolli; tag luuakse alles pärast täielikku lõppkontrolli.
+* Lahti järgmiseks korraks: ühendada päris AtomS3R, laadida Lab 2 püsivara
+  PlatformIO-ga, kontrollida serial boot'i ja Atomi web/settings lehte, testida
+  lokaalset postkontori pollingut ning hiljem teostada ja kontrollida teine
+  kõrgtaseme töö.
+
 ### Väljundid ja tulemused
 
 **Väljundid**
