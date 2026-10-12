@@ -7,10 +7,10 @@ püsivara ei ole tervikuna kopeeritud.
 
 AtomS3 püsivara kohustuslik projektitöövoog on PlatformIO: reprodutseeritav
 `platformio.ini`, lähtekoodipuu ja sõltuvused ning build/upload PlatformIO
-kaudu. Arduino IDE ei ole selle repo peamine firmware-töövoog. Kui XIAO
-ESP32S3 Sense püsivara hakkab selles repos elama, peab ka see olema eraldi
-PlatformIO projekt. AtomS3 build on tarkvaraliselt kontrollitud; seadmele
-laadimine on veel TODO.
+kaudu. Arduino IDE ei ole selle repo peamine firmware-töövoog. XIAO ESP32S3
+Sense püsivara asub eraldi PlatformIO projektis `../firmware-xiao-camera/`.
+AtomS3 ja XIAO buildid on tarkvaraliselt kontrollitud; seadmetele laadimine on
+veel TODO.
 
 > Siin eristatakse teostatud tarkvaraalust ja kontrollimata riistvaratööd.
 > Ükski allolev punkt ei tõenda päris AtomS3, station'i ega MG400 integratsiooni.
@@ -34,10 +34,12 @@ muudeta. Võtme teadlikuks eemaldamiseks peab olema eraldi kinnitatav tegevus.
 
 ## Postkontori test
 
-Lehel on nupp `TEST SERVER HEALTH`, mis teeb ühe autentitud `GET /health`
-testpäringu ilma polli või claim'ita. Minimaalne alus näitab HTTP tulemust ja
-turvalist lühivastust. Round-trip aja ning viimase õnnestunud polli kuvamine on
-veel TODO.
+Lehel on nupp `TEST SERVER HEALTH`, mis teeb ühe `GET /health` testpäringu ilma
+polli või claim'ita. Firmware lisab seadistatud bearer-päise, kuid praeguse
+serveri `/health` endpoint on avalik ega valideeri Atomi võtit. Seega kontrollib
+nupp aadressi, TLS-i ja HTTP tervisevastust; Atomi autentimist kontrollivad
+poll/result päringud. Minimaalne alus näitab HTTP tulemust ja turvalist
+lühivastust. Round-trip aja ning viimase õnnestunud polli kuvamine on veel TODO.
 
 - päringu olekut ja HTTP tulemust;
 - serveri vastuse lühikest turvalist sisu või veakoodi;
@@ -86,7 +88,7 @@ kehtiva kalibratsiooni puudumisel; selle asemel näidatakse selget TODO/error ol
 - [ ] Seaded püsivad pärast AtomS3 taaskäivitust.
 - [ ] Production-hostile tehakse päris HTTPS polling.
 - [ ] Vale või puuduva võtme vastus kuvatakse saladust avaldamata.
-- [ ] `TEST POST-OFFICE REQUEST` vastus ja round-trip aeg on kontrollitud.
+- [ ] `TEST SERVER HEALTH` vastus ja round-trip aeg on kontrollitud.
 - [ ] Kiire ja aeglane polling-intervall on päriselt kontrollitud.
 - [ ] Rõhu raw ADC, V ja kPa kuvatakse korraga ning vastavad mõõtmismeetodile.
 - [ ] Andmehõive Lab 2 tegelikud kalibratsioonikonstandid on kasutusel.

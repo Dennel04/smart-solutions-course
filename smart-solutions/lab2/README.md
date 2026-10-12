@@ -44,6 +44,12 @@ lauakaamera -------- kohalik võrk/USB --------> jaama leht
 tööriistakaamera ---- kohalik Wi-Fi ----------> jaama leht
 ```
 
+![Lab 2 süsteemiarhitektuur](docs/system.svg)
+
+Muudetav skeem: [`docs/system.drawio`](docs/system.drawio). Skeem näitab eraldi
+avalikku postkontorit, Atomi väljaminevat pollingut, lokaalset robotirada ja
+ainult station'i lehele minevaid kaameravooge.
+
 Täpne protokoll on failis [`docs/server_api.md`](docs/server_api.md).
 Kohalik kaamera-arhitektuur ja tulevaste pärismõõtmiste metoodika on failis
 [`docs/cameras.md`](docs/cameras.md).
@@ -176,8 +182,11 @@ tulemust; füüsilise katse juurde lisatakse kuupäev, meetod ja failiviide.
 - [x] Postkontori kasutajaleht ja Atomi API on loogiliselt eraldatud.
 - [x] Kohalik kasutajaleht nõuab autentimist; production-siht on endiselt HTTPS.
 - [x] Postkontor võtab vastu ainult whitelist'is olevaid kõrgtaseme töid.
-- [x] Kaks eri tööd on protokollis määratud; server lubab ainult Labori 1
-  `letter`, teine on `pick_place` kavand, mille riistvaraliides on veel TODO.
+- [x] `letter` on ainus praegu lubatud ja tarkvaraliselt teostatud kõrgtaseme
+  robotitöö.
+- [ ] Teine lubatud kõrgtaseme töö on veel realiseerimata / valimata.
+  `pick_place` on ainult tuleviku placeholder ja server lükkab selle praegu
+  tagasi; seetõttu ei ole ametlik „vähemalt kaks eri tööd“ kriteerium täidetud.
 - [x] Töödel on TTL; aegunud töö märgitakse `expired` ja seda ei väljastata.
 - [x] Vigane või tundmatu töö lükatakse tagasi ega jõua täitmispiirini.
 - [x] Stabiilne töö ID, atomaarne claim ja idempotentne tulemus välistavad
@@ -272,6 +281,19 @@ tulemust; füüsilise katse juurde lisatakse kuupäev, meetod ja failiviide.
 - [ ] Enne tellimist on BOM laboris üle kontrollitud ja tellimus on valmis 16.10.26.
 - [ ] Repo ja arenduspäevik on täidetud ning esitamisel on loodud tag
   `smart-solutions-lab2`.
+
+### Enne päris riistvara testi
+
+- [ ] BOM-i füüsiline saadavus on laboris kontrollitud.
+- [ ] Lab 2 püsivara on AtomS3R-i PlatformIO kaudu üles laaditud.
+- [ ] AtomS3R ja lokaalne postkontor on koos kontrollitud ilma MG400
+  täitmiseta.
+- [ ] Dropleti ligipääsuandmed ja host on õppejõult saadud.
+- [ ] XIAO ESP32S3 Sense füüsiline saadavus on kontrollitud.
+- [ ] USB UHD-kaamera füüsiline saadavus on kontrollitud.
+- [ ] Andmehõive Lab 2 päris rõhukalibratsioon on kättesaadav.
+- [ ] 3D Printing Lab 2 laua- ja tööriistakaamera kinnitused on valmis ning
+  füüsiliselt kontrollitud.
 
 ## Kavandatud tulemused
 

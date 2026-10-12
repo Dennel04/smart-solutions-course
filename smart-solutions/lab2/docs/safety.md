@@ -5,6 +5,9 @@
 
 ## Kohustuslikud reeglid
 
+Kaugtöö võib postkontorisse jätta ainult isikliku autentitud ligipääsuga
+meeskonnaliige pärast ruumis oleva vastutaja selgesõnalist nõusolekut.
+
 1. Kaugtöö tohib käivitada ainult siis, kui robotiga samas ruumis on inimene,
    kes näeb kogu tööala ja ulatub füüsilise hädastopini.
 2. Ruumis olev inimene kontrollib tööala ning lubab roboti lokaalselt.
@@ -68,6 +71,6 @@ Iga liige lisab oma kinnituse ise pärast kokkuleppe päriselt läbilugemist.
 
 | Nimi | Kuupäev | Kinnitus |
 | :--- | :--- | :--- |
-| TODO — team member confirmation required | TODO | TODO |
-| TODO — team member confirmation required | TODO | TODO |
-| TODO — team member confirmation required | TODO | TODO |
+| Nikita | TODO | TODO — kinnitab isiklikult pärast läbilugemist |
+| Denys | TODO | TODO — kinnitab isiklikult pärast läbilugemist |
+| Raimo | TODO | TODO — kinnitab isiklikult pärast läbilugemist |

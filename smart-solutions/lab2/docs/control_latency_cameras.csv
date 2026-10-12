@@ -1,1 +1,1 @@
-condition,trial,latency_ms,note
+condition,camera_count,trial,command_timestamp,robot_first_movement_timestamp,latency_ms,method,note

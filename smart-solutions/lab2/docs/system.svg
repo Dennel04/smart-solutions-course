@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="720" viewBox="0 0 1100 720" role="img" aria-labelledby="title desc">
+  <title id="title">Smart Solutions Lab 2 system architecture</title>
+  <desc id="desc">Public post-office reached by a user over HTTPS and polled outbound by AtomS3R. Atom sends a local Lab 1 job to the station, which alone reaches MG400. USB and XIAO cameras feed only the local station page.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+    </marker>
+    <style>
+      .box { fill: #f8fafc; stroke: #334155; stroke-width: 2; rx: 12; }
+      .public { fill: #e0f2fe; stroke: #0369a1; }
+      .local { fill: #ecfdf5; stroke: #047857; }
+      .camera { fill: #fff7ed; stroke: #c2410c; }
+      .label { font: 600 17px system-ui, sans-serif; fill: #0f172a; text-anchor: middle; }
+      .small { font: 14px system-ui, sans-serif; fill: #334155; text-anchor: middle; }
+      .edge { fill: none; stroke: #334155; stroke-width: 2.5; marker-end: url(#arrow); }
+      .camera-edge { fill: none; stroke: #c2410c; stroke-width: 2.5; marker-end: url(#arrow); }
+      .boundary { fill: #fff1f2; stroke: #be123c; stroke-width: 2; stroke-dasharray: 8 6; rx: 12; }
+      .warning { font: 600 14px system-ui, sans-serif; fill: #9f1239; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <text x="550" y="34" class="label" font-size="23">Smart Solutions Lab 2 — post-office ja kohalik station</text>
+
+  <rect x="430" y="60" width="240" height="70" class="box"/>
+  <text x="550" y="90" class="label">Kasutaja / telefon</text>
+  <text x="550" y="114" class="small">autenditud veebileht</text>
+
+  <rect x="400" y="190" width="300" height="80" class="box public"/>
+  <text x="550" y="222" class="label">Avalik droplet / post-office</text>
+  <text x="550" y="247" class="small">Flask + SQLite; kaameravooge ei ole</text>
+
+  <rect x="430" y="350" width="240" height="75" class="box local"/>
+  <text x="550" y="381" class="label">AtomS3R</text>
+  <text x="550" y="405" class="small">tööde väljaminev polling</text>
+
+  <rect x="430" y="500" width="240" height="80" class="box local"/>
+  <text x="550" y="532" class="label">Station</text>
+  <text x="550" y="557" class="small">lokaalne leht ja safety gate</text>
+
+  <rect x="430" y="635" width="240" height="60" class="box local"/>
+  <text x="550" y="672" class="label">MG400</text>
+
+  <rect x="55" y="480" width="240" height="75" class="box camera"/>
+  <text x="175" y="511" class="label">USB lauakaamera</text>
+  <text x="175" y="535" class="small">kohalik USB</text>
+
+  <rect x="805" y="480" width="240" height="75" class="box camera"/>
+  <text x="925" y="511" class="label">XIAO Wi-Fi kaamera</text>
+  <text x="925" y="535" class="small">kohalik Wi-Fi snapshot</text>
+
+  <path d="M550 130 L550 190" class="edge"/>
+  <text x="585" y="165" class="small">HTTPS</text>
+
+  <path d="M520 350 L520 270" class="edge"/>
+  <text x="410" y="315" class="small">outbound HTTPS polling</text>
+
+  <path d="M550 425 L550 500" class="edge"/>
+  <text x="655" y="468" class="small">Lab 1 lokaalne kanal</text>
+
+  <path d="M550 580 L550 635" class="edge"/>
+  <text x="645" y="614" class="small">lokaalne MG400 API</text>
+
+  <path d="M295 518 L430 535" class="camera-edge"/>
+  <path d="M805 518 L670 535" class="camera-edge"/>
+
+  <rect x="735" y="105" width="320" height="235" class="boundary"/>
+  <text x="895" y="138" class="warning">LAB 2 VÕRGUPIIR</text>
+  <text x="895" y="172" class="small">Droplet ei loo inbound ühendust</text>
+  <text x="895" y="196" class="small">Atomisse, station'isse ega MG400-sse.</text>
+  <text x="895" y="230" class="small">Kaamerad ei lähe dropletile.</text>
+  <text x="895" y="264" class="small">VPN-i ega port-forward'i ei ole.</text>
+  <text x="895" y="298" class="small">Direct VPN/control kuulub Lab 3-sse.</text>
+</svg>

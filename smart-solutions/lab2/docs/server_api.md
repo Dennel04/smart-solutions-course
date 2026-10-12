@@ -75,6 +75,11 @@ käitamist ei ole veel tõendatud.
 teostamisel võib jaam vastu võtta ainult eelnevalt lokaalselt õpetatud ja
 lubatud positsioonide nimesid. Töö ei ole veel füüsiliselt realiseeritud.
 
+Praeguses tarkvaras on `letter` ainus lubatud kõrgtaseme töö. Teine lubatud
+kõrgtaseme töö on veel realiseerimata / valimata ning ametlik „vähemalt kaks
+eri tööd“ kriteerium on seetõttu blocker/TODO. `unknown`, test-, status- ja
+poll-päringud ei ole robotitööd ega täida seda kriteeriumi.
+
 Whitelist'i mittekuuluv `job`, tundmatu argument, lisaväli, liiga pikk tekst,
 vale tüüp või lubamatu väärtus lükatakse tagasi. Vaikimisi lubamist ei ole.
 
@@ -118,9 +123,10 @@ Terminalolekud on `done`, `refused` ja `expired`. Neist ei minda tagasi
 
 - server kontrollib TTL-i nii polli kui claim'i ajal;
 - `expires_at <= server_now` muudab veel alustamata töö olekuks `expired`;
-- Atom kontrollib saadud `expires_at` väärtust uuesti, kuid serveri otsus on
-  autoriteetne;
-- jaam kontrollib TTL-i vahetult enne täitmise algust;
+- Atom kontrollib saadud `expires_at` väärtust uuesti enne töö edastamist
+  station'ile, kuid serveri otsus on autoriteetne;
+- praegune station-adapter ei saa eraldi TTL-i kontrollida, sest selle lokaalne
+  serial-sõnum ei sisalda `expires_at` välja;
 - aegunud töö kohta võib saata ACK/result'i, kuid mitte liikumiskäsku;
 - juba `claimed` töö TTL ei ole kaugjuhitav stoppsignaal. Kui Atom on töö enne
   aegumist vastu võtnud ja station on selle lokaalselt aktsepteerinud, lõpetab
@@ -222,6 +228,46 @@ Example-vastus töö olemasolul:
 `poll_interval_ms` on Atomi tegelik kasutatud väärtus ja salvestatakse
 heartbeat'i juurde. Mõõtmistes kirjutatakse tegelik intervall iga rea juurde.
 Production-vaikeväärtus on TODO — real test required.
+
+## Example: Atomi tulemus
+
+```http
+POST /api/atom/result
+Authorization: Bearer <ATOM_API_KEY>
+Content-Type: application/json
+```
+
+Eduka lokaalse tulemuse päring:
+
+```json
+{
+  "id": "example-job-id",
+  "status": "done",
+  "result": {"source": "local_station"}
+}
+```
+
+Server vastab salvestatud tööga ja märgib, kas täpselt sama terminaltulemus
+oli duplikaat:
+
+```json
+{
+  "job": {
+    "id": "example-job-id",
+    "job": "letter",
+    "arg": {"letter": "A"},
+    "status": "done",
+    "result": {"source": "local_station"},
+    "reason": null
+  },
+  "duplicate": false
+}
+```
+
+`refused` päringus on `reason` kohustuslik. Tundmatu ID annab `404`, muu kui
+`claimed` olek või vastuoluline terminaltulemus `409`; täpselt sama `done` või
+`refused` kordus tagastab `200` ja `duplicate: true`. Näite ID ja andmed on
+formaadinäited, mitte päris täitmise tulemus.
 
 ## Heartbeat, `last_seen` ja roboti olek
 

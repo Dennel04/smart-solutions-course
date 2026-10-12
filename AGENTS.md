@@ -54,11 +54,18 @@ Each later lab under `smart-solutions/labN/` follows the same pattern.
   touching the graded files.
 - **Nothing gets deleted.** A wrong measurement stays in the doc with its
   date; the correction goes underneath it, not over it.
+- **No fake measurements or hardware claims.** Unknown physical results stay
+  `TODO` until a student records the real method, date, value, and units.
 - **Devlog entries** live inside each lab's `README.md` under
   "Arenduspäevik" — one entry per work session, appended (not edited later).
 - Diagrams/simulations go into the doc as an image + a link to the live,
   editable file (draw.io link).
-- Git tag per lab on submission, e.g. `smart-solutions-lab1`.
+- Firmware projects use PlatformIO with a reproducible `platformio.ini`, source
+  tree, and dependencies; Arduino IDE is not the primary project workflow.
+- In Lab 2, Atom initiates outbound HTTPS polling to the public post-office.
+  The droplet never connects inbound to the station or MG400, and both camera
+  streams stay on the station/local network.
+- Git tag per lab only at final submission, e.g. `smart-solutions-lab1`.
 
 ## Tools in play
 
