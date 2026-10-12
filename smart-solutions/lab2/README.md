@@ -415,27 +415,38 @@ route'e, proxy't, VPN-i või tunnelit. Need failid on kontrollitav deployment
 foundation, mitte väide päris dropleti valmimise kohta: DNS, sertifikaat,
 serveri hardening, firewall ja recovery drill vajavad endiselt päris hosti.
 
-## Arenduspäevik
+### Arenduspäevik
 
 **KAARDISTA ISE — päevik.** Üks sissekanne iga töösessiooni kohta, kirjutatud
 nii, et inimene, kes kohal ei olnud, saab aru. Sissekandeid lisatakse, mitte
 ei muudeta.
 
-### PP.KK.AA — kes olid kohal
+**PP.KK.AA — kes olid kohal**
 
-- Tegime:
-- Juhtus (numbrid):
-- Otsustasime, ja miks:
-- Lahti järgmiseks korraks:
+* Tegime:
+* Juhtus (numbrid):
+* Otsustasime, ja miks:
+* Lahti järgmiseks korraks:
 
-## Väljundid ja lõpptulemused
+### Väljundid ja tulemused
 
-- Git repo ja tag: TODO — lisada alles esitamisel.
-- Postkontori paigaldus- ja taastamismallid: teostatud failis `deploy/README.md`;
-  päris dropleti paigaldus ja taastamiskatse on TODO — droplet required.
-- Lokaalne `letter` tarkvaraleping: teostatud; Atom/MG400 integration on TODO.
-- Mõõtmistulemused koos ühikutega: TODO — real measurement required.
-- Kahe kaamera samaaegsed näidispildid: TODO — real hardware required.
-- Meeskonna ohutuskinnitused: TODO — each team member must confirm personally.
-- Mida teeksime teisiti: TODO — complete after tests.
-- Mida järgmine labor peab teadma: TODO — complete at the end of Lab 2.
+**Väljundid**
+* Lab 3 saab siit postkontori tarkvara ja dropleti paigaldusaluse; päris dropleti
+  paigaldus ja taastamiskatse on TODO — droplet required.
+* Lab 3 saab siit Atomi väljamineva pollingu ning lokaalse `letter` tarkvaralepingu;
+  AtomS3R upload ja Atom/MG400 riistvaraintegratsioon on TODO.
+* Lab 3 saab siit kahe station'i kaamera lokaalse tarkvarakihi; mõlema päris
+  kaamera samaaegne kontroll ja näidispildid on TODO — real hardware required.
+* Lab 3 VPN/direct path saab siit postkontori, Atomi, station'i ja kaamerate
+  piirid; VPN-i ega station'i otseühendust Lab 2-s ei teostata.
+
+**KAARDISTA ISE, lõpus.**
+* Git repo ja tag: TODO — lisada alles esitamisel.
+* Numbrid, mille see labor andis, ühikutega: TODO — real measurement required;
+  software-testide arvud ei ole füüsilised mõõtmistulemused.
+* Postkontori paigaldus- ja taastamismallid: teostatud failis
+  `deploy/README.md`; päris dropleti paigaldus on TODO — droplet required.
+* Meeskonna ohutuskinnitused: TODO — each team member must confirm personally.
+* Mida me teeksime teisiti: TODO — complete after physical tests.
+* Mida järgmine labor peaks enne alustamist teadma: TODO — complete at the end
+  of Lab 2 after droplet, Atom, MG400 and camera tests.
