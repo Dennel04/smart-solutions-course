@@ -65,6 +65,10 @@ Each later lab under `smart-solutions/labN/` follows the same pattern.
 - In Lab 2, Atom initiates outbound HTTPS polling to the public post-office.
   The droplet never connects inbound to the station or MG400, and both camera
   streams stay on the station/local network.
+- In Lab 3, do not invent IP addresses, routes, VPN configuration, or network
+  measurements. Never store private SSH or WireGuard keys in the repo. The
+  public post-office and VPN are separate paths; physical results require real
+  hardware, and Lab 3 devlog entries are appended rather than rewritten.
 - Git tag per lab only at final submission, e.g. `smart-solutions-lab1`.
 
 ## Tools in play
