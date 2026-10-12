@@ -8,6 +8,10 @@ bool PersistentState::begin() {
 }
 
 String PersistentState::activeJobId() const {
+  // A fresh device normally has no activeId key. Preferences::getString logs
+  // ESP_ERR_NVS_NOT_FOUND, so guard the read instead of turning the empty
+  // state into a tight-loop error message.
+  if (!preferences_.isKey("activeId")) return "";
   return preferences_.getString("activeId", "");
 }
 

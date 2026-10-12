@@ -32,6 +32,30 @@ void copyId(char* target, const char* source) {
 
 }  // namespace
 
+WifiStartupMode wifiStartupMode(bool hasStoredSsid) {
+  return hasStoredSsid ? WifiStartupMode::StationAttempt
+                       : WifiStartupMode::SetupAccessPoint;
+}
+
+bool shouldFallbackToSetupAccessPoint(bool stationConnected, uint32_t elapsedMs,
+                                      uint32_t timeoutMs) {
+  return !stationConnected && elapsedMs >= timeoutMs;
+}
+
+WifiRecoveryAction wifiRecoveryAction(bool fallbackActive, bool stationAttemptActive,
+                                      bool stationConnected, uint32_t attemptElapsedMs,
+                                      bool retryTimerExpired, uint32_t timeoutMs) {
+  if (fallbackActive && stationConnected) return WifiRecoveryAction::RetrySucceeded;
+  if (stationAttemptActive && !stationConnected && attemptElapsedMs >= timeoutMs) {
+    return fallbackActive ? WifiRecoveryAction::RetryTimedOut
+                          : WifiRecoveryAction::EnterFallback;
+  }
+  if (fallbackActive && !stationAttemptActive && retryTimerExpired) {
+    return WifiRecoveryAction::StartRetry;
+  }
+  return WifiRecoveryAction::None;
+}
+
 ValidationResult validateJob(const Job& job, int64_t nowEpoch, bool clockAvailable) {
   if (job.id[0] == '\0') return {ValidationCode::MissingId, "missing_job_id"};
   if (!validId(job.id)) return {ValidationCode::InvalidId, "invalid_job_id"};

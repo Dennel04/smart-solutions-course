@@ -65,8 +65,10 @@ XIAO ESP32S3 Sense tööriistakaamera on eraldi PlatformIO projektis
 `firmware-xiao-camera/`; see ei ole AtomS3 projektiga kokku segatud. Mõlemal on
 oma `platformio.ini`, lähtekoodipuu ja native-testid. Lab 2 AtomS3 projekt on
 kaustas `firmware/`; Labori 1 püsivara ei ole tervikuna kopeeritud. Mõlema
-projekti `pio run` build on tarkvaraliselt kontrollitud, kuid seadmetele upload
-ja kõik riistvarakatsed on TODO.
+projekti `pio run` build on tarkvaraliselt kontrollitud. AtomS3R-i Lab 2
+püsivara laaditi 12.10.26 PlatformIO-ga seadmesse; Atomi autentitud lokaalne
+polling, reboot-persistence ja Wi-Fi reconnect kontrolliti 13.10.26. XIAO
+upload ja ülejäänud riistvarakatsed on TODO.
 
 ## Tehtud töö
 
@@ -100,8 +102,12 @@ füüsilisi seadmeid kasutavat katset.
   fail-safe käitumine väldivad automaatset kordustäitmist.
 - Atom → station piir saadab Lab 1 väljadega ühilduva serial-JSON sõnumi, millele
   lisatakse stabiilne `job_id`. Native-testid ja PlatformIO build läbivad.
-- **Lab 2 püsivara ei ole füüsilisse AtomS3R-i üles laaditud ega seadmel
-  testitud.** Seadme olemasolu ei muuda upload'i või riistvarakatset tehtuks.
+- Lab 2 püsivara laaditi 12.10.26 füüsilisse AtomS3R-i pordi
+  `/dev/cu.usbmodem101` kaudu. Esimesel katsel leitud NVS `activeId NOT_FOUND`
+  kordus ja development-serveri loopback-bind parandati ning kontrolliti sama
+  päeva jätkukatses. Setup-AP, settings, autentitud lokaalne polling,
+  reboot-persistence ja Wi-Fi reconnect kontrolliti päris seadmel 13.10.26;
+  production HTTPS, station/MG400 ja ametlik mid-job katkestus on TODO.
 
 ### Station-adapter
 
@@ -169,8 +175,10 @@ loomist sama sisuga tööpuule:
 | `deploy/verify.sh` arendusmasinas | `SKIP` | systemd/Caddy production-kontroll vajab päris Ubuntu dropletit |
 | Mock-kaameraserver | leht ja API vastasid; mõlemad mock-kaamerad olid saadaval ning mõlemad snapshot'id vastasid | sünteetilised mock-kaadrid, mitte füüsiline mõõtmine |
 
-Need tulemused ei tõenda AtomS3R/XIAO upload'i, MG400 täitmist, päris kaamerate
-tööd, internetist kättesaadavat HTTPS-i, SSH hardening'ut ega tulemüüri olekut.
+Tabeli software-only tulemused ise ei tõenda seadme upload'i, MG400 täitmist,
+päris kaamerate tööd, internetist kättesaadavat HTTPS-i, SSH hardening'ut ega
+tulemüüri olekut. Hilisem osaline AtomS3R upload/boot-katse on eraldi kirjas
+12.10.26 arenduspäeviku riistvarakande juures; XIAO upload on endiselt TODO.
 
 ## Kontrollnimekiri
 
@@ -285,8 +293,8 @@ tulemust; füüsilise katse juurde lisatakse kuupäev, meetod ja failiviide.
 ### Enne päris riistvara testi
 
 - [ ] BOM-i füüsiline saadavus on laboris kontrollitud.
-- [ ] Lab 2 püsivara on AtomS3R-i PlatformIO kaudu üles laaditud.
-- [ ] AtomS3R ja lokaalne postkontor on koos kontrollitud ilma MG400
+- [x] Lab 2 püsivara on AtomS3R-i PlatformIO kaudu üles laaditud 12.10.26.
+- [x] AtomS3R ja lokaalne postkontor on koos kontrollitud ilma MG400
   täitmiseta.
 - [ ] Dropleti ligipääsuandmed ja host on õppejõult saadud.
 - [ ] XIAO ESP32S3 Sense füüsiline saadavus on kontrollitud.
@@ -347,6 +355,18 @@ Need väärtused on ainult lokaalse arenduse näited, mitte production-saladused
 Ilma `ATOM_API_KEY` või `POST_OFFICE_PASSWORD` muutujata server ei käivitu.
 Kasutajaleht avaneb aadressil `http://127.0.0.1:5001/` ja küsib HTTP Basic
 kasutajat/parooli. HTTP on lubatud ainult lokaalseks arenduseks.
+
+Füüsilise Atomi samas LAN-is testimiseks tuleb development-server eraldi ja
+teadlikult LAN-ile bind'ida:
+
+```bash
+export POST_OFFICE_BIND=0.0.0.0  # development LAN test only
+python -m server.app
+```
+
+Vaikeväärtus jääb `127.0.0.1`. Seda opt-in'i ei kasutata production'is:
+systemd/Gunicorn kuulab endiselt ainult `127.0.0.1:5001` ning avalik HTTPS piir
+on Caddy.
 
 Loo teises terminalis testtöö:
 
@@ -497,13 +517,115 @@ ei muudeta.
   lokaalset postkontori pollingut ning hiljem teostada ja kontrollida teine
   kõrgtaseme töö.
 
+**12.10.26 — Nikita (AtomS3R hardware test)**
+
+* Tegime: Ehitasin Lab 2 `atoms3r` environment'i, tuvastasin ühendatud seadme
+  PlatformIO abil ning laadisin püsivara füüsilisse AtomS3R-i. Vaatasin serial
+  logi 115200 baudiga, käivitasin lokaalse Flask post-office'i development-only
+  saladustega ja kontrollisin `/health` kättesaadavust nii loopback- kui ka
+  sülearvuti LAN-aadressil. Peatasin katse enne Atomile Wi-Fi või API võtme
+  sisestamist, sest server ei olnud LAN-ist kättesaadav.
+* Juhtus (numbrid): Port oli `/dev/cu.usbmodem101` (USB VID:PID `303A:1001`).
+  `pio run -e atoms3r` oli `SUCCESS` ajaga 4,36 s; RAM 50 168 / 327 680 baiti
+  (15,3%) ja flash 1 122 541 / 3 342 336 baiti (33,6%). Upload oli `SUCCESS`
+  ajaga 22,22 s ning kirjutatud image'i hash kontrolliti. Serialis ei nähtud
+  panic'ut ega boot loop'i ja firmware jõudis pollingutsüklisse, kuid logis
+  kordus `[E][Preferences.cpp] ... activeId NOT_FOUND` ligikaudu iga 9 ms ning
+  `POST poll_failed` ligikaudu kord sekundis; seetõttu ei loetud boot-kontrolli
+  puhtalt läbituks. Sülearvuti LAN IP oli `192.168.50.249`. Serveri
+  `http://127.0.0.1:5001/health` vastas HTTP 200, kuid
+  `http://192.168.50.249:5001/health` ei olnud kättesaadav.
+* Otsustasime, ja miks: Praegust production'i localhost-piiri ei muudeta
+  varjatult. Füüsilise Atomi lokaalseks arendustestiks on vaja eraldi selgelt
+  lubatavat development-bind'i LAN-liidesele, säilitades production'i
+  `127.0.0.1` vaikeväärtuse. Enne jätkamist tuleb eemaldada ka puuduva
+  `activeId` võtme tekitatud NVS log storm. Web/settings lehte, server-test'i,
+  pollingut/`last_seen` väärtust, persistence'it ega Wi-Fi reconnect'i selles
+  katses läbituks ei märgitud.
+* Lahti järgmiseks korraks: Lisada ja dokumenteerida minimaalne development-only
+  LAN-bind, parandada puuduva `activeId` lugemine, korrata puhast serial boot'i,
+  avada Atomi setup-AP/web settings, kasutada ainult lokaalset development
+  võtit, testida `/health`, päris pollingut ja `last_seen` väärtust ning alles
+  seejärel teha reboot persistence ja Wi-Fi reconnect kontrollid. MG400,
+  droplet, XIAO, kaamerad ja ametlikud latentsusmõõtmised jäävad sellest katsest
+  välja.
+
+**12.10.26 — Nikita (AtomS3R hardware test, jätk)**
+
+* Tegime: Leidsin LAN blocker'i põhjuse funktsioonist `server.app.main`, kus
+  development-server kasutas alati `127.0.0.1`. Lisasin piiratud
+  `POST_OFFICE_BIND` opt-in'i: default on endiselt loopback ning `0.0.0.0` on
+  lubatud ainult teadlikuks development LAN testiks. Production'i Gunicorn ja
+  Caddy jäid loopback-piirile. Leidsin NVS flood'i põhjuse funktsioonist
+  `PersistentState::activeJobId()`: värskel seadmel normaalset puuduvat
+  `activeId` võtit loeti igas võrgutsüklis `getString()` abil. Lisasin enne
+  lugemist `isKey()` kontrolli, testisin tarkvara, ehitasin ja laadisin firmware
+  uuesti ning kordasin serial- ja LAN-kontrolli.
+* Juhtus (numbrid): Python suite: `66 passed`; Atom native-testid: `13/13`;
+  Atom build: `SUCCESS` 7,82 s, RAM 50 168 / 327 680 baiti (15,3%), flash
+  1 123 057 / 3 342 336 baiti (33,6%). Re-upload pordile
+  `/dev/cu.usbmodem101` oli `SUCCESS` 16,25 s ja image'i hash kontrolliti.
+  Mitmesekundilises serial-vaatluses ei olnud panic'ut ega reboot loop'i ning
+  `activeId NOT_FOUND` log storm kadus täielikult; seadistamata ühenduse
+  `POST poll_failed` jäi ligikaudu 1000 ms intervallile. Sülearvuti tegelik LAN
+  IP oli endiselt `192.168.50.249`. Explicit `POST_OFFICE_BIND=0.0.0.0` korral
+  vastasid nii `http://127.0.0.1:5001/health` kui ka
+  `http://192.168.50.249:5001/health` HTTP 200.
+* Otsustasime, ja miks: Kaht algset parandust ei laiendatud arhitektuuri
+  refactor'iks ega production'i avalikuks bind'iks. Atom ei ilmunud praeguse
+  LAN-i ARP-tabelisse ning `Lab2AtomSetup` AP-d ei leitud ka pärast normaalset
+  restarti. Tõenäoline põhjus on varasem `wifi` NVS SSID, mille olemasolul
+  firmware jääb STA connecting olekusse ega tee setup-AP fallback'i. Salvestatud
+  Wi-Fi andmeid ei loetud ega kustutatud ilma eraldi kinnitamiseta. Seetõttu ei
+  märgitud settings-lehte, server-test'i, autentitud pollingut, `last_seen`
+  väärtust, persistence'it ega reconnect'i läbituks.
+* Lahti järgmiseks korraks: Kinnitada turvaline Wi-Fi taastamisviis — kasutada
+  teadaolevat salvestatud võrku, kustutada kasutaja loal ainult vana Wi-Fi NVS
+  seadistus või lisada eraldi kontrollitud setup-AP fallback. Seejärel avada
+  settings-leht, sisestada lokaalne development URL ja võti, kontrollida
+  `/health`, autentitud pollingut ja tegelikku intervalli, `last_seen` väärtust,
+  reboot persistence'it ning Wi-Fi reconnect'i. MG400, droplet, XIAO, kaamerad
+  ja ametlik mid-job disconnect test jäävad endiselt välja.
+
+**13.10.26 — Nikita (AtomS3R Wi-Fi reconnect test)**
+
+* Tegime: Lisasin olemasolevale setup-AP fallback'ile piiratud AP+STA recovery:
+  seadistus-AP jääb võrgu taastumise ootamise ajal aktiivseks, salvestatud
+  STA-seadistust proovitakse perioodiliselt uuesti ning eduka ühenduse järel
+  peatatakse retry ja setup-AP. Ehitasin ja laadisin püsivara päris AtomS3R-i,
+  kontrollisin autentitud lokaalset pollingut ja reboot-järgset persistence'it
+  ning tegin reaalse 2,4 GHz katkestus- ja taastamiskatse ilma Atomi reboot'ita.
+* Juhtus (numbrid): Native-testid läbisid `21/21`; Atom build oli `SUCCESS`,
+  RAM 50 176 / 327 680 baiti (15,3%) ja flash 1 127 693 / 3 342 336 baiti
+  (33,7%); upload pordile `/dev/cu.usbmodem1101` oli `SUCCESS`. Enne katkestust
+  vastas `POST /api/atom/poll` HTTP 200 ligikaudu `1000 ms` intervalliga ning
+  `last_seen` uuenes. 2,4 GHz kadumisel lõppes polling, serial näitas esmalt
+  reason `51` (`INVALID_FTE`) ja seejärel reason `201` (`NO_AP_FOUND`);
+  `15 s` järel oli lõppolek `WL_NO_SSID_AVAIL` ja käivitus `Lab2AtomSetup`.
+  Recovery retry intervall oli `20 s` ning ühe STA-katse timeout `15 s`.
+  Võrgu taastumise järel assotsieerus Atom järgmisel retry-katsel, sai uuesti
+  aadressi `192.168.50.19` ja polling jätkus automaatselt HTTP 200-ga;
+  `last_seen` uuenes väärtuselt `2026-10-12T22:16:20.330494Z` väärtusele
+  `2026-10-12T22:16:24.333387Z`. Käsitsi raadio sisselülitamise hetke ei
+  timestamp'itud Atomiga samast kellast, seega täpset taastumisaega sekundites
+  ei esitata. Panic'ut, reboot loop'i ega NVS log storm'i ei olnud.
+* Otsustasime, ja miks: Fallback kasutab AP+STA režiimi, et setup-leht jääks
+  kättesaadavaks, kuid retry ei muutuks tight loop'iks. SSID-d, Wi-Fi parooli,
+  serveri URL-i, Atomi võtit ega pollinguseadeid katkestuse ajal ei kustutata.
+  Edukas STA taastumine lõpetab recovery-oleku ja tavapolling jätkub ilma
+  reboot'ita. Development-võtit ega muid saladusi päevikusse ei lisata.
+* Lahti järgmiseks korraks: Ametlik mid-job katkestuskriteerium koos aktiivse
+  töö ja saatmata tulemuse NVS retry-ga, production droplet/HTTPS, päris MG400,
+  kaamerad, latentsusmõõtmised ja Andmehõive rõhukalibratsioon jäävad TODO-ks.
+
 ### Väljundid ja tulemused
 
 **Väljundid**
 * Lab 3 saab siit postkontori tarkvara ja dropleti paigaldusaluse; päris dropleti
   paigaldus ja taastamiskatse on TODO — droplet required.
 * Lab 3 saab siit Atomi väljamineva pollingu ning lokaalse `letter` tarkvaralepingu;
-  AtomS3R upload ja Atom/MG400 riistvaraintegratsioon on TODO.
+  AtomS3R upload ja autentitud lokaalne polling on tehtud, kuid MG400
+  riistvaraintegratsioon on TODO.
 * Lab 3 saab siit kahe station'i kaamera lokaalse tarkvarakihi; mõlema päris
   kaamera samaaegne kontroll ja näidispildid on TODO — real hardware required.
 * Lab 3 VPN/direct path saab siit postkontori, Atomi, station'i ja kaamerate

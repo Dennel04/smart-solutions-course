@@ -4,9 +4,34 @@ import sqlite3
 import subprocess
 import sys
 
+import pytest
+
+from server.app import _development_bind
+
 
 LAB2_ROOT = Path(__file__).resolve().parents[1]
 DEPLOY = LAB2_ROOT / "deploy"
+
+
+def test_development_server_defaults_to_loopback(monkeypatch):
+    monkeypatch.delenv("POST_OFFICE_BIND", raising=False)
+    assert _development_bind() == "127.0.0.1"
+
+
+def test_development_server_requires_explicit_lan_bind(monkeypatch):
+    monkeypatch.setenv("POST_OFFICE_BIND", "0.0.0.0")
+    assert _development_bind() == "0.0.0.0"
+    monkeypatch.setenv("POST_OFFICE_BIND", "192.0.2.10")
+    with pytest.raises(RuntimeError, match="POST_OFFICE_BIND"):
+        _development_bind()
+
+
+def test_firmware_guards_normal_missing_active_id_before_nvs_read():
+    source = (LAB2_ROOT / "firmware" / "src" / "persistent_state.cpp").read_text()
+    guard = 'preferences_.isKey("activeId")'
+    read = 'preferences_.getString("activeId", "")'
+    assert guard in source
+    assert source.index(guard) < source.index(read)
 
 
 def parse_example_environment():

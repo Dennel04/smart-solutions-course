@@ -112,6 +112,64 @@ void test_restored_ambiguous_claim_is_not_pollable() {
   TEST_ASSERT_TRUE(guard.isDuplicate("ambiguous-job"));
 }
 
+void test_missing_persisted_claim_restores_as_empty_state() {
+  ClaimGuard guard;
+  guard.restore("", "");
+  TEST_ASSERT_TRUE(guard.canPoll());
+  TEST_ASSERT_EQUAL_STRING("", guard.activeJobId());
+  TEST_ASSERT_EQUAL_STRING("", guard.pendingResultId());
+}
+
+void test_missing_wifi_credentials_start_setup_ap() {
+  TEST_ASSERT_EQUAL(
+      static_cast<int>(WifiStartupMode::SetupAccessPoint),
+      static_cast<int>(wifiStartupMode(false)));
+}
+
+void test_saved_wifi_credentials_attempt_station_connection() {
+  TEST_ASSERT_EQUAL(
+      static_cast<int>(WifiStartupMode::StationAttempt),
+      static_cast<int>(wifiStartupMode(true)));
+}
+
+void test_station_attempt_waits_before_timeout() {
+  TEST_ASSERT_FALSE(shouldFallbackToSetupAccessPoint(false, kWifiStaTimeoutMs - 1));
+  TEST_ASSERT_FALSE(shouldFallbackToSetupAccessPoint(true, kWifiStaTimeoutMs));
+}
+
+void test_station_timeout_falls_back_to_setup_ap() {
+  TEST_ASSERT_TRUE(shouldFallbackToSetupAccessPoint(false, kWifiStaTimeoutMs));
+}
+
+void test_wifi_recovery_enters_fallback_after_initial_timeout() {
+  TEST_ASSERT_EQUAL(
+      static_cast<int>(WifiRecoveryAction::EnterFallback),
+      static_cast<int>(wifiRecoveryAction(false, true, false, kWifiStaTimeoutMs,
+                                          false)));
+}
+
+void test_wifi_recovery_waits_for_retry_timer() {
+  TEST_ASSERT_EQUAL(
+      static_cast<int>(WifiRecoveryAction::None),
+      static_cast<int>(wifiRecoveryAction(true, false, false, 0, false)));
+  TEST_ASSERT_EQUAL(
+      static_cast<int>(WifiRecoveryAction::StartRetry),
+      static_cast<int>(wifiRecoveryAction(true, false, false, 0, true)));
+}
+
+void test_wifi_recovery_success_stops_retry() {
+  TEST_ASSERT_EQUAL(
+      static_cast<int>(WifiRecoveryAction::RetrySucceeded),
+      static_cast<int>(wifiRecoveryAction(true, true, true, 1000, false)));
+}
+
+void test_failed_wifi_retry_returns_to_fallback_wait() {
+  TEST_ASSERT_EQUAL(
+      static_cast<int>(WifiRecoveryAction::RetryTimedOut),
+      static_cast<int>(wifiRecoveryAction(true, true, false, kWifiStaTimeoutMs,
+                                          false)));
+}
+
 int main(int argc, char** argv) {
   UNITY_BEGIN();
   RUN_TEST(test_valid_letter_job);
@@ -126,5 +184,14 @@ int main(int argc, char** argv) {
   RUN_TEST(test_claim_guard_blocks_second_job_and_duplicate);
   RUN_TEST(test_result_must_match_active_job_and_ack);
   RUN_TEST(test_restored_ambiguous_claim_is_not_pollable);
+  RUN_TEST(test_missing_persisted_claim_restores_as_empty_state);
+  RUN_TEST(test_missing_wifi_credentials_start_setup_ap);
+  RUN_TEST(test_saved_wifi_credentials_attempt_station_connection);
+  RUN_TEST(test_station_attempt_waits_before_timeout);
+  RUN_TEST(test_station_timeout_falls_back_to_setup_ap);
+  RUN_TEST(test_wifi_recovery_enters_fallback_after_initial_timeout);
+  RUN_TEST(test_wifi_recovery_waits_for_retry_timer);
+  RUN_TEST(test_wifi_recovery_success_stops_retry);
+  RUN_TEST(test_failed_wifi_retry_returns_to_fallback_wait);
   return UNITY_END();
 }

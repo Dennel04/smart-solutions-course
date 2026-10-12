@@ -21,6 +21,13 @@ def _environment_int(name, default):
         raise RuntimeError("%s must be an integer." % name) from exc
 
 
+def _development_bind():
+    bind = os.environ.get("POST_OFFICE_BIND", "127.0.0.1").strip()
+    if bind not in {"127.0.0.1", "0.0.0.0"}:
+        raise RuntimeError("POST_OFFICE_BIND must be 127.0.0.1 or 0.0.0.0.")
+    return bind
+
+
 def _json_error(status, code, message):
     return jsonify(error={"code": code, "message": message}), status
 
@@ -181,7 +188,7 @@ def create_app(test_config=None, clock=None):
 
 def main():
     app = create_app()
-    app.run(host="127.0.0.1", port=5001)
+    app.run(host=_development_bind(), port=5001)
 
 
 if __name__ == "__main__":

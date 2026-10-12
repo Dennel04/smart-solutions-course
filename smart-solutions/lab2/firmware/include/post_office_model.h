@@ -10,6 +10,30 @@ constexpr size_t kMaxJobType = 24;
 constexpr uint32_t kDefaultPollIntervalMs = 1000;  // software default, not a measurement
 constexpr uint32_t kMinPollIntervalMs = 250;
 constexpr uint32_t kMaxPollIntervalMs = 60000;
+constexpr uint32_t kWifiStaTimeoutMs = 15000;  // setup fallback, not a measurement
+constexpr uint32_t kWifiStaRetryIntervalMs = 20000;
+
+enum class WifiStartupMode {
+  SetupAccessPoint,
+  StationAttempt,
+};
+
+WifiStartupMode wifiStartupMode(bool hasStoredSsid);
+bool shouldFallbackToSetupAccessPoint(bool stationConnected, uint32_t elapsedMs,
+                                      uint32_t timeoutMs = kWifiStaTimeoutMs);
+
+enum class WifiRecoveryAction {
+  None,
+  EnterFallback,
+  StartRetry,
+  RetryTimedOut,
+  RetrySucceeded,
+};
+
+WifiRecoveryAction wifiRecoveryAction(bool fallbackActive, bool stationAttemptActive,
+                                      bool stationConnected, uint32_t attemptElapsedMs,
+                                      bool retryTimerExpired,
+                                      uint32_t timeoutMs = kWifiStaTimeoutMs);
 
 struct Job {
   char id[kMaxJobId + 1] = {0};

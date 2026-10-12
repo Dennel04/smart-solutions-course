@@ -31,10 +31,38 @@ postoffice::PostOfficeClient postOfficeClient;
 postoffice::Settings settings;
 String serialLine;
 bool accessPointActive = false;
+bool wifiRecoveryActive = false;
+bool stationAttemptActive = false;
+uint32_t stationAttemptStartedMs = 0;
+uint32_t nextStationRetryAtMs = 0;
 
 void logLine(const String& message) {
   // Never pass Wi-Fi passwords or the Atom API key to this function.
   Serial.println("# " + message);
+}
+
+void handleWifiEvent(arduino_event_id_t event, arduino_event_info_t info) {
+  switch (event) {
+    case ARDUINO_EVENT_WIFI_STA_START:
+      logLine("Wi-Fi event: STA start");
+      break;
+    case ARDUINO_EVENT_WIFI_STA_CONNECTED:
+      logLine("Wi-Fi event: STA associated");
+      break;
+    case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+      logLine("Wi-Fi event: STA got IP " + WiFi.localIP().toString());
+      break;
+    case ARDUINO_EVENT_WIFI_STA_DISCONNECTED: {
+      const uint8_t reason = info.wifi_sta_disconnected.reason;
+      const char* reasonName =
+          WiFi.disconnectReasonName(static_cast<wifi_err_reason_t>(reason));
+      logLine("Wi-Fi event: STA disconnected; reason=" + String(reason) +
+              (reasonName[0] == '\0' ? "" : " (" + String(reasonName) + ")"));
+      break;
+    }
+    default:
+      break;
+  }
 }
 
 String jsonString(const String& value) {
@@ -63,24 +91,60 @@ void showStatus(const String& heading, const String& detail) {
   M5.Display.println(detail);
 }
 
-void startNetwork() {
-  const String ssid = wifiPreferences.getString("ssid", "");
-  if (!ssid.isEmpty()) {
-    WiFi.mode(WIFI_STA);
-    WiFi.setAutoReconnect(true);
-    WiFi.begin(ssid.c_str(), wifiPreferences.getString("pass", "").c_str());
-    accessPointActive = false;
-    logLine("Wi-Fi STA connecting to configured SSID");
-    showStatus("Wi-Fi connecting", ssid);
-    return;
-  }
-
-  WiFi.mode(WIFI_AP);
+void startSetupAccessPoint(bool enableRecovery) {
+  WiFi.disconnect(false, false);  // keep saved credentials for the next reboot
+  WiFi.mode(enableRecovery ? WIFI_AP_STA : WIFI_AP);
   WiFi.softAP(kSetupSsid);  // local setup AP; no production credential in source
   dnsServer.start(kDnsPort, "*", WiFi.softAPIP());
   accessPointActive = true;
+  wifiRecoveryActive = enableRecovery;
+  stationAttemptActive = false;
+  nextStationRetryAtMs = millis() + postoffice::kWifiStaRetryIntervalMs;
   logLine("Wi-Fi setup AP active");
   showStatus("Setup AP", WiFi.softAPIP().toString());
+}
+
+void startStoredStationAttempt(bool keepSetupAccessPoint) {
+  const String ssid = wifiPreferences.getString("ssid", "");
+  if (ssid.isEmpty()) {
+    startSetupAccessPoint(false);
+    return;
+  }
+  WiFi.mode(keepSetupAccessPoint ? WIFI_AP_STA : WIFI_STA);
+  WiFi.setAutoReconnect(true);
+  WiFi.begin(ssid.c_str(), wifiPreferences.getString("pass", "").c_str());
+  stationAttemptActive = true;
+  stationAttemptStartedMs = millis();
+  logLine(keepSetupAccessPoint ? "Wi-Fi recovery: STA retry started"
+                               : "Wi-Fi STA connecting to configured SSID");
+  if (!keepSetupAccessPoint) showStatus("Wi-Fi connecting", ssid);
+}
+
+bool timerReached(uint32_t nowMs, uint32_t deadlineMs) {
+  return static_cast<int32_t>(nowMs - deadlineMs) >= 0;
+}
+
+void finishWifiRecovery() {
+  dnsServer.stop();
+  WiFi.softAPdisconnect(true);
+  WiFi.mode(WIFI_STA);
+  accessPointActive = false;
+  wifiRecoveryActive = false;
+  stationAttemptActive = false;
+  logLine("Wi-Fi recovery: STA connected; setup AP stopped");
+}
+
+void startNetwork() {
+  const String ssid = wifiPreferences.getString("ssid", "");
+  if (postoffice::wifiStartupMode(!ssid.isEmpty()) ==
+      postoffice::WifiStartupMode::StationAttempt) {
+    accessPointActive = false;
+    wifiRecoveryActive = false;
+    startStoredStationAttempt(false);
+    return;
+  }
+
+  startSetupAccessPoint(false);
 }
 
 String wifiModeName() {
@@ -176,12 +240,41 @@ void networkTask(void*) {
   for (;;) {
     webServer.handleClient();
     if (accessPointActive) dnsServer.processNextRequest();
+    const uint32_t nowMs = millis();
     const bool connected = WiFi.status() == WL_CONNECTED;
     if (connected != lastConnected) {
       logLine(connected ? "Wi-Fi connected" : "Wi-Fi disconnected");
+      if (connected) {
+        stationAttemptActive = false;
+      } else if (lastConnected && !wifiRecoveryActive) {
+        stationAttemptActive = true;
+        stationAttemptStartedMs = nowMs;
+      }
       lastConnected = connected;
     }
-    postOfficeClient.tick(millis());
+
+    const postoffice::WifiRecoveryAction action = postoffice::wifiRecoveryAction(
+        wifiRecoveryActive, stationAttemptActive, connected,
+        nowMs - stationAttemptStartedMs, timerReached(nowMs, nextStationRetryAtMs));
+    if (action == postoffice::WifiRecoveryAction::EnterFallback) {
+      logLine("Wi-Fi STA timeout; final status=" +
+              String(static_cast<int>(WiFi.status())));
+      logLine("Wi-Fi STA timeout; starting setup AP with periodic STA recovery");
+      startSetupAccessPoint(true);
+      lastConnected = false;
+    } else if (action == postoffice::WifiRecoveryAction::StartRetry) {
+      startStoredStationAttempt(true);
+    } else if (action == postoffice::WifiRecoveryAction::RetryTimedOut) {
+      logLine("Wi-Fi recovery: STA retry timed out; final status=" +
+              String(static_cast<int>(WiFi.status())));
+      WiFi.disconnect(false, false);
+      stationAttemptActive = false;
+      nextStationRetryAtMs = nowMs + postoffice::kWifiStaRetryIntervalMs;
+    } else if (action == postoffice::WifiRecoveryAction::RetrySucceeded) {
+      finishWifiRecovery();
+    }
+
+    postOfficeClient.tick(nowMs);
     vTaskDelay(1);
   }
 }
@@ -222,6 +315,7 @@ void setup() {
   postOfficeClient.begin(deviceId(), persistentState, stationBridge, POST_OFFICE_ROOT_CA);
   postOfficeClient.configure(settings);
 
+  WiFi.onEvent(handleWifiEvent);
   startNetwork();
   configTime(0, 0, "pool.ntp.org", "time.nist.gov");
 

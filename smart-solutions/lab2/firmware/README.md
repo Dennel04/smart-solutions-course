@@ -17,8 +17,12 @@ pio test -e native
 
 11.10.2026 kontrollis `pio run` AtomS3 keskkonna edukalt: RAM 50 168 / 327 680
 baiti (15,3%) ja flash 1 122 541 / 3 342 336 baiti (33,6%). Native Unity
-testides läbis 12/12 testi. Need on tarkvaratulemused; käsku `pio run -t upload`
-ei ole käivitatud ja päris AtomS3 kontroll on endiselt TODO.
+testides läbis 12/12 testi. 12.10.2026 laaditi püsivara päris AtomS3R-i ning
+pärast puuduva `activeId` NVS-lugemise parandust läbis uus build ja upload;
+native suite läbis 13/13 testi. 13.10.2026 läbis AP+STA recovery muudatus
+21/21 native-testi ning päris AtomS3R-il kontrolliti setup/settings,
+autentitud lokaalset pollingut, reboot-persistence'it ja Wi-Fi reconnect'i.
+See ei tõenda production HTTPS-i ega station/MG400 integratsiooni.
 
 Arduino IDE ei ole selle repo põhitöövoog. `platformio.ini`, lähtekood ja
 sõltuvused peavad jääma reprodutseeritavaks. Kui XIAO ESP32S3 Sense püsivara
@@ -46,6 +50,13 @@ Minimaalne seadeteleht sisaldab Wi-Fi SSID/parooli, postkontori baasaadressi,
 Atomi bearer-võtit, pollinguintervalli 250–60 000 ms ja eraldi `Allow local
 HTTP development` lippu. Võtit ega Wi-Fi parooli ei tagastata seadete
 GET-vastuses ega logita; tühi võtmeväli jätab olemasoleva võtme muutmata.
+Kui SSID puudub, käivitub kohe lokaalne `Lab2AtomSetup` seadistus-AP. Kui
+salvestatud SSID-ga STA-ühendus ei teki 15 sekundi jooksul, läheb püsivara
+samasse setup-AP režiimi ilma Wi-Fi või postkontori NVS-seadeid kustutamata.
+Fallback kasutab AP+STA režiimi: setup-leht jääb avatuks ning salvestatud
+STA-seadistust proovitakse iga 20 sekundi järel uuesti, iga katse timeout on
+endiselt 15 sekundit. Eduka STA-ühenduse järel peatatakse retry ja setup-AP,
+seejärel jätkub tavaline polling ilma restartita.
 
 Production URL peab algama `https://`. Päris hosti usaldusahel lisatakse
 ignoreeritud faili `include/post_office_ca_private.h`, kus defineeritakse
@@ -88,8 +99,8 @@ ei saadeta tähte uuesti: töö muudetakse `ambiguous_after_reboot` põhjusega
 
 ## Veel kontrollimata
 
-- [ ] püsivara laadimine päris AtomS3-le;
-- [ ] Wi-Fi/setup-AP ja seadete püsimine taaskäivituse järel;
+- [x] püsivara laadimine päris AtomS3R-i PlatformIO kaudu 12.10.2026;
+- [x] Wi-Fi/setup-AP ja seadete püsimine taaskäivituse järel;
 - [ ] päris hosti CA ja HTTPS-polling;
 - [ ] päris USB-ga AtomS3 → station ning Lab 1 MG400 executor'i otsast lõpuni tulemus;
 - [ ] võrgu katkestus ja NVS retry päris seadmel;
