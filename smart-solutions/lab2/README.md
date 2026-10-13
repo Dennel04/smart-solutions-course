@@ -163,32 +163,31 @@ füüsilisi seadmeid kasutavat katset.
 
 ## Tarkvaralise kontrolli tulemused
 
-Kontrollid käivitati lokaalselt 12.10.26 seisuga commit'i
-`9ec062661591fd0f7c381134b2702bb76efd3849` sisule või vahetult enne selle
-loomist sama sisuga tööpuule:
+Allolev tabel on praeguse tarkvaraseisu koond, mitte varasemate arenduspäeviku
+kannete ümberkirjutus. Kontrollid on software-only, kui piirangu veerus ei ole
+selgesõnaliselt märgitud päris riistvara.
 
 | Kontroll | Tegelik tulemus | Piirang |
 | :--- | :--- | :--- |
-| Lab 2 Python `pytest` | 63 testi läbis | software-only; sisaldab 7 deployment-testi |
-| `python -m src.e2e_demo` | `server_status=done`, sama `job_id` kogu ahelas, `hardware_used=false` | ajutine DB, mock Atom ja mock executor |
-| AtomS3R `pio run` | SUCCESS, environment `atoms3r` | build; upload'i ei tehtud |
-| AtomS3R `pio test -e native` | 12/12 testi läbis | hosti native-testid, mitte seadme test |
+| Lab 2 Python `pytest` | 91 testi läbis | software-only; sisaldab 11 deployment-testi |
+| `python -m src.e2e_demo` | `letter` ja `pick_place`: `server_status=done`, sama `job_id` kogu ahelas, `hardware_used=false` | ajutine DB, mock Atom ja mock executor |
+| AtomS3R `pio run -e atoms3r` | SUCCESS; RAM 50 616 / 327 680 baiti (15,4%); flash 1 150 757 / 3 342 336 baiti (34,4%) | build; selle kontrolli käigus upload'i ei tehtud |
+| AtomS3R `pio test -e native` | 29/29 testi läbis | hosti native-testid, mitte seadme test |
 | XIAO `pio run` | SUCCESS, board `seeed_xiao_esp32s3` | build; upload'i ei tehtud |
 | XIAO `pio test -e native` | 6/6 testi läbis | hosti native-testid, mitte kaamerakatse |
+| Deployment-testid | 11 testi läbis | lokaalne/static kontroll; päris hosti ei kasutatud |
 | WSGI import ja deploy shell syntax | läbis | lokaalne/static kontroll |
 | `deploy/verify.sh` arendusmasinas | `SKIP` | systemd/Caddy production-kontroll vajab päris Ubuntu dropletit |
-| Mock-kaameraserver | leht ja API vastasid; mõlemad mock-kaamerad olid saadaval ning mõlemad snapshot'id vastasid | sünteetilised mock-kaadrid, mitte füüsiline mõõtmine |
+| Mock-kaameraserver | HTTP 200 lehel, API-s ning table/tool snapshot'idel | sünteetilised mock-kaadrid, mitte füüsiline mõõtmine |
 
 Tabeli software-only tulemused ise ei tõenda seadme upload'i, MG400 täitmist,
 päris kaamerate tööd, internetist kättesaadavat HTTPS-i, SSH hardening'ut ega
 tulemüüri olekut. Hilisem osaline AtomS3R upload/boot-katse on eraldi kirjas
 12.10.26 arenduspäeviku riistvarakande juures; XIAO upload on endiselt TODO.
 
-13.10.26 teise high-level töö software-only kontrollis läbis Python suite
-`90` testi ning Atomi native suite `23/23` testi. `python -m src.e2e_demo`
-lõpetas nii `letter` kui ka `pick_place` ahela olekuga `done`, säilitas mõlemas
-sama `job_id` ja raporteeris `hardware_used=false`. Need ei ole MG400 ega pumba
-füüsilised katsetulemused.
+Varasemad testiarvud jäävad kuupäevaga arenduspäeviku kannetes ajalooliseks
+tõendiks. Praegune koond ei ole MG400, pumba, rõhuanduri, XIAO ega kaamerate
+füüsiline katsetulemus.
 
 ## Kontrollnimekiri
 
@@ -355,7 +354,7 @@ Käivita käsud kaustas `smart-solutions/lab2/`:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r server/requirements.txt
+python -m pip install -r server/requirements-dev.txt
 export ATOM_API_KEY=local-dev-only-atom-key
 export POST_OFFICE_USER=dev-user
 export POST_OFFICE_PASSWORD=local-dev-only-user-password
@@ -451,6 +450,16 @@ Testid ja import-/süntaksikontroll:
 pytest -q
 python -m compileall -q server src tests
 ```
+
+Kogu software-only regressiooni (Python, E2E ning mõlema PlatformIO projekti
+native-testid ja buildid) saab käivitada Lab 2 kaustast või mujalt ühe käsuga:
+
+```bash
+smart-solutions/lab2/check.sh
+```
+
+Skript ei laadi püsivara seadmesse, ei ava serial-porti, ei ühendu MG400,
+kaamerate ega dropletiga ning ei käivita SSH/deployment toiminguid.
 
 ## Production-paigalduse alus
 

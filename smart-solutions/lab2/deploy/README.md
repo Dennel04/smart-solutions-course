@@ -48,6 +48,11 @@ Teenuse kasutaja `smart-solutions-lab2` on süsteemikonto ilma login-shellita.
 Lähtekood ei ole selle kasutaja kirjutatav. Systemd unit annab kirjutusõiguse
 ainult püsiva andmebaasi kataloogile.
 
+`deploy/install.sh` ja `deploy/update.sh` paigaldavad ainult postkontori
+production-sõltuvused failist `server/requirements.txt`. Kohaliku arenduse,
+testide, station-adapteri ja kaamerate sõltuvused on eraldi failis
+`server/requirements-dev.txt` ning neid dropletile ei paigaldata.
+
 ## Eeltingimused
 
 - puhas toetatud Ubuntu droplet, mille hostinimi/IP on õppejõult saadud;
