@@ -69,16 +69,19 @@ käitamist ei ole veel tõendatud.
 | `job` | Lubatud `arg` | Olek |
 | :--- | :--- | :--- |
 | `letter` | objekt väljaga `letter`, üks suurtäht `A`–`Z` | serveris lubatud ja testitud; hardware integration TODO |
-| `pick_place` | tulevane eelnevalt õpetatud lähte- ja sihtkoha sümboolne nimi | FUTURE/HARDWARE-PENDING; server lükkab praegu tagasi |
+| `pick_place` | täpselt `{"routine":"source_to_finished"}` | software-only ahelas lubatud ja testitud; MG400/pump TODO |
 
-`pick_place` ei tohi sisaldada kasutaja antud X/Y/Z/R koordinaate. Selle
-teostamisel võib jaam vastu võtta ainult eelnevalt lokaalselt õpetatud ja
-lubatud positsioonide nimesid. Töö ei ole veel füüsiliselt realiseeritud.
+`pick_place` ei tohi sisaldada kasutaja antud X/Y/Z/R koordinaate, kiirust,
+pumba-/DO-käske, korduste arvu, trajektoori või skripti. Avalik argument valib
+ainult ühe eelmääratud local routine'i. Tulevane päris station executor peab
+routine'i ise lokaalseteks, eelnevalt õpetatud ja kontrollitud positsioonideks
+ning toiminguteks teisendama. Seda executor'it ei ole veel realiseeritud.
 
-Praeguses tarkvaras on `letter` ainus lubatud kõrgtaseme töö. Teine lubatud
-kõrgtaseme töö on veel realiseerimata / valimata ning ametlik „vähemalt kaks
-eri tööd“ kriteerium on seetõttu blocker/TODO. `unknown`, test-, status- ja
-poll-päringud ei ole robotitööd ega täida seda kriteeriumi.
+Praeguses tarkvaras on `letter` ja `pick_place` kaks lubatud kõrgtaseme tööd.
+Teise töö server-, Atom-, serial-, station- ja mock-tulemuse ahel on
+software-only; ametlik riistvarakriteerium jääb TODO-ks kuni MG400/pumba
+integratsiooni ja kohaliku ohutuskontrollini. `unknown`, test-, status- ja
+poll-päringud ei ole robotitööd.
 
 Whitelist'i mittekuuluv `job`, tundmatu argument, lisaväli, liiga pikk tekst,
 vale tüüp või lubamatu väärtus lükatakse tagasi. Vaikimisi lubamist ei ole.
@@ -142,7 +145,7 @@ Parool tuleb keskkonnamuutujast. Production'is peab nende ees olema HTTPS.
 | Meetod ja tee | Otstarve |
 | :--- | :--- |
 | `GET /` | minimaalne kasutajaleht: Atom status, töö loomine ja tööde ajalugu |
-| `POST /jobs` | HTML-vormi `letter` töö loomine |
+| `POST /jobs` | HTML-vormi `letter` või eelmääratud `pick_place` töö loomine |
 | `POST /api/jobs` | valideeri whitelist'i töö ja lisa see järjekorda |
 | `GET /api/jobs/{id}` | kuva ühe töö olek ja tulemus |
 | `GET /api/jobs` | kuva hiljutised tööd ja Atomi olek |
@@ -194,6 +197,18 @@ Example-vastus:
 ```
 
 Kuupäevad ja ID on ainult formaadinäited, mitte mõõtmised ega production-andmed.
+
+`pick_place` loomise näide erineb ainult high-level töö ja argumendi poolest:
+
+```json
+{
+  "job": "pick_place",
+  "arg": {"routine": "source_to_finished"},
+  "ttl_seconds": 60
+}
+```
+
+Kasutaja ei anna selle tööga robotipositsioone ega actuator-käske.
 
 ## Example: Atomi poll ja heartbeat
 
@@ -304,15 +319,23 @@ formaadinäited, mitte päris täitmise tulemus.
 
 Põhitransport on sama põhimõttega nagu Lab 1 laboriarvutis: üks programm omab
 AtomS3 USB serial-porti, baud on seadistatav (vaikimisi 115200) ja iga sõnum
-on üks reavahetusega lõpetatud JSON objekt. Lab 2 firmware saadab:
+on üks reavahetusega lõpetatud JSON objekt. `letter` säilitab Lab 1 formaadi:
 
 ```json
 {"letter":"A","session":"post-office","seq":1,"atom_sent_ms":1234,"job_id":"example-job-id"}
 ```
 
+`pick_place` teeb töö tüübi selgeks ja edastab ainult routine'i nime:
+
+```json
+{"job":"pick_place","routine":"source_to_finished","session":"post-office","seq":2,"atom_sent_ms":1234,"job_id":"example-pick-id"}
+```
+
 | Väli | Reegel |
 | :--- | :--- |
 | `letter` | täpselt üks suurtäht `A`–`Z`; mock executor kontrollib lisaks, et Lab 1 `letters.json` sisaldab trajektoori |
+| `job` | `letter` puhul valikuline/legacy-puuduv; teise töö puhul täpselt `pick_place` |
+| `routine` | ainult `pick_place` jaoks täpselt `source_to_finished` |
 | `session` | mittetühi kuni 64 märgi pikkune Lab 1-ga ühilduv session |
 | `seq` | mittenegatiivne täisarv; koos session'iga vana kanali duplicate key |
 | `atom_sent_ms` | valikuline mittenegatiivne Atomi uptime; seda ei võrrelda station'i kellaga |
@@ -334,7 +357,7 @@ või:
 ```
 
 Stabiilsed station'i keeldumispõhjused on `invalid_message`, `invalid_letter`,
-`duplicate_conflict`, `robot_not_enabled`, `executor_busy`,
+`invalid_routine`, `unknown_job`, `duplicate_conflict`, `robot_not_enabled`, `executor_busy`,
 `ambiguous_after_restart` ja `execution_failed`. Vigase JSON-i või puuduva
 `job_id` puhul ei ole ID-d võimalik kajastada ning adapter vastab tühja `id`
 väärtusega; firmware ei käsitle seda aktiivse töö terminaltulemusena.
@@ -346,9 +369,10 @@ annab `duplicate_conflict`. Pärast protsessi restarti muutub pooleli olnud
 `in_progress` fail-safe olekuks `refused / ambiguous_after_restart` ning seda
 ei käivitata automaatselt uuesti.
 
-Praegune `MockLetterExecutor` ei impordi MG400 klienti ega loo robotivõrgu
-ühendust. Adapteri default on lokaalselt keelatud; `--allow-mock-jobs` lubab
-ainult kontrollitud mock-täitmise. Tulevane päris executor peab eraldi tõendama
+Praegused `MockLetterExecutor` ja `MockPickPlaceExecutor` ei impordi MG400
+klienti, ei loo robotivõrgu ühendust ega juhi pumpa/DO-d. Pick-place mock märgib
+selgelt `hardware_used=false`. Adapteri default on lokaalselt keelatud;
+`--allow-mock-jobs` lubab ainult kontrollitud mock-täitmise. Tulevane päris executor peab eraldi tõendama
 lokaalse enable'i, roboti teadaoleva safe/ready oleku ja ainsa motion-saatja
 omandi. Päris USB, AtomS3 ja MG400 otsast lõpuni kontroll on TODO.
 

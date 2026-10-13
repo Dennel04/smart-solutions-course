@@ -54,13 +54,31 @@ bool parseUtc(const char* value, int64_t& epoch) {
 }
 
 bool hasDirectMotionField(JsonObjectConst object) {
-  static const char* fields[] = {"x",       "y",       "z",      "r",
-                                 "speed",   "pump",    "command", "coordinates",
-                                 "trajectory", "motion"};
+  static const char* fields[] = {
+      "x",          "y",       "z",       "r",       "speed",
+      "pump",       "do",      "command", "coordinates", "trajectory",
+      "motion",     "script",  "joints",  "joint",   "repetitions"};
   for (JsonPairConst pair : object) {
     for (const char* field : fields) {
       if (strcmp(pair.key().c_str(), field) == 0) return true;
     }
+  }
+  return false;
+}
+
+bool hasUnsupportedJobField(JsonObjectConst object) {
+  static const char* allowed[] = {"id",         "job",       "arg",    "created_at",
+                                  "expires_at", "status",    "claimed_at",
+                                  "result",     "reason",    "updated_at"};
+  for (JsonPairConst pair : object) {
+    bool known = false;
+    for (const char* field : allowed) {
+      if (strcmp(pair.key().c_str(), field) == 0) {
+        known = true;
+        break;
+      }
+    }
+    if (!known) return true;
   }
   return false;
 }
@@ -193,8 +211,14 @@ bool PostOfficeClient::parseJobResponse(const String& response, Job& job, bool& 
 
   const char* letter = argument["letter"] | "";
   job.letter = strlen(letter) == 1 ? letter[0] : 0;
-  job.hasDirectMotionData = hasDirectMotionField(object) || hasDirectMotionField(argument) ||
-                            argument.size() != 1;
+  strlcpy(job.routine, argument["routine"] | "", sizeof(job.routine));
+  const bool expectedArgument =
+      (strcmp(job.type, "letter") == 0 && argument.size() == 1 &&
+       argument["letter"].is<const char*>()) ||
+      (strcmp(job.type, "pick_place") == 0 && argument.size() == 1 &&
+       argument["routine"].is<const char*>());
+  job.hasDirectMotionData = hasUnsupportedJobField(object) || hasDirectMotionField(object) ||
+                            hasDirectMotionField(argument) || !expectedArgument;
   if (!parseUtc(object["expires_at"] | nullptr, job.expiresEpoch)) {
     refusalReason = "invalid_expiration";
     return false;
@@ -257,7 +281,7 @@ void PostOfficeClient::pollOnce(uint32_t nowMs) {
     setStatus("claim_state_conflict");
     return;
   }
-  if (!bridge_->dispatchLetter(job, nowMs)) {
+  if (!bridge_->dispatchJob(job, nowMs)) {
     state_->queueRefused(job.id, "station_dispatch_failed");
     setStatus("station_dispatch_failed");
     return;

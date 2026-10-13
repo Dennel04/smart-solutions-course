@@ -11,7 +11,7 @@ namespace postoffice {
 class StationBridge {
  public:
   bool begin();
-  bool dispatchLetter(const Job& job, uint32_t sentAtMs);
+  bool dispatchJob(const Job& job, uint32_t sentAtMs);
   bool handleResultLine(const String& line, PersistentState& state);
 
  private:

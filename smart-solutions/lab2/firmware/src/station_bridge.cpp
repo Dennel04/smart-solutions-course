@@ -8,14 +8,19 @@ bool StationBridge::begin() {
   return preferences_.begin("lab2bridge", false);
 }
 
-bool StationBridge::dispatchLetter(const Job& job, uint32_t sentAtMs) {
+bool StationBridge::dispatchJob(const Job& job, uint32_t sentAtMs) {
   const uint32_t sequence = preferences_.getUInt("seq", 0) + 1;
   if (preferences_.putUInt("seq", sequence) != sizeof(uint32_t)) return false;
 
-  // Compatible with the Lab 1 USB letter channel. Existing station code uses
-  // letter/session/seq and ignores the additional stable post-office job_id.
+  // Letters retain the Lab 1 USB fields. Pick-place carries only a predefined
+  // routine name; coordinates and actuator commands never cross this boundary.
   JsonDocument document;
-  document["letter"] = String(job.letter);
+  if (strcmp(job.type, "letter") == 0) {
+    document["letter"] = String(job.letter);
+  } else {
+    document["job"] = "pick_place";
+    document["routine"] = job.routine;
+  }
   document["session"] = "post-office";
   document["seq"] = sequence;
   document["atom_sent_ms"] = sentAtMs;

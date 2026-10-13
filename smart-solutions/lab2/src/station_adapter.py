@@ -5,8 +5,20 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from .executor import Lab1LetterCatalog, LetterExecutor, MockLetterExecutor
-from .models import MessageValidationError, StationResult, parse_atom_message, parse_json_line
+from .executor import (
+    Lab1LetterCatalog,
+    LetterExecutor,
+    MockLetterExecutor,
+    MockPickPlaceExecutor,
+    PickPlaceExecutor,
+)
+from .models import (
+    AtomLetterJob,
+    MessageValidationError,
+    StationResult,
+    parse_atom_message,
+    parse_json_line,
+)
 from .serial_transport import run_serial_forever
 from .station_store import StationJobStore
 
@@ -20,11 +32,13 @@ class StationAdapter:
         store: StationJobStore,
         *,
         executor: LetterExecutor | None = None,
+        pick_place_executor: PickPlaceExecutor | None = None,
         catalog: Lab1LetterCatalog | None = None,
         local_execution_enabled: bool = False,
     ) -> None:
         self.store = store
         self.executor = executor or MockLetterExecutor()
+        self.pick_place_executor = pick_place_executor or MockPickPlaceExecutor()
         self.catalog = catalog or Lab1LetterCatalog()
         self.local_execution_enabled = local_execution_enabled
 
@@ -40,22 +54,40 @@ class StationAdapter:
             assert decision.result is not None
             return decision.result.to_json_line()
 
-        if not self.local_execution_enabled or not self.executor.ready:
+        if not self.local_execution_enabled:
             result = StationResult(job.job_id, "refused", "robot_not_enabled")
-        elif not self.catalog.supports(job.letter):
-            result = StationResult(job.job_id, "refused", "invalid_letter")
+        elif isinstance(job, AtomLetterJob):
+            if not self.executor.ready:
+                result = StationResult(job.job_id, "refused", "robot_not_enabled")
+            elif not self.catalog.supports(job.letter):
+                result = StationResult(job.job_id, "refused", "invalid_letter")
+            else:
+                try:
+                    outcome = self.executor.execute_letter(
+                        job.letter,
+                        job.job_id,
+                        session=job.session,
+                        seq=job.seq,
+                        atom_sent_ms=job.atom_sent_ms,
+                    )
+                    result = StationResult(job.job_id, outcome.status, outcome.reason)
+                except Exception:
+                    result = StationResult(job.job_id, "refused", "execution_failed")
         else:
-            try:
-                outcome = self.executor.execute_letter(
-                    job.letter,
-                    job.job_id,
-                    session=job.session,
-                    seq=job.seq,
-                    atom_sent_ms=job.atom_sent_ms,
-                )
-                result = StationResult(job.job_id, outcome.status, outcome.reason)
-            except Exception:
-                result = StationResult(job.job_id, "refused", "execution_failed")
+            if not self.pick_place_executor.ready:
+                result = StationResult(job.job_id, "refused", "robot_not_enabled")
+            else:
+                try:
+                    outcome = self.pick_place_executor.execute_pick_place(
+                        job.routine,
+                        job.job_id,
+                        session=job.session,
+                        seq=job.seq,
+                        atom_sent_ms=job.atom_sent_ms,
+                    )
+                    result = StationResult(job.job_id, outcome.status, outcome.reason)
+                except Exception:
+                    result = StationResult(job.job_id, "refused", "execution_failed")
 
         self.store.finish(result)
         return result.to_json_line()

@@ -7,6 +7,7 @@ namespace postoffice {
 
 constexpr size_t kMaxJobId = 80;
 constexpr size_t kMaxJobType = 24;
+constexpr size_t kMaxRoutine = 32;
 constexpr uint32_t kDefaultPollIntervalMs = 1000;  // software default, not a measurement
 constexpr uint32_t kMinPollIntervalMs = 250;
 constexpr uint32_t kMaxPollIntervalMs = 60000;
@@ -39,6 +40,7 @@ struct Job {
   char id[kMaxJobId + 1] = {0};
   char type[kMaxJobType + 1] = {0};
   char letter = 0;
+  char routine[kMaxRoutine + 1] = {0};
   int64_t expiresEpoch = 0;
   bool hasDirectMotionData = false;
 };
@@ -49,6 +51,7 @@ enum class ValidationCode {
   InvalidId,
   UnknownJob,
   InvalidLetter,
+  InvalidRoutine,
   DirectMotionNotAllowed,
   InvalidExpiration,
   ClockUnavailable,

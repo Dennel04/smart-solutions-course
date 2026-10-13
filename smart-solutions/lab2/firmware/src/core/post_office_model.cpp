@@ -62,11 +62,16 @@ ValidationResult validateJob(const Job& job, int64_t nowEpoch, bool clockAvailab
   if (job.hasDirectMotionData) {
     return {ValidationCode::DirectMotionNotAllowed, "direct_motion_not_allowed"};
   }
-  if (strcmp(job.type, "letter") != 0) {
+  if (strcmp(job.type, "letter") == 0) {
+    if (job.letter < 'A' || job.letter > 'Z') {
+      return {ValidationCode::InvalidLetter, "invalid_letter"};
+    }
+  } else if (strcmp(job.type, "pick_place") == 0) {
+    if (strcmp(job.routine, "source_to_finished") != 0) {
+      return {ValidationCode::InvalidRoutine, "invalid_routine"};
+    }
+  } else {
     return {ValidationCode::UnknownJob, "unknown_job"};
-  }
-  if (job.letter < 'A' || job.letter > 'Z') {
-    return {ValidationCode::InvalidLetter, "invalid_letter"};
   }
   if (job.expiresEpoch <= 0) {
     return {ValidationCode::InvalidExpiration, "invalid_expiration"};

@@ -27,9 +27,25 @@ void test_invalid_letter_is_refused() {
       static_cast<int>(validateJob(job, 1000, true).code));
 }
 
-void test_unknown_job_is_refused() {
+void test_valid_pick_place_job() {
   Job job = validJob();
   std::strcpy(job.type, "pick_place");
+  std::strcpy(job.routine, "source_to_finished");
+  TEST_ASSERT_TRUE(validateJob(job, 1000, true).ok());
+}
+
+void test_invalid_pick_place_routine_is_refused() {
+  Job job = validJob();
+  std::strcpy(job.type, "pick_place");
+  std::strcpy(job.routine, "other");
+  TEST_ASSERT_EQUAL(
+      static_cast<int>(ValidationCode::InvalidRoutine),
+      static_cast<int>(validateJob(job, 1000, true).code));
+}
+
+void test_unknown_job_is_refused() {
+  Job job = validJob();
+  std::strcpy(job.type, "move_robot");
   TEST_ASSERT_EQUAL(
       static_cast<int>(ValidationCode::UnknownJob),
       static_cast<int>(validateJob(job, 1000, true).code));
@@ -174,6 +190,8 @@ int main(int argc, char** argv) {
   UNITY_BEGIN();
   RUN_TEST(test_valid_letter_job);
   RUN_TEST(test_invalid_letter_is_refused);
+  RUN_TEST(test_valid_pick_place_job);
+  RUN_TEST(test_invalid_pick_place_routine_is_refused);
   RUN_TEST(test_unknown_job_is_refused);
   RUN_TEST(test_direct_motion_is_refused);
   RUN_TEST(test_expired_job_is_refused);

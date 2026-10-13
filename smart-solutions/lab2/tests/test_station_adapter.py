@@ -1,8 +1,9 @@
 import json
+import sqlite3
 
 from src.e2e_demo import run_demo
-from src.executor import MockLetterExecutor
-from src.models import AtomLetterJob, StationResult, parse_atom_message
+from src.executor import MockLetterExecutor, MockPickPlaceExecutor
+from src.models import AtomPickPlaceJob, StationResult, parse_atom_message
 from src.serial_transport import process_lines
 from src.station_adapter import StationAdapter
 from src.station_store import StationJobStore
@@ -20,20 +21,81 @@ def atom_payload(job_id="job-1", letter="A", session="post-office", seq=1, **ext
     return payload
 
 
+def pick_place_payload(
+    job_id="job-pick-1",
+    routine="source_to_finished",
+    session="post-office",
+    seq=2,
+    **extra,
+):
+    payload = {
+        "job": "pick_place",
+        "routine": routine,
+        "session": session,
+        "seq": seq,
+        "atom_sent_ms": 1234,
+        "job_id": job_id,
+    }
+    payload.update(extra)
+    return payload
+
+
 def decode(line):
     return json.loads(line)["post_office_result"]
 
 
-def make_adapter(tmp_path, *, executor=None, enabled=True):
+def make_adapter(tmp_path, *, executor=None, pick_place_executor=None, enabled=True):
     selected = executor or MockLetterExecutor()
     return (
         StationAdapter(
             StationJobStore(tmp_path / "station.sqlite3"),
             executor=selected,
+            pick_place_executor=pick_place_executor,
             local_execution_enabled=enabled,
         ),
         selected,
     )
+
+
+def test_valid_pick_place_message_uses_software_mock(tmp_path):
+    pick_executor = MockPickPlaceExecutor()
+    adapter, _ = make_adapter(tmp_path, pick_place_executor=pick_executor)
+    result = decode(adapter.handle_line(json.dumps(pick_place_payload())))
+    assert result == {"id": "job-pick-1", "status": "done"}
+    assert [job.routine for job in pick_executor.calls] == ["source_to_finished"]
+    assert pick_executor.hardware_used is False
+
+
+def test_invalid_pick_place_routine_is_refused(tmp_path):
+    pick_executor = MockPickPlaceExecutor()
+    adapter, _ = make_adapter(tmp_path, pick_place_executor=pick_executor)
+    result = decode(adapter.handle_line(json.dumps(pick_place_payload(routine="other"))))
+    assert result["reason"] == "invalid_routine"
+    assert pick_executor.calls == []
+
+
+def test_malformed_pick_place_serial_job_is_refused(tmp_path):
+    adapter, _ = make_adapter(tmp_path)
+    payload = pick_place_payload()
+    payload.pop("routine")
+    result = decode(adapter.handle_line(json.dumps(payload)))
+    assert result["reason"] == "invalid_routine"
+
+
+def test_pick_place_coordinates_are_refused(tmp_path):
+    pick_executor = MockPickPlaceExecutor()
+    adapter, _ = make_adapter(tmp_path, pick_place_executor=pick_executor)
+    result = decode(adapter.handle_line(json.dumps(pick_place_payload(x=10))))
+    assert result["reason"] == "invalid_message"
+    assert pick_executor.calls == []
+
+
+def test_unknown_serial_job_is_refused(tmp_path):
+    adapter, _ = make_adapter(tmp_path)
+    result = decode(
+        adapter.handle_line(json.dumps(pick_place_payload(job="move_robot")))
+    )
+    assert result["reason"] == "unknown_job"
 
 
 def test_valid_letter_message_is_accepted(tmp_path):
@@ -139,6 +201,78 @@ def test_restart_persistence_prevents_terminal_replay(tmp_path):
     assert second_executor.calls == []
 
 
+def test_duplicate_pick_place_is_not_executed_twice(tmp_path):
+    pick_executor = MockPickPlaceExecutor()
+    adapter, _ = make_adapter(tmp_path, pick_place_executor=pick_executor)
+    line = json.dumps(pick_place_payload())
+    assert adapter.handle_line(line) == adapter.handle_line(line)
+    assert len(pick_executor.calls) == 1
+
+
+def test_pick_place_terminal_result_survives_restart(tmp_path):
+    database = tmp_path / "station.sqlite3"
+    line = json.dumps(pick_place_payload())
+    first_executor = MockPickPlaceExecutor()
+    first = StationAdapter(
+        StationJobStore(database),
+        pick_place_executor=first_executor,
+        local_execution_enabled=True,
+    )
+    expected = first.handle_line(line)
+    restarted_executor = MockPickPlaceExecutor()
+    restarted = StationAdapter(
+        StationJobStore(database),
+        pick_place_executor=restarted_executor,
+        local_execution_enabled=True,
+    )
+    assert restarted.handle_line(line) == expected
+    assert len(first_executor.calls) == 1
+    assert restarted_executor.calls == []
+
+
+def test_pick_place_restart_ambiguity_refuses_replay(tmp_path):
+    database = tmp_path / "station.sqlite3"
+    job = parse_atom_message(pick_place_payload())
+    assert isinstance(job, AtomPickPlaceJob)
+    assert StationJobStore(database).claim(job).action == "execute"
+    pick_executor = MockPickPlaceExecutor()
+    restarted = StationAdapter(
+        StationJobStore(database),
+        pick_place_executor=pick_executor,
+        local_execution_enabled=True,
+    )
+    result = decode(restarted.handle_line(json.dumps(pick_place_payload())))
+    assert result["reason"] == "ambiguous_after_restart"
+    assert pick_executor.calls == []
+
+
+def test_existing_letter_store_is_migrated_without_replay(tmp_path):
+    database = tmp_path / "legacy.sqlite3"
+    with sqlite3.connect(database) as connection:
+        connection.executescript(
+            """
+            CREATE TABLE station_jobs (
+                job_id TEXT PRIMARY KEY,
+                letter TEXT NOT NULL,
+                session TEXT NOT NULL,
+                seq INTEGER NOT NULL,
+                atom_sent_ms INTEGER,
+                state TEXT NOT NULL,
+                reason TEXT,
+                updated_at TEXT NOT NULL,
+                UNIQUE(session, seq)
+            );
+            INSERT INTO station_jobs VALUES
+                ('legacy-job', 'A', 'post-office', 1, 1234, 'done', NULL, 'old');
+            """
+        )
+    store = StationJobStore(database)
+    job = parse_atom_message(atom_payload(job_id="legacy-job"))
+    decision = store.claim(job)
+    assert decision.action == "cached"
+    assert decision.result == StationResult("legacy-job", "done")
+
+
 def test_ambiguous_in_progress_job_is_refused_after_restart(tmp_path):
     database = tmp_path / "station.sqlite3"
     job = parse_atom_message(atom_payload())
@@ -175,6 +309,16 @@ def test_default_mode_does_not_call_executor_or_mg400(tmp_path):
     assert executor.calls == []
 
 
+def test_default_mode_does_not_run_pick_place_mock(tmp_path):
+    pick_executor = MockPickPlaceExecutor()
+    adapter, _ = make_adapter(
+        tmp_path, pick_place_executor=pick_executor, enabled=False
+    )
+    result = decode(adapter.handle_line(json.dumps(pick_place_payload())))
+    assert result["reason"] == "robot_not_enabled"
+    assert pick_executor.calls == []
+
+
 def test_result_json_contains_stable_job_id(tmp_path):
     adapter, _ = make_adapter(tmp_path)
     result = decode(adapter.handle_line(json.dumps(atom_payload(job_id="stable-123"))))
@@ -202,7 +346,11 @@ def test_result_model_matches_firmware_envelope():
 
 def test_end_to_end_post_office_station_demo(tmp_path):
     result = run_demo(tmp_path)
-    assert result["station_result"]["id"] == result["job_id"]
-    assert result["station_result"]["status"] == "done"
-    assert result["server_status"] == "done"
+    for job_type in ("letter", "pick_place"):
+        job = result[job_type]
+        assert job["station_result"]["id"] == job["job_id"]
+        assert job["station_result"]["status"] == "done"
+        assert job["server_status"] == "done"
+        assert job["hardware_used"] is False
     assert result["hardware_used"] is False
+    assert result["mock_pick_place_calls"] == 1

@@ -30,22 +30,30 @@ def validate_job_request(payload, default_ttl_seconds, max_ttl_seconds):
     _reject_extra_fields(payload, {"job", "arg", "ttl_seconds"}, "request")
 
     job_type = payload.get("job")
-    if job_type != "letter":
-        if job_type == "pick_place":
-            raise ValidationError(
-                "job_not_enabled",
-                "pick_place is hardware-pending and is not enabled on this server.",
-            )
-        raise ValidationError("unknown_job", "Only the enabled high-level job 'letter' is accepted.")
-
     argument = _require_object(payload.get("arg"), "arg")
-    _reject_extra_fields(argument, {"letter"}, "arg")
-    letter = argument.get("letter")
-    if not isinstance(letter, str):
-        raise ValidationError("invalid_letter", "letter must be a string.")
-    letter = letter.strip().upper()
-    if len(letter) != 1 or not ("A" <= letter <= "Z"):
-        raise ValidationError("invalid_letter", "letter must be exactly one character A-Z.")
+    if job_type == "letter":
+        _reject_extra_fields(argument, {"letter"}, "arg")
+        letter = argument.get("letter")
+        if not isinstance(letter, str):
+            raise ValidationError("invalid_letter", "letter must be a string.")
+        letter = letter.strip().upper()
+        if len(letter) != 1 or not ("A" <= letter <= "Z"):
+            raise ValidationError("invalid_letter", "letter must be exactly one character A-Z.")
+        normalized_argument = {"letter": letter}
+    elif job_type == "pick_place":
+        _reject_extra_fields(argument, {"routine"}, "arg")
+        routine = argument.get("routine")
+        if not isinstance(routine, str) or routine != "source_to_finished":
+            raise ValidationError(
+                "invalid_routine",
+                "pick_place routine must be 'source_to_finished'.",
+            )
+        normalized_argument = {"routine": routine}
+    else:
+        raise ValidationError(
+            "unknown_job",
+            "Only the enabled high-level jobs 'letter' and 'pick_place' are accepted.",
+        )
 
     ttl = payload.get("ttl_seconds", default_ttl_seconds)
     if isinstance(ttl, bool) or not isinstance(ttl, int):
@@ -55,7 +63,7 @@ def validate_job_request(payload, default_ttl_seconds, max_ttl_seconds):
             "invalid_ttl",
             "ttl_seconds must be between 1 and %d." % max_ttl_seconds,
         )
-    return {"job": "letter", "arg": {"letter": letter}, "ttl_seconds": ttl}
+    return {"job": job_type, "arg": normalized_argument, "ttl_seconds": ttl}
 
 
 def validate_poll(payload):

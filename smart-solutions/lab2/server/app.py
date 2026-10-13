@@ -121,12 +121,14 @@ def create_app(test_config=None, clock=None):
         except ValueError:
             return redirect(url_for("index", error="TTL must be an integer."))
         try:
+            job_type = request.form.get("job", "letter")
+            argument = (
+                {"letter": request.form.get("letter", "")}
+                if job_type == "letter"
+                else {"routine": request.form.get("routine", "")}
+            )
             create_validated_job(
-                {
-                    "job": "letter",
-                    "arg": {"letter": request.form.get("letter", "")},
-                    "ttl_seconds": ttl,
-                }
+                {"job": job_type, "arg": argument, "ttl_seconds": ttl}
             )
         except ValidationError as error:
             return redirect(url_for("index", error=error.message))

@@ -81,3 +81,18 @@ def create_letter(client, user_headers):
         return client.post("/api/jobs", headers=user_headers, json=payload)
 
     return create
+
+
+@pytest.fixture
+def create_pick_place(client, user_headers):
+    def create(routine="source_to_finished", ttl_seconds=60, extra_arg=None):
+        argument = {"routine": routine}
+        if extra_arg:
+            argument.update(extra_arg)
+        return client.post(
+            "/api/jobs",
+            headers=user_headers,
+            json={"job": "pick_place", "arg": argument, "ttl_seconds": ttl_seconds},
+        )
+
+    return create

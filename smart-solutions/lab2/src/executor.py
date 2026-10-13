@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from typing import Protocol
 
-from .models import AtomLetterJob, STABLE_REASONS
+from .models import AtomLetterJob, AtomPickPlaceJob, STABLE_REASONS
 
 
 DEFAULT_LAB1_LETTERS = (
@@ -38,6 +38,21 @@ class LetterExecutor(Protocol):
     def execute_letter(
         self,
         letter: str,
+        job_id: str,
+        *,
+        session: str,
+        seq: int,
+        atom_sent_ms: int | None,
+    ) -> ExecutionOutcome: ...
+
+
+class PickPlaceExecutor(Protocol):
+    @property
+    def ready(self) -> bool: ...
+
+    def execute_pick_place(
+        self,
+        routine: str,
         job_id: str,
         *,
         session: str,
@@ -113,4 +128,32 @@ class MockLetterExecutor:
             raise RuntimeError("controlled mock failure")
         if letter in self.refusals:
             return ExecutionOutcome.refused(self.refusals[letter])
+        return ExecutionOutcome.done()
+
+
+class MockPickPlaceExecutor:
+    """Deterministic software-only executor; it has no hardware or network code."""
+
+    hardware_used = False
+
+    def __init__(self, *, ready: bool = True) -> None:
+        self._ready = ready
+        self.calls: list[AtomPickPlaceJob] = []
+
+    @property
+    def ready(self) -> bool:
+        return self._ready
+
+    def execute_pick_place(
+        self,
+        routine: str,
+        job_id: str,
+        *,
+        session: str,
+        seq: int,
+        atom_sent_ms: int | None,
+    ) -> ExecutionOutcome:
+        if routine != "source_to_finished":
+            return ExecutionOutcome.refused("invalid_routine")
+        self.calls.append(AtomPickPlaceJob(routine, session, seq, job_id, atom_sent_ms))
         return ExecutionOutcome.done()

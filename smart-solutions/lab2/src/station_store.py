@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import json
 import sqlite3
 from pathlib import Path
 
-from .models import AtomLetterJob, StationResult
+from .models import AtomJob, StationResult
 
 
 @dataclass(frozen=True)
@@ -37,7 +38,9 @@ class StationJobStore:
                 """
                 CREATE TABLE IF NOT EXISTS station_jobs (
                     job_id TEXT PRIMARY KEY,
-                    letter TEXT NOT NULL,
+                    letter TEXT NOT NULL DEFAULT '',
+                    job_type TEXT NOT NULL DEFAULT 'letter',
+                    arg_json TEXT NOT NULL DEFAULT '{}',
                     session TEXT NOT NULL,
                     seq INTEGER NOT NULL,
                     atom_sent_ms INTEGER,
@@ -48,6 +51,26 @@ class StationJobStore:
                 );
                 """
             )
+            columns = {
+                row["name"]
+                for row in connection.execute("PRAGMA table_info(station_jobs)").fetchall()
+            }
+            if "job_type" not in columns:
+                connection.execute(
+                    "ALTER TABLE station_jobs ADD COLUMN job_type TEXT NOT NULL DEFAULT 'letter'"
+                )
+            if "arg_json" not in columns:
+                connection.execute(
+                    "ALTER TABLE station_jobs ADD COLUMN arg_json TEXT NOT NULL DEFAULT '{}'"
+                )
+            for row in connection.execute(
+                "SELECT job_id, letter, arg_json FROM station_jobs"
+            ).fetchall():
+                if row["arg_json"] == "{}":
+                    connection.execute(
+                        "UPDATE station_jobs SET arg_json = ? WHERE job_id = ?",
+                        (self._argument_json({"letter": row["letter"]}), row["job_id"]),
+                    )
             connection.execute(
                 """
                 UPDATE station_jobs
@@ -62,15 +85,20 @@ class StationJobStore:
         return StationResult(job_id or row["job_id"], row["state"], row["reason"])
 
     @staticmethod
-    def _same_payload(row: sqlite3.Row, job: AtomLetterJob) -> bool:
+    def _argument_json(argument: dict[str, str]) -> str:
+        return json.dumps(argument, separators=(",", ":"), sort_keys=True)
+
+    @classmethod
+    def _same_payload(cls, row: sqlite3.Row, job: AtomJob) -> bool:
         return (
-            row["letter"] == job.letter
+            row["job_type"] == job.job_type
+            and row["arg_json"] == cls._argument_json(job.argument)
             and row["session"] == job.session
             and row["seq"] == job.seq
             and row["atom_sent_ms"] == job.atom_sent_ms
         )
 
-    def claim(self, job: AtomLetterJob) -> ClaimDecision:
+    def claim(self, job: AtomJob) -> ClaimDecision:
         connection = self._connect()
         try:
             connection.execute("BEGIN IMMEDIATE")
@@ -115,12 +143,15 @@ class StationJobStore:
             connection.execute(
                 """
                 INSERT INTO station_jobs
-                    (job_id, letter, session, seq, atom_sent_ms, state, reason, updated_at)
-                VALUES (?, ?, ?, ?, ?, 'in_progress', NULL, ?)
+                    (job_id, letter, job_type, arg_json, session, seq, atom_sent_ms,
+                     state, reason, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'in_progress', NULL, ?)
                 """,
                 (
                     job.job_id,
-                    job.letter,
+                    job.argument.get("letter", ""),
+                    job.job_type,
+                    self._argument_json(job.argument),
                     job.session,
                     job.seq,
                     job.atom_sent_ms,

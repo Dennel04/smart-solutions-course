@@ -74,13 +74,16 @@ Klient saadab bearer-autentimisega:
 - `POST /api/atom/poll` — heartbeat ja maksimaalselt ühe töö küsimine;
 - `POST /api/atom/result` — sama ID-ga `done` või `refused` tulemuse retry.
 
-Lubatud on ainult `letter` ühe suurtähega `A`–`Z`. `pick_place`, tundmatu töö,
-lisaväljad, koordinaadid/liikumiskäsud, vigane või aegunud töö lükatakse tagasi.
-See püsivara ei saada MG400 käske.
+Lubatud on `letter` ühe suurtähega `A`–`Z` ja `pick_place` täpselt routine'iga
+`source_to_finished`. Tundmatu routine või töö, lisaväljad,
+koordinaadid/liikumiskäsud, kiirus, pump/DO, trajektoor, vigane või aegunud töö
+lükatakse tagasi. See püsivara ei saada MG400 käske.
 
 Enne station'ile edastamist salvestatakse aktiivne töö ID NVS-i. Station'ile
-saadetakse Lab 1-ga ühilduv JSON-rida väljadega `letter`,
-`session:"post-office"`, `seq`, `atom_sent_ms` ning lisaks stabiilne `job_id`.
+saadetakse `letter` puhul Lab 1-ga ühilduv JSON-rida väljadega `letter`,
+`session:"post-office"`, `seq`, `atom_sent_ms` ning stabiilne `job_id`.
+`pick_place` real on selle asemel `job:"pick_place"` ja
+`routine:"source_to_finished"`; koordinaate ega actuator-käske ei saadeta.
 Käesolev alus ootab station'ilt terminalvastust:
 
 ```json

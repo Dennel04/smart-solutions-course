@@ -79,7 +79,8 @@ füüsilisi seadmeid kasutavat katset.
 ### Postkontori server
 
 - Valmis on Flaski ja SQLite'i kasutav postkontor, kus autentitud kasutaja saab
-  luua lubatud kõrgtaseme `letter` töid.
+  luua lubatud kõrgtaseme `letter` ja `pick_place` töid. `pick_place` lubab
+  ainult eelmääratud routine'i `source_to_finished`.
 - Atomil on kasutajaliidesest eraldatud bearer-võtmega polling- ja tulemuse API.
 - Server rakendab TTL-i ja aegumist, lubatud tööde whitelist'i, atomaarset
   claim'i ning idempotentset tulemust. Tundmatuid töid, otseliikumiskäske ja
@@ -100,8 +101,9 @@ füüsilisi seadmeid kasutavat katset.
 - Aktiivse töö ID ja saatmata terminaltulemus säilitatakse püsivalt. Ühe
   aktiivse töö piir, duplikaadikaitse ja restardi järel ebaselge claim'i
   fail-safe käitumine väldivad automaatset kordustäitmist.
-- Atom → station piir saadab Lab 1 väljadega ühilduva serial-JSON sõnumi, millele
-  lisatakse stabiilne `job_id`. Native-testid ja PlatformIO build läbivad.
+- Atom → station piir säilitab `letter` jaoks Lab 1 väljadega ühilduva
+  serial-JSON sõnumi ning saadab `pick_place` jaoks ainult high-level routine'i;
+  mõlemal on stabiilne `job_id`. Native-testid ja PlatformIO build läbivad.
 - Lab 2 püsivara laaditi 12.10.26 füüsilisse AtomS3R-i pordi
   `/dev/cu.usbmodem101` kaudu. Esimesel katsel leitud NVS `activeId NOT_FOUND`
   kordus ja development-serveri loopback-bind parandati ning kontrolliti sama
@@ -111,13 +113,15 @@ füüsilisi seadmeid kasutavat katset.
 
 ### Station-adapter
 
-- Valmis on station'i Atom-job adapter, mis säilitab Lab 1 väljad
-  `letter/session/seq/atom_sent_ms` ja lisab serveri stabiilse `job_id`.
+- Valmis on station'i Atom-job adapter, mis eristab `letter` ja `pick_place`
+  töid, säilitab `session/seq/atom_sent_ms` väljad ning serveri stabiilse
+  `job_id`.
 - SQLite'i idempotentsus, `session + seq` duplikaadikaitse ja restardi
   `ambiguous_after_restart` fail-safe väldivad ebaselge töö automaatset
   korduskäivitust.
-- USB serial transport on eraldi abstraktsioon. Mock executor võimaldab
-  software-only kontrolli; vaikimisi on täitmine keelatud.
+- USB serial transport on eraldi abstraktsioon. Eraldi letter- ja pick-place
+  mock executor'id võimaldavad software-only kontrolli; vaikimisi on täitmine
+  keelatud.
 - Adapter ei loo MG400 ühendust ega impordi robotiklienti. Kohalik software E2E
   läbib kogu server → mock Atom → station → server tulemuse ahela.
 - Päris MG400 täitmine on TODO ja vajab eraldi lokaalset ohutuskontrolli.
@@ -180,6 +184,12 @@ päris kaamerate tööd, internetist kättesaadavat HTTPS-i, SSH hardening'ut eg
 tulemüüri olekut. Hilisem osaline AtomS3R upload/boot-katse on eraldi kirjas
 12.10.26 arenduspäeviku riistvarakande juures; XIAO upload on endiselt TODO.
 
+13.10.26 teise high-level töö software-only kontrollis läbis Python suite
+`90` testi ning Atomi native suite `23/23` testi. `python -m src.e2e_demo`
+lõpetas nii `letter` kui ka `pick_place` ahela olekuga `done`, säilitas mõlemas
+sama `job_id` ja raporteeris `hardware_used=false`. Need ei ole MG400 ega pumba
+füüsilised katsetulemused.
+
 ## Kontrollnimekiri
 
 Kõik punktid on alguses lahti. Märge tehakse alles pärast kontrollitavat
@@ -190,11 +200,11 @@ tulemust; füüsilise katse juurde lisatakse kuupäev, meetod ja failiviide.
 - [x] Postkontori kasutajaleht ja Atomi API on loogiliselt eraldatud.
 - [x] Kohalik kasutajaleht nõuab autentimist; production-siht on endiselt HTTPS.
 - [x] Postkontor võtab vastu ainult whitelist'is olevaid kõrgtaseme töid.
-- [x] `letter` on ainus praegu lubatud ja tarkvaraliselt teostatud kõrgtaseme
-  robotitöö.
-- [ ] Teine lubatud kõrgtaseme töö on veel realiseerimata / valimata.
-  `pick_place` on ainult tuleviku placeholder ja server lükkab selle praegu
-  tagasi; seetõttu ei ole ametlik „vähemalt kaks eri tööd“ kriteerium täidetud.
+- [x] `letter` on lubatud ja tarkvaraliselt teostatud kõrgtaseme robotitöö.
+- [x] `pick_place` on teine lubatud high-level töö software-only ahelas;
+  ainus routine on `source_to_finished` ning internetist antud koordinaadid,
+  kiirus, pumba-/DO-käsud ja trajektoorid lükatakse tagasi. Päris MG400/pumba
+  kontroll on endiselt lahti, seega ametlik riistvarakriteerium ei ole täidetud.
 - [x] Töödel on TTL; aegunud töö märgitakse `expired` ja seda ei väljastata.
 - [x] Vigane või tundmatu töö lükatakse tagasi ega jõua täitmispiirini.
 - [x] Stabiilne töö ID, atomaarne claim ja idempotentne tulemus välistavad
@@ -214,8 +224,9 @@ tulemust; füüsilise katse juurde lisatakse kuupäev, meetod ja failiviide.
   `docs/atom_page.md`.
 - [x] AtomS3 PlatformIO projekt build'ib ning hostitestid katavad töö- ja
   konfiguratsioonivalideerimist ning ühe aktiivse claim'i reeglit.
-- [x] Atom pollib millis-ajastusega, lubab ainult `letter` töö ning salvestab
-  aktiivse ID ja saatmata terminaltulemuse püsivalt enne retry'd.
+- [x] Atom pollib millis-ajastusega, valideerib `letter` ja eelmääratud
+  `pick_place` töö ning salvestab aktiivse ID ja saatmata terminaltulemuse
+  püsivalt enne retry'd.
 - [x] AtomS3 minimaalne seadeteleht salvestab serveri URL-i, bearer-võtme ja
   polling-intervalli; saladust ei tagastata ega logita.
 - [x] Lab 2 station-adapter valideerib firmware serial-JSON lepingu ja kasutab
@@ -390,11 +401,12 @@ simulatsiooniks kasuta `--outcome refused`.
 
 ## Kohalik station-adapter
 
-Kood asub kaustas `src/`. See kasutab Lab 1 USB sõnumi välju
-`letter/session/seq/atom_sent_ms`, lisab kohustusliku serveri `job_id` ning
-tagastab firmware'ile `post_office_result` JSON rea. Adapter ei kopeeri Lab 1
-Flask UI-d ega motion-koodi: mock executor kontrollib toetatud tähte otse Lab 1
-kanonilisest `config/letters.json` failist.
+Kood asub kaustas `src/`. `letter` säilitab Lab 1 USB sõnumi väljad;
+`pick_place` saadab ainult `job`, `routine`, `session`, `seq`, `atom_sent_ms`
+ja `job_id`. Adapter tagastab firmware'ile `post_office_result` JSON rea.
+Adapter ei kopeeri Lab 1 Flask UI-d ega motion-koodi: letter mock kontrollib
+toetatud tähte Lab 1 `config/letters.json` failist ning pick-place mock ei ava
+võrku ega kasuta MG400 või pumpa.
 
 Reaalset porti kasutava software-only mock adapteri näidiskäsk:
 
@@ -407,9 +419,9 @@ kasutatakse ainult mock executor'it; MG400 klienti ei impordita ega ühendata.
 Serial-porti tohib omada ainult üks programm. Porti kadumisel proovib adapter
 uuesti ühenduda, vigane üksikrida ei lõpeta protsessi.
 
-Täielik lokaalne tarkvarademo loob ajutise Flask/SQLite postkontori, pollib
-töö mock Atomina, saadab firmware-formaadis rea station-adapterile ning
-tagastab sama ID terminaltulemuse serverisse:
+Täielik lokaalne tarkvarademo loob ajutise Flask/SQLite postkontori, läbib
+eraldi `letter` ja `pick_place` töö mock Atomina, saadab firmware-formaadis
+read station-adapterile ning tagastab mõlema sama ID terminaltulemuse serverisse:
 
 ```bash
 python -m src.e2e_demo

@@ -28,14 +28,37 @@ def test_invalid_job_type_is_rejected(client, user_headers):
     assert response.get_json()["error"]["code"] == "unknown_job"
 
 
-def test_future_pick_place_is_not_enabled(client, user_headers):
-    response = client.post(
-        "/api/jobs",
-        headers=user_headers,
-        json={"job": "pick_place", "arg": {"source": "A", "target": "B"}},
-    )
+def test_valid_pick_place_job_creation(create_pick_place):
+    response = create_pick_place()
+    assert response.status_code == 201
+    assert response.get_json()["arg"] == {"routine": "source_to_finished"}
+
+
+@pytest.mark.parametrize("routine", ["", "other", None])
+def test_unknown_or_missing_pick_place_routine_is_rejected(create_pick_place, routine):
+    response = create_pick_place(routine)
     assert response.status_code == 400
-    assert response.get_json()["error"]["code"] == "job_not_enabled"
+    assert response.get_json()["error"]["code"] == "invalid_routine"
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("x", 100),
+        ("y", 20),
+        ("z", -80),
+        ("r", 0),
+        ("speed", 20),
+        ("pump", "on"),
+        ("do", 1),
+        ("repetitions", 2),
+        ("trajectory", [[1, 2, 3]]),
+    ],
+)
+def test_pick_place_direct_control_fields_are_rejected(create_pick_place, field, value):
+    response = create_pick_place(extra_arg={field: value})
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "unexpected_field"
 
 
 def test_invalid_letter_is_rejected(create_letter):
@@ -55,6 +78,16 @@ def test_expired_job_is_never_delivered(
     stored = client.get("/api/jobs/" + created["id"], headers=user_headers).get_json()
     assert stored["status"] == "expired"
     assert stored["reason"] == "ttl_expired"
+
+
+def test_expired_pick_place_is_never_delivered(
+    create_pick_place, clock, client, atom_headers, valid_poll, user_headers
+):
+    created = create_pick_place(ttl_seconds=1).get_json()
+    clock.advance(2)
+    assert claim(client, atom_headers, valid_poll).get_json()["job"] is None
+    stored = client.get("/api/jobs/" + created["id"], headers=user_headers).get_json()
+    assert stored["status"] == "expired"
 
 
 def test_atom_key_is_required(client, valid_poll):
@@ -216,13 +249,29 @@ def test_user_page_creates_and_lists_letter_job(client, user_headers):
     created = client.post(
         "/jobs",
         headers=user_headers,
-        data={"letter": "B", "ttl_seconds": "60"},
+        data={"job": "letter", "letter": "B", "ttl_seconds": "60"},
     )
     assert created.status_code == 302
     page = client.get("/", headers=user_headers)
     assert page.status_code == 200
     assert b"queued" in page.data
     assert b"Lab 2 postkontor" in page.data
+
+
+def test_user_page_creates_predefined_pick_place_job(client, user_headers):
+    created = client.post(
+        "/jobs",
+        headers=user_headers,
+        data={
+            "job": "pick_place",
+            "routine": "source_to_finished",
+            "ttl_seconds": "60",
+        },
+    )
+    assert created.status_code == 302
+    page = client.get("/", headers=user_headers)
+    assert b"pick_place" in page.data
+    assert b"source_to_finished" in page.data
 
 
 def test_startup_refuses_missing_required_secrets(tmp_path, monkeypatch):
