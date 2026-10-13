@@ -103,6 +103,13 @@ Need route'id kuuluvad eraldi `src.camera_server` protsessile, mitte avalikku
 `server.app` postkontorisse. Päris laborivõrgus tuleb station'i lehele lisada
 sama lokaalne autentimispiir nagu station'i juhtimislehel; selle kontroll on TODO.
 
+Praegu autentimist camera route'idel ei ole ja vaikebind `127.0.0.1` hoiab need
+ainult station-arvutis. Kui päris laborikatse nõuab hiljem station'i lehe
+sidumist LAN-aadressile, otsustatakse enne seda eraldi, kas lisada lokaalne
+autentimispiir. See ei ole praeguse tarkvaraaluse valmimise väide ega ametliku
+Lab 2 eraldi nõue. Ka XIAO `/status` ja `/snapshot.jpg` on kohaliku Wi-Fi-võrgu
+endpoint'id; neid ei port-forward'ita ega lisata Caddy konfiguratsiooni.
+
 ## Tarkvaraloendurid
 
 Iga allikas loendab:
@@ -147,6 +154,43 @@ tehakse mitu kordust ning dokumenteeritakse klientide arv ja kaameraseaded.
 Kaamerakood ei lisa job/executor rajale callback'e; võrdlus mõõdab eraldi
 protsesside tegelikku koormusmõju. Tulemused lähevad pärast päriskatset faili
 `control_latency_cameras.csv`.
+
+## Labori kontrolliplaan
+
+Järgmised sammud tehakse ainult päris riistvaraga. Mock-kaadreid ega software
+loendureid ei kanta mõõtmistulemustena CSV-failidesse.
+
+1. Kontrollida laboris USB UHD-kaamera ja XIAO ESP32S3 Sense olemasolu ning
+   täpsed seadmerevisionid. Kontrollida eraldi USB-pikendust, XIAO toidet ja
+   station'i vabu USB-/võrguühendusi.
+2. Paigaldada 3D Printing Lab 2 kinnitused: laua kaamera robotist kõrgemale ja
+   tööriistakaamera iminapa kõrvale. Enne kinnitamist kontrollida kaabli
+   tegelik marsruut, liikumisvaru ja strain relief.
+3. Kontrollida laua kaamera vaatevälja: kogu laud, Gridfinity ruudustik servast
+   servani, robot ja hoidikud peavad olema samas kaadris; ruutude nimed peavad
+   valitud kuvamisresolutsioonis loetavaks jääma.
+4. Laadida olemasolev PlatformIO firmware päris XIAO-sse ja kontrollida
+   `/status`, tuvastatud sensorit, PSRAM-i, Wi-Fi reconnect'i ning
+   `/snapshot.jpg` JPEG-vastust. Salajast `wifi_private.h` faili reposse ei
+   lisata ja XIAO endpoint'i internetti ei avaldata.
+5. Kontrollida tööriistakaamera vaatevälja: otsik ja detail otse selle all
+   peavad olema nähtavad kogu vajaliku robotiliikumise jooksul.
+6. Käivitada mõlemad pärisallikad station'i lehel ja kontrollida, et Table
+   camera ning Tool camera on samaaegselt eristatavad. Kui leht peab olema
+   avatav teistest LAN-i seadmetest, otsustada ja dokumenteerida enne bind'i
+   muutmist kohalik ligipääsupiir.
+7. Mõõta kummagi kaamera kohta eraldi capture- ja kuvamisresolutsioon,
+   sündmusest kuvatud kaadrini viide, tegelik FPS ning ribalaius. Fikseerida
+   katse aeg, trial, klientide arv, seaded ja meetod failis
+   `camera_metrics.csv`.
+8. Korrata sama valideeritud robotitöö juhtimislatentsuse katset võrreldavates
+   tingimustes: 0 aktiivset kaamerat, ainult 1 aktiivne kaamera ja mõlemad ehk
+   2 aktiivset kaamerat. Kanda iga trial faili
+   `control_latency_cameras.csv`; kokkuvõte ja valitud kaameraseaded tehakse
+   alles pärisandmete põhjal.
+9. Kontrollida lõpuks, et camera route'e ei ole postkontori Caddy
+   konfiguratsioonis, droplet ei proxy pilte ning pildid jäävad ainult
+   ettenähtud station'i/labori kohaliku võrgu piirile.
 
 ## Riistvara TODO
 

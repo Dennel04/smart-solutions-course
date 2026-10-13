@@ -1,1 +1,1 @@
-camera,resolution,measured_latency_ms,fps,bandwidth_mbps,method,note
+measured_at,camera,source,trial,capture_resolution,display_resolution,client_count,target_fps,measured_latency_ms,measured_fps,bandwidth_mbps,method,note
