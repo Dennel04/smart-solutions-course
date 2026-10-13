@@ -146,3 +146,13 @@ def test_deployment_scripts_avoid_destructive_or_lockout_actions():
     assert "PasswordAuthentication no" not in scripts
     assert "ufw enable" not in scripts
     assert "pio run -t upload" not in scripts
+
+
+def test_verify_checks_production_file_and_proxy_boundaries():
+    verify = (DEPLOY / "verify.sh").read_text()
+    assert "stat -c '%U:%G'" in verify
+    assert "root:root" in verify
+    assert "EXPECTED_DB_PATH=/var/lib/smart-solutions-lab2/post-office.sqlite3" in verify
+    assert 'caddy validate --config "$CADDY_FILE"' in verify
+    assert "127\\.0\\.0\\.1:5001" in verify
+    assert "Caddy has no additional public reverse_proxy target" in verify

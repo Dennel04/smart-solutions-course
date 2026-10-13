@@ -61,10 +61,75 @@ Pakette ja Caddyt paigaldatakse nende ametlike Ubuntu juhiste järgi päris
 hostil. Seda pole siin automatiseeritud, sest hosti versioon ja õppejõu
 haldusreeglid tuleb enne teada.
 
+## Blokeeritud kuni õppejõud annab ligipääsu
+
+Järgmised väärtused ei ole repos teada ja neid ei tohi oletada:
+
+- `<SSH_USER>`: õppejõu antud SSH kasutajanimi;
+- `<DROPLET_IP>`: dropleti avalik aadress;
+- `<HOSTNAME>`: õppejõu antud hostinimi/link;
+- kinnitus, et selle arvuti avalik SSH võti on dropletisse paigaldatud;
+- kinnitus, et `<HOSTNAME>` DNS-kirje viitab `<DROPLET_IP>`-le.
+
+Repo olemasolevates konfiguratsioonimallides tähistab `<TEAM_HOSTNAME>` sama
+õppejõult saadud väärtust, mida selle runbook'i käskudes tähistab `<HOSTNAME>`.
+
+Kuni need viis punkti pole kinnitatud, ei saa tõendada SSH ligipääsu,
+password-login'i olekut, UFW live-reegleid, avalikku TLS-sertifikaati,
+mobiilse andmeside testi ega Atomi production HTTPS pollingut.
+
+## Kohalik eelkontroll
+
+Privaatvõtit ei avata ega kopeerita. Kontrolli ainult avaliku võtme
+fingerprint'i ja privaatse vaste olemasolu:
+
+```bash
+ssh-keygen -lf ~/.ssh/id_ed25519.pub -E sha256
+test -f ~/.ssh/id_ed25519 && echo "private counterpart exists"
+git -C /path/to/smart-solutions-course status --short --branch
+git -C /path/to/smart-solutions-course diff --check
+```
+
+Saada õppejõule ainult `id_ed25519.pub` sisu. Kui ligipääs on kinnitatud,
+kasuta esimeseks ühenduseks täpselt saadud placeholder'ite väärtusi:
+
+```bash
+ssh -i ~/.ssh/id_ed25519 <SSH_USER>@<DROPLET_IP>
+```
+
+Hoia esimene sessioon avatuna kuni võtmega teine sessioon, SSH seadistus ja
+tulemüür on eraldi kontrollitud.
+
 ## Esmane paigaldus
 
 Allolevad käsud on hostil täitmiseks pärast eeltingimuste kontrolli. Asenda
-ainult märgitud placeholder'id päris hosti väärtustega.
+ainult märgitud placeholder'id päris hosti väärtustega. Esmalt tuvasta distro
+ja paigalda Ubuntu uuendused ning vajalikud paketid; vaata upgrade'i nimekiri
+enne kinnitamist üle:
+
+```bash
+cat /etc/os-release
+sudo apt update
+apt list --upgradable
+sudo apt upgrade
+sudo apt install -y git python3 python3-venv curl openssl sqlite3 ufw \
+  debian-keyring debian-archive-keyring apt-transport-https gnupg
+```
+
+Paigalda Caddy tema ametliku Debian/Ubuntu pakivaramu kaudu, mitte tundmatust
+binaarist. Enne käivitamist kontrolli allalaaditud võtme ja repo URL-i Caddy
+ametliku paigaldusjuhendi vastu:
+
+```bash
+curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/gpg.key \
+  | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt \
+  | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+sudo chmod o+r /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+sudo chmod o+r /etc/apt/sources.list.d/caddy-stable.list
+sudo apt update
+sudo apt install -y caddy
+```
 
 1. Tee rakenduse kataloog ja klooni repo:
 
@@ -98,6 +163,21 @@ ainult märgitud placeholder'id päris hosti väärtustega.
    `POST_OFFICE_DB` peab jääma välisele püsirajale
    `/var/lib/smart-solutions-lab2/post-office.sqlite3`. Saladusi ei lisata
    Git-i, logisse, issue'sse ega ekraanipilti.
+
+   Genereeri kaks eri saladust käsuga, mille argumendis saladust ennast ei ole;
+   salvesta väljund kohe paroolihaldurisse ja puhasta terminali kuva. Käivita
+   käsk eraldi veebiparooli ja Atomi bearer-võtme jaoks:
+
+   ```bash
+   python3 -c 'import secrets; print(secrets.token_urlsafe(32))'
+   ```
+
+   `env` faili võtmed on täpselt `POST_OFFICE_USER`,
+   `POST_OFFICE_PASSWORD`, `ATOM_API_KEY`, `POST_OFFICE_DB`,
+   `JOB_TTL_SECONDS`, `JOB_MAX_TTL_SECONDS`, `ATOM_STALE_SECONDS`,
+   `ATOM_OFFLINE_SECONDS` ja `PUBLIC_HOSTNAME`. Sama uus `ATOM_API_KEY` läheb
+   hiljem Atomi lokaalse seadistuslehe kaudu Atomisse; seda ei panda käsurea
+   argumenti ega Git-i.
 
 4. Kopeeri Caddy näidis, asenda `<TEAM_HOSTNAME>` ja valideeri enne reload'i:
 
@@ -138,6 +218,48 @@ järjekorras. Neid samme ei tee ükski repo skript.
 8. Ava veel üks uus võtmega sessioon ja kontrolli seda.
 9. Alles pärast õnnestunud kontrolli sulge esialgne sessioon.
 
+Teises lokaalses terminalis kontrolli võtmega login'it nii, et klient ei paku
+parooli autentimist:
+
+```bash
+ssh -o PasswordAuthentication=no -i ~/.ssh/id_ed25519 \
+  <SSH_USER>@<DROPLET_IP>
+```
+
+Serveris vaata enne muudatust tegelik effective config ja olemasolevad
+drop-in failid üle:
+
+```bash
+sudo sshd -T | grep -E '^(passwordauthentication|kbdinteractiveauthentication|pubkeyauthentication) '
+sudo find /etc/ssh/sshd_config.d -maxdepth 1 -type f -print
+systemctl list-unit-files --type=service | grep -E '^ssh(d)?\.service'
+```
+
+Kui password-login ei ole juba keelatud ja hosti omanik lubab muudatust, loo
+eraldi drop-in; ära kirjuta distro põhifaili pimesi üle:
+
+```bash
+sudo install -d -o root -g root -m 755 /etc/ssh/sshd_config.d
+printf '%s\n' \
+  'PasswordAuthentication no' \
+  'KbdInteractiveAuthentication no' \
+  'PubkeyAuthentication yes' \
+  | sudo tee /etc/ssh/sshd_config.d/99-smart-solutions-key-only.conf >/dev/null
+sudo chmod 644 /etc/ssh/sshd_config.d/99-smart-solutions-key-only.conf
+sudo sshd -t
+sudo sshd -T | grep -E '^(passwordauthentication|kbdinteractiveauthentication|pubkeyauthentication) '
+```
+
+Leia eelmise käsuga tegelik unit (`ssh.service` või `sshd.service`) ja tee
+ainult reload, näiteks Ubuntu tavapärase `ssh.service` korral:
+
+```bash
+sudo systemctl reload ssh.service
+```
+
+Seejärel ava kolmas uus võtmega sessioon. Kui `sshd -t`, reload või uus login
+ebaõnnestub, jäta algne sessioon avatuks ja paranda põhjus enne jätkamist.
+
 Root-login, kasutajate loomine ja õppejõu ligipääs kooskõlastatakse hosti
 omanikuga; siin ei eeldada nende poliitikat.
 
@@ -156,6 +278,7 @@ sudo ufw allow 443/tcp
 sudo ufw status verbose
 sudo ufw enable
 sudo ufw status numbered
+sudo ss -lntup
 ```
 
 Kui host kasutab mittevaikimisi SSH porti, lisa enne tulemüüri aktiveerimist
@@ -216,13 +339,98 @@ sudo journalctl -u caddy --since today
 ```
 
 `verify.sh` kontrollib env-faili õigusi ja placeholder'e, DB kataloogi
-kirjutatavust service user'ina, systemd/Caddy olekut, localhost health'i,
-port 5001 loopback-bind'i ning seadistatud hostinime HTTPS health'i. HTTPS curl
-ei kasuta `-k` lippu, seega kontrollib ka sertifikaadi usaldatavust. Mitte-Linux
-arendusmasinas annab skript teadlikult `SKIP`, mitte väljamõeldud PASS-i.
+omanikku, DB rada ja kirjutatavust service user'ina, systemd/Caddy olekut,
+Caddy konfiguratsiooni, localhost health'i, port 5001 loopback-bind'i ning
+seadistatud hostinime HTTPS health'i. HTTPS curl ei kasuta `-k` lippu, seega
+kontrollib ka sertifikaadi usaldatavust. Mitte-Linux arendusmasinas annab
+skript teadlikult `SKIP`, mitte väljamõeldud PASS-i.
 
 Logides võivad olla töö ID, olek, ajatempel ja veakood. Paroole, bearer-võtit,
 Authorization päist, SSH privaatvõtit või kogu env-faili ei tohi logida.
+
+### DNS, HTTPS ja välise kliendi kontroll
+
+Enne Caddy reload'i peab õppejõu antud nimi viitama kinnitatud dropletile:
+
+```bash
+getent ahostsv4 <HOSTNAME>
+getent ahostsv6 <HOSTNAME>
+sudo caddy validate --config /etc/caddy/Caddyfile
+sudo systemctl reload caddy
+curl --fail --show-error --silent https://<HOSTNAME>/health
+```
+
+AAAA kirje tohib olemas olla ainult siis, kui dropleti IPv6 ja UFW on samuti
+teadlikult seadistatud. Caddy backend jääb `127.0.0.1:5001`; konfiguratsiooni
+ei lisata camera, station'i ega MG400 route'e.
+
+Teisest arvutist kontrolli HTTPS health'i ja kasutajalehte. `curl -u` saab
+kasutajanime järel parooli interaktiivselt küsida, nii et parooli ei panda
+shelli ajalukku:
+
+```bash
+curl --fail --show-error --silent https://<HOSTNAME>/health
+curl --fail --show-error --silent --user '<WEB_USERNAME>' \
+  https://<HOSTNAME>/api/status
+```
+
+Telefonis lülita Wi-Fi välja, ava `https://<HOSTNAME>`, kontrolli brauseri TLS
+olekut ja logi sisse. Töö saada ainult siis, kui labori kohalik ohutuskontekst
+ja Atom/robot seda päriselt lubavad.
+
+## Atomi production-serverile ümberlülitamine
+
+Alles pärast avaliku HTTPS health'i õnnestumist kontrolli päris hosti
+sertifikaadiahelat:
+
+```bash
+openssl s_client -connect <HOSTNAME>:443 -servername <HOSTNAME> \
+  -verify_return_error </dev/null
+```
+
+Võta usaldatud root CA PEM sertifikaadi väljastaja ametlikust allikast ja
+pane see lokaalsesse ignoreeritud faili
+`firmware/include/post_office_ca_private.h` väärtusena
+`POST_OFFICE_ROOT_CA`. Ära vali CA-d oletuse järgi ega kopeeri serveri
+leaf-sertifikaati root CA asemele. Seejärel tee PlatformIO build ja upload
+eraldi kontrollitud hardware-sammuna. Ilma CA-ta peatab firmware HTTPS
+pollingu põhjusega `https_ca_not_configured`.
+
+Pärast CA-ga firmware upload'i:
+
+1. Ava Atomi lokaalne seadistusleht.
+2. Sea serveri URL-iks `https://<HOSTNAME>`.
+3. Sisesta sama uus `ATOM_API_KEY`, mis on production env-failis.
+4. Sea teadlikult valitud polling interval ja käivita üks serveri test.
+5. Kontrolli dropletis HTTP 200 pollingut ning lehel `last_seen` uuenemist.
+6. Tee reboot ja kinnita seadete püsimine enne katsete jätkamist.
+
+Production firmware kontrollib TLS sertifikaati CA trust store'i või
+konfigureeritud CA kaudu; production päringute jaoks ei kasutata
+`setInsecure()` käitumist.
+
+## Päris acceptance-testide järjekord
+
+Need on katsejuhised, mitte tehtud tulemused. Iga tulemus märgitakse alles
+pärast päris dropleti ja laboririistvaraga katset:
+
+1. Ava leht telefonist mobiilse andmesidega (Wi-Fi väljas) ja kinnita HTTPS.
+2. Kinnita Atomi authenticated polling ning `last_seen` uuenemine.
+3. Käivita `letter` ainult kohaliku enable'i ja ohutusvaatlejaga.
+4. Käivita `pick_place` alles pärast local MG400/pumba implementatsiooni,
+   õpetatud positsioonide kontrolli ja 20% esimese jooksu nõude täitmist.
+5. Jäta Atom väljalülitatuna töö, oota üle TTL-i ning kinnita, et see aegub ja
+   ei põhjusta liikumist.
+6. Saada whitelist'i mittekuuluv töö ja kinnita fail-closed refusal.
+7. Lülita Atom välja ning mõõda, millal leht muutub stale/offline olekusse.
+8. Katkesta ühendus poole lubatud töö ajal; töö peab lokaalselt lõppema ja
+   terminaltulemus pärast ühenduse taastumist idempotentselt kohale jõudma.
+9. Tee 30 latency katset polling interval A-ga ja 30 interval B-ga, kasutaja
+   vajutusest roboti esimese liigutuseni.
+10. Täida olemasolevad `docs/latency_poll_fast.csv` ja
+    `docs/latency_poll_slow.csv`; ära loo oletuslikke ridu ega dubleeri
+    mõõtmistabelit. Arvuta kummagi intervalli keskmine ja maksimum alles
+    tegelikest mõõtmistest.
 
 ## Päris dropleti päeva TODO
 

@@ -4,7 +4,9 @@ set -eu
 SERVICE=smart-solutions-lab2
 SERVICE_USER=smart-solutions-lab2
 ENV_FILE=${ENV_FILE:-/etc/smart-solutions-lab2/env}
+CADDY_FILE=${CADDY_FILE:-/etc/caddy/Caddyfile}
 INTERNAL_URL=http://127.0.0.1:5001/health
+EXPECTED_DB_PATH=/var/lib/smart-solutions-lab2/post-office.sqlite3
 FAILURES=0
 
 pass() { echo "PASS: $*"; }
@@ -22,6 +24,9 @@ else
     MODE=$(stat -c '%a' "$ENV_FILE")
     [ "$MODE" = "600" ] && pass "environment file mode is 600" || \
         fail "environment file mode is $MODE, expected 600"
+    OWNER=$(stat -c '%U:%G' "$ENV_FILE")
+    [ "$OWNER" = "root:root" ] && pass "environment file owner is root:root" || \
+        fail "environment file owner is $OWNER, expected root:root"
     for key in POST_OFFICE_USER POST_OFFICE_PASSWORD ATOM_API_KEY \
         POST_OFFICE_DB PUBLIC_HOSTNAME; do
         grep -q "^$key=..*" "$ENV_FILE" || fail "missing required setting: $key"
@@ -31,12 +36,19 @@ else
     fi
 
     DB_PATH=$(sed -n 's/^POST_OFFICE_DB=//p' "$ENV_FILE" | tail -n 1)
-    DB_DIR=$(dirname "$DB_PATH")
-    if id "$SERVICE_USER" >/dev/null 2>&1 && \
-        runuser -u "$SERVICE_USER" -- test -w "$DB_DIR"; then
-        pass "database directory is writable by the service user"
+    if [ "$DB_PATH" = "$EXPECTED_DB_PATH" ]; then
+        pass "database uses the expected persistent path"
     else
-        fail "database directory is not writable by the service user"
+        fail "database path is not the expected persistent path"
+    fi
+    if [ -n "$DB_PATH" ]; then
+        DB_DIR=$(dirname "$DB_PATH")
+        if id "$SERVICE_USER" >/dev/null 2>&1 && \
+            runuser -u "$SERVICE_USER" -- test -w "$DB_DIR"; then
+            pass "database directory is writable by the service user"
+        else
+            fail "database directory is not writable by the service user"
+        fi
     fi
 fi
 
@@ -69,6 +81,35 @@ if systemctl is-active --quiet caddy; then
     pass "Caddy service is active"
 else
     fail "Caddy service is not active"
+fi
+
+if [ ! -f "$CADDY_FILE" ]; then
+    fail "missing Caddy configuration: $CADDY_FILE"
+elif ! command -v caddy >/dev/null 2>&1; then
+    fail "caddy command is unavailable; configuration was not validated"
+elif caddy validate --config "$CADDY_FILE" >/dev/null 2>&1; then
+    pass "Caddy configuration validates"
+else
+    fail "Caddy configuration validation failed"
+fi
+
+if [ -f "$CADDY_FILE" ] && grep -Eq \
+    '^[[:space:]]*reverse_proxy[[:space:]]+127\.0\.0\.1:5001[[:space:]]*$' \
+    "$CADDY_FILE"; then
+    pass "Caddy proxies to the loopback post-office backend"
+else
+    fail "Caddy loopback post-office reverse_proxy was not found"
+fi
+
+if [ -f "$CADDY_FILE" ]; then
+    UNEXPECTED_PROXIES=$(grep -E '^[[:space:]]*reverse_proxy[[:space:]]+' \
+        "$CADDY_FILE" | grep -Ev \
+        '^[[:space:]]*reverse_proxy[[:space:]]+127\.0\.0\.1:5001[[:space:]]*$' || true)
+    if [ -z "$UNEXPECTED_PROXIES" ]; then
+        pass "Caddy has no additional public reverse_proxy target"
+    else
+        fail "Caddy contains an unexpected reverse_proxy target"
+    fi
 fi
 
 if [ -f "$ENV_FILE" ]; then
