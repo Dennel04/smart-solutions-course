@@ -28,6 +28,37 @@ Arduino IDE ei ole selle repo põhitöövoog. `platformio.ini`, lähtekood ja
 sõltuvused peavad jääma reprodutseeritavaks. Kui XIAO ESP32S3 Sense püsivara
 lisatakse siia reposse, tehakse see eraldi PlatformIO projektina.
 
+## Projekti püsivara taastamine pärast UIFlow2
+
+13.10.26 ekraanikontrolli järel on füüsilises AtomS3R-is
+`UIFlow2.0 AtomS3R v2.5.3`. Projekti polling, station bridge ja pressure page
+pole selle püsivaraga saadaval. Vaata
+[ekraani diagnostikat](../docs/atom_display_diagnostic.md).
+
+Taasta Lab 2 projekt PlatformIO kaudu repo juurkaustast:
+
+```bash
+cd smart-solutions/lab2/firmware
+pio device list
+pio run -e atoms3r
+pio run -e atoms3r -t upload --upload-port <ACTUAL_PORT>
+```
+
+`<ACTUAL_PORT>` tuvastatakse vahetult enne laadimist; varasem
+`/dev/cu.usbmodem101` ei ole püsiv aadress. Eraldi flash/NVS erase'i ega
+filesystem upload'i ei ole taastamiseks ette nähtud.
+
+Pärast upload'i kontrolli serial startup'i ja ligipääsu setup-AP või
+salvestatud Wi-Fi kaudu. Kontrolli serveri URL-i, Wi-Fi seadeid ja Atomi
+võtit: nende säilimist pärast UIFlow2 ei saa eeldada. Paroole ega API-võtmeid
+ei kirjutata Git'i või diagnostikalogi. Käivita kohalik postkontori test,
+kontrolli autentitud pollingut ja `last_seen` uuenemist ning vajadusel korda
+Wi-Fi reconnect-katset.
+
+Praegune pressure-extension püsivara ei ole veel füüsiliselt kontrollitud.
+Selle upload, päris sensor/op-amp ahel, Andmehõive Lab 2 koefitsiendid,
+rõhukalibratsiooni reboot-püsivus ja pressure test button jäävad TODO-ks.
+
 ## Moodulid ja vastutus
 
 - `src/main.cpp` — M5Unified, Wi-Fi/setup-AP, minimaalne seadete/testide

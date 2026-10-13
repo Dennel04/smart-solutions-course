@@ -8,6 +8,44 @@
 
 **Välja antud:** 07.10.26 | **Tellimise kuupäev:** 16.10.26 | **Esimene kaitsmine:** 27.10.26, veebis
 
+## Praegune seis — 13.10.26
+
+**Tarkvara:** valmis on Flask/SQLite postkontor koos autentimise, TTL-i,
+järjekorra, `last_seen` ja tulemuste käsitlemisega; kõrgtaseme tööd `letter`
+ja `pick_place`; station-adapter (`pick_place` täitmine on ainult mock);
+Atomi väljaminev polling ja Wi-Fi recovery; USB/XIAO kaamerate tarkvaraalus;
+rõhuanduri UI, kalibratsioonimudel ja NVS-seaded; production-paigalduse
+runbook ning software-regressiooni skript `check.sh`.
+
+**Kontrollitud:** Python `91 passed`, Atom native `29/29`, XIAO native `6/6`,
+deployment-testid `11 passed` ning mõlema PlatformIO projekti edukad buildid.
+Mõlema töö software E2E läbib tulemusega `done` ja `hardware_used=false`.
+Varasemad Atomi lokaalse autentitud HTTP pollingu, reboot-püsivuse ning
+Wi-Fi fallback/reconnect/recovery katsed on tehtud päris seadmel. Need
+tarkvarakontrollid ei tõenda kogu Lab 2 riistvaravalmidust.
+
+**Praegune AtomS3R:** seadmes on display-diagnostika järel
+`UIFlow2.0 AtomS3R v2.5.3`, mitte projekti Lab 2 püsivara. Projektipolling,
+station bridge ja pressure page ei tööta praegu sellel seadmel. Ekraan jäi
+mustaks ka Lab 1, sõltumatu M5Unified testi ja UIFlow2 korral; võimalik
+ekraani, taustvalgustuse või ühenduse riistvaraprobleem ei ole lõplikult
+tõestatud. Katsed ja järgmised sammud on kirjas failis
+[`docs/atom_display_diagnostic.md`](docs/atom_display_diagnostic.md).
+Taastamisjuhend: [`firmware/README.md`](firmware/README.md#projekti-püsivara-taastamine-pärast-uiflow2).
+
+**Väline takistus:** dropleti IP, SSH kasutaja, hostinimi ja avaliku SSH võtme
+paigaldamine pole kinnitatud. Nikita saatis 13.10.26 õppejõule oma avaliku
+võtme ning küsis ligipääsuandmeid; vastust pole veel saadud. Production
+deployment on seetõttu `BLOCKED BY EXTERNAL ACCESS`.
+
+**Laboris veel teha:** päris `pick_place` executor ja kalibratsioon, füüsiline
+Lab 2 end-to-end, mõlemad päris kaamerad, sensor/op-amp ahel ja Andmehõive
+Lab 2 rõhukalibratsioon, tegelikud latency/metrics mõõtmised, production
+HTTPS polling, BOM-i ja tellimuse kontroll ning iga liikme isiklik
+ohutuskinnitus. Kontrollida tuleb praegust ja teist teadaolevalt töötavat
+AtomS3R-i ning taastada projektipüsivara. Lõplik tag tehakse alles pärast
+kriteeriumide täitmist.
+
 ## Eesmärk
 
 Labor 2 lisab Labori 1 lokaalsele Atom → jaam → MG400 ahelale internetis
