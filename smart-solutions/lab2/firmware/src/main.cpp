@@ -13,6 +13,8 @@
 #include "post_office_client.h"
 #include "post_office_model.h"
 #include "post_office_settings.h"
+#include "pressure_model.h"
+#include "pressure_settings.h"
 #include "station_bridge.h"
 #include "web_page.h"
 
@@ -20,6 +22,8 @@ namespace {
 
 constexpr uint16_t kDnsPort = 53;
 constexpr char kSetupSsid[] = "Lab2AtomSetup";
+constexpr int kPressureAdcPin = 5;  // AtomS3(R) G5; verify DA2 wiring in lab.
+constexpr int kPressureSampleCount = 8;
 
 WebServer webServer(80);
 DNSServer dnsServer;
@@ -29,6 +33,8 @@ postoffice::PersistentState persistentState;
 postoffice::StationBridge stationBridge;
 postoffice::PostOfficeClient postOfficeClient;
 postoffice::Settings settings;
+pressure::SettingsStore pressureSettingsStore;
+pressure::Calibration pressureCalibration;
 String serialLine;
 bool accessPointActive = false;
 bool wifiRecoveryActive = false;
@@ -220,6 +226,96 @@ void handlePostOfficeTest() {
                  "{\"result\":" + jsonString(result) + "}");
 }
 
+void handlePressureSettingsGet() {
+  pressureCalibration = pressureSettingsStore.load();
+  JsonDocument document;
+  document["calibrated"] = pressureCalibration.calibrated;
+  document["adc_pin"] = "G5";
+  if (pressureCalibration.calibrated) {
+    document["volts_per_count"] = pressureCalibration.voltsPerCount;
+    document["voltage_offset_v"] = pressureCalibration.voltageOffsetV;
+    document["kpa_per_volt"] = pressureCalibration.kpaPerVolt;
+    document["pressure_offset_kpa"] = pressureCalibration.pressureOffsetKpa;
+  } else {
+    document["volts_per_count"] = nullptr;
+    document["voltage_offset_v"] = nullptr;
+    document["kpa_per_volt"] = nullptr;
+    document["pressure_offset_kpa"] = nullptr;
+  }
+  String response;
+  serializeJson(document, response);
+  webServer.send(200, "application/json", response);
+}
+
+void handlePressureSettingsPost() {
+  const String calibratedValue = webServer.arg("pressure_calibrated");
+  if (calibratedValue != "0" && calibratedValue != "1") {
+    webServer.send(400, "application/json",
+                   "{\"error\":\"malformed_pressure_settings\"}");
+    return;
+  }
+  pressure::Calibration candidate;
+  candidate.calibrated = calibratedValue == "1";
+  if (candidate.calibrated) {
+    const pressure::CalibrationResult parsed = pressure::parseCalibration(
+        webServer.arg("volts_per_count").c_str(),
+        webServer.arg("voltage_offset_v").c_str(),
+        webServer.arg("kpa_per_volt").c_str(),
+        webServer.arg("pressure_offset_kpa").c_str(), &candidate);
+    if (!parsed.ok()) {
+      webServer.send(400, "application/json",
+                     "{\"error\":" + jsonString(parsed.reason) + "}");
+      return;
+    }
+  }
+  if (!pressureSettingsStore.save(candidate)) {
+    webServer.send(500, "application/json",
+                   "{\"error\":\"pressure_settings_store_failed\"}");
+    return;
+  }
+  pressureCalibration = candidate;
+  logLine(candidate.calibrated ? "pressure calibration saved"
+                               : "pressure calibration disabled");
+  webServer.send(200, "application/json",
+                 candidate.calibrated
+                     ? "{\"saved\":true,\"calibrated\":true}"
+                     : "{\"saved\":true,\"calibrated\":false}");
+}
+
+int readPressureRawAdc() {
+  uint32_t total = 0;
+  for (int sample = 0; sample < kPressureSampleCount; ++sample) {
+    total += static_cast<uint32_t>(analogRead(kPressureAdcPin));
+  }
+  return static_cast<int>(total / kPressureSampleCount);
+}
+
+void handlePressureTest() {
+  pressureCalibration = pressureSettingsStore.load();
+  const pressure::Reading reading =
+      pressure::convertReading(readPressureRawAdc(), pressureCalibration);
+  JsonDocument document;
+  document["status"] = reading.status;
+  document["sample_count"] = kPressureSampleCount;
+  document["raw_adc"] = reading.rawAdc;
+  document["calibrated"] = pressureCalibration.calibrated;
+  if (reading.voltageAvailable) {
+    document["voltage_v"] = reading.voltageV;
+  } else {
+    document["voltage_v"] = nullptr;
+  }
+  if (reading.pressureAvailable) {
+    document["pressure_kpa"] = reading.pressureKpa;
+  } else {
+    document["pressure_kpa"] = nullptr;
+  }
+  String response;
+  serializeJson(document, response);
+  const bool safeResponse = reading.ok() ||
+                            reading.code == pressure::ReadingCode::NotCalibrated;
+  webServer.send(safeResponse ? 200 : 503, "application/json", response);
+}
+
 void handleState() {
   const postoffice::PendingResult pending = persistentState.pendingResult();
   JsonDocument document;
@@ -229,6 +325,7 @@ void handleState() {
   document["active_job_id"] = persistentState.activeJobId();
   document["pending_result_id"] = pending.present ? pending.jobId : "";
   document["pressure_available"] = false;
+  document["pressure_calibrated"] = pressureCalibration.calibrated;
   document["pressure"] = nullptr;
   String response;
   serializeJson(document, response);
@@ -309,9 +406,14 @@ void setup() {
 
   wifiPreferences.begin("wifi", false);  // compatible with Lab 1 keys
   settingsStore.begin();
+  pressureSettingsStore.begin();
   persistentState.begin();
   stationBridge.begin();
   settings = settingsStore.load();
+  pressureCalibration = pressureSettingsStore.load();
+  pinMode(kPressureAdcPin, INPUT);
+  analogReadResolution(12);
+  analogSetPinAttenuation(kPressureAdcPin, ADC_11db);
   postOfficeClient.begin(deviceId(), persistentState, stationBridge, POST_OFFICE_ROOT_CA);
   postOfficeClient.configure(settings);
 
@@ -324,6 +426,9 @@ void setup() {
   webServer.on("/settings", HTTP_POST, handleSettingsPost);
   webServer.on("/state", HTTP_GET, handleState);
   webServer.on("/test/post-office", HTTP_POST, handlePostOfficeTest);
+  webServer.on("/pressure/settings", HTTP_GET, handlePressureSettingsGet);
+  webServer.on("/pressure/settings", HTTP_POST, handlePressureSettingsPost);
+  webServer.on("/test/pressure", HTTP_POST, handlePressureTest);
   webServer.onNotFound([]() {
     if (accessPointActive) handleRoot();
     else webServer.send(404, "application/json", "{\"error\":\"not_found\"}");
@@ -337,6 +442,6 @@ void setup() {
 void loop() {
   M5.update();
   pollSerialStationBoundary();
-  // Future Lab 1 display/button and pressure/pump work remains on core 1.
+  // Future Lab 1 display/button and pump work remains on core 1.
   delay(2);
 }

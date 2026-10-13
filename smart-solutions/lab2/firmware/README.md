@@ -3,8 +3,8 @@
 See on eraldiseisev PlatformIO projekt Lab 2 postkontori kliendi jaoks. See
 kasutab sama AtomS3 board'i, Arduino raamistikku, M5Unified'i ja ArduinoJsoni
 sõltuvust nagu Lab 1, kuid Lab 1 suurt `main.cpp` faili ei ole siia kopeeritud.
-Pildiserveri, pumba/rõhu ja täieliku Lab 1 kasutajaliidese ühendamine selle
-alusega on eraldi TODO.
+Rõhuseadete ja ohutu lokaalse testpäringu software-only alus on lisatud;
+pildiserveri, pumba ja täieliku Lab 1 kasutajaliidese ühendamine jääb TODO-ks.
 
 ## Ehitus ja hostitestid
 
@@ -35,6 +35,10 @@ lisatakse siia reposse, tehakse see eraldi PlatformIO projektina.
 - `post_office_settings.*` — serveri URL-i, Atomi võtme, pollinguintervalli ja
   lokaalse HTTP arenduslipu valideerimine ning Preferences/NVS salvestus;
 - `post_office_client.*` — väljuv poll, töö valideerimine ja tulemuse retry;
+- `pressure_model.*` — Arduino-vaba ADC → V → kPa mudel, range-check ja
+  fail-closed kalibratsiooni valideerimine;
+- `pressure_settings.*` — valideeritud koefitsientide eraldi Preferences/NVS
+  salvestus;
 - `persistent_state.*` — aktiivse töö ja saatmata terminaltulemuse püsiolek;
 - `station_bridge.*` — Lab 1-ga ühilduv kohalik serial-JSON piir;
 - `core/post_office_model.cpp` — Arduino-vaba valideerimis- ja claim-loogika,
@@ -66,6 +70,12 @@ lubatud ainult eraldi arenduslipuga kohalikuks testiks.
 
 Nupp `TEST SERVER HEALTH` teeb ainult ühe `GET /health` päringu. See ei polli,
 claim'i tööd, kutsu station'it ega liiguta robotit.
+
+Samal lehel olev rõhuosa salvestab neli lineaarset teisenduskoefitsienti ning
+`TEST PRESSURE SENSOR` loeb lokaalselt G5 ADC sisendit. Vaikimisi ja vigase
+NVS konfiguratsiooni korral on olek `not_calibrated`: raw ADC võib olla
+nähtav, kuid voltage ja kPa on `null`. Tegelikud koefitsiendid, ADC wiring ja
+kõik füüsilised tulemused peavad tulema Andmehõive Lab 2 katsest.
 
 ## Poll, station-piir ja püsiolek
 
@@ -108,5 +118,8 @@ ei saadeta tähte uuesti: töö muudetakse `ambiguous_after_reboot` põhjusega
 - [ ] päris USB-ga AtomS3 → station ning Lab 1 MG400 executor'i otsast lõpuni tulemus;
 - [ ] võrgu katkestus ja NVS retry päris seadmel;
 - [ ] pollingu latentsus ja valitud production-intervall;
-- [ ] rõhuanduri ADC/pinge/kPa hook'id ja kalibratsioon;
+- [x] rõhuanduri seadete, NVS valideerimise ja kohaliku ADC/pinge/kPa testi
+  software-only alus;
+- [ ] Andmehõive Lab 2 päris koefitsiendid, sensor/op-amp wiring ning raw
+  ADC/pinge/kPa riistvarakontroll;
 - [ ] Lab 1 pildi-, captive-portali ja pumba funktsioonide kontrollitud ühendus.

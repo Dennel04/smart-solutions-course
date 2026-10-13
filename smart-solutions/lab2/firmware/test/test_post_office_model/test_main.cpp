@@ -1,8 +1,10 @@
 #include <unity.h>
 
 #include <cstring>
+#include <limits>
 
 #include "post_office_model.h"
+#include "pressure_model.h"
 
 using namespace postoffice;
 
@@ -186,6 +188,87 @@ void test_failed_wifi_retry_returns_to_fallback_wait() {
                                           false)));
 }
 
+static pressure::Calibration validPressureCalibration() {
+  // Synthetic arithmetic fixture only; these are not lab calibration values.
+  pressure::Calibration calibration;
+  calibration.calibrated = true;
+  calibration.voltsPerCount = 0.001f;
+  calibration.voltageOffsetV = 0.0f;
+  calibration.kpaPerVolt = 100.0f;
+  calibration.pressureOffsetKpa = -10.0f;
+  return calibration;
+}
+
+void test_pressure_uncalibrated_state_never_invents_converted_values() {
+  const pressure::Reading reading =
+      pressure::convertReading(1234, pressure::Calibration{});
+  TEST_ASSERT_EQUAL(static_cast<int>(pressure::ReadingCode::NotCalibrated),
+                    static_cast<int>(reading.code));
+  TEST_ASSERT_EQUAL_INT(1234, reading.rawAdc);
+  TEST_ASSERT_FALSE(reading.voltageAvailable);
+  TEST_ASSERT_FALSE(reading.pressureAvailable);
+  TEST_ASSERT_EQUAL_STRING("not_calibrated", reading.status);
+}
+
+void test_pressure_valid_calibration_converts_raw_voltage_and_kpa() {
+  const pressure::Reading reading =
+      pressure::convertReading(1000, validPressureCalibration());
+  TEST_ASSERT_TRUE(reading.ok());
+  TEST_ASSERT_TRUE(reading.voltageAvailable);
+  TEST_ASSERT_TRUE(reading.pressureAvailable);
+  TEST_ASSERT_FLOAT_WITHIN(0.0001f, 1.0f, reading.voltageV);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 90.0f, reading.pressureKpa);
+}
+
+void test_pressure_invalid_coefficients_fail_closed() {
+  pressure::Calibration calibration = validPressureCalibration();
+  calibration.voltsPerCount = 0.0f;
+  TEST_ASSERT_FALSE(pressure::validateCalibration(calibration).ok());
+  calibration = validPressureCalibration();
+  calibration.kpaPerVolt = 0.0f;
+  TEST_ASSERT_FALSE(pressure::validateCalibration(calibration).ok());
+  calibration = validPressureCalibration();
+  calibration.pressureOffsetKpa =
+      std::numeric_limits<float>::quiet_NaN();
+  TEST_ASSERT_FALSE(pressure::validateCalibration(calibration).ok());
+}
+
+void test_pressure_parser_accepts_complete_bounded_calibration() {
+  pressure::Calibration calibration;
+  const pressure::CalibrationResult result = pressure::parseCalibration(
+      "0.001", "0", "100", "-10", &calibration);
+  TEST_ASSERT_TRUE(result.ok());
+  TEST_ASSERT_TRUE(calibration.calibrated);
+  TEST_ASSERT_FLOAT_WITHIN(0.000001f, 0.001f, calibration.voltsPerCount);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, -10.0f, calibration.pressureOffsetKpa);
+}
+
+void test_pressure_parser_rejects_malformed_input_without_changing_previous() {
+  pressure::Calibration calibration = validPressureCalibration();
+  const pressure::CalibrationResult result = pressure::parseCalibration(
+      "0.001junk", "0", "100", "-10", &calibration);
+  TEST_ASSERT_FALSE(result.ok());
+  TEST_ASSERT_FLOAT_WITHIN(0.000001f, 0.001f, calibration.voltsPerCount);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 100.0f, calibration.kpaPerVolt);
+  TEST_ASSERT_FALSE(pressure::parseCalibration(
+                        "0.000000000000000000000000000000001", "0", "100",
+                        "-10", &calibration)
+                        .ok());
+}
+
+void test_pressure_invalid_raw_adc_is_error_not_pressure() {
+  const pressure::Reading reading =
+      pressure::convertReading(4095, validPressureCalibration());
+  TEST_ASSERT_EQUAL(static_cast<int>(pressure::ReadingCode::InvalidRawAdc),
+                    static_cast<int>(reading.code));
+  TEST_ASSERT_FALSE(reading.voltageAvailable);
+  TEST_ASSERT_FALSE(reading.pressureAvailable);
+  TEST_ASSERT_EQUAL(
+      static_cast<int>(pressure::ReadingCode::InvalidRawAdc),
+      static_cast<int>(
+          pressure::convertReading(0, validPressureCalibration()).code));
+}
+
 int main(int argc, char** argv) {
   UNITY_BEGIN();
   RUN_TEST(test_valid_letter_job);
@@ -211,5 +294,11 @@ int main(int argc, char** argv) {
   RUN_TEST(test_wifi_recovery_waits_for_retry_timer);
   RUN_TEST(test_wifi_recovery_success_stops_retry);
   RUN_TEST(test_failed_wifi_retry_returns_to_fallback_wait);
+  RUN_TEST(test_pressure_uncalibrated_state_never_invents_converted_values);
+  RUN_TEST(test_pressure_valid_calibration_converts_raw_voltage_and_kpa);
+  RUN_TEST(test_pressure_invalid_coefficients_fail_closed);
+  RUN_TEST(test_pressure_parser_accepts_complete_bounded_calibration);
+  RUN_TEST(test_pressure_parser_rejects_malformed_input_without_changing_previous);
+  RUN_TEST(test_pressure_invalid_raw_adc_is_error_not_pressure);
   return UNITY_END();
 }
