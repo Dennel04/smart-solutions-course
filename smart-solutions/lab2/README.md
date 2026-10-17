@@ -8,7 +8,7 @@
 
 **Välja antud:** 07.10.26 | **Tellimise kuupäev:** 16.10.26 | **Esimene kaitsmine:** 27.10.26, veebis
 
-## Praegune seis — 13.10.26
+## Praegune seis — 16.10.26
 
 **Tarkvara:** valmis on Flask/SQLite postkontor koos autentimise, TTL-i,
 järjekorra, `last_seen` ja tulemuste käsitlemisega; kõrgtaseme tööd `letter`
@@ -33,10 +33,15 @@ tõestatud. Katsed ja järgmised sammud on kirjas failis
 [`docs/atom_display_diagnostic.md`](docs/atom_display_diagnostic.md).
 Taastamisjuhend: [`firmware/README.md`](firmware/README.md#projekti-püsivara-taastamine-pärast-uiflow2).
 
-**Väline takistus:** dropleti IP, SSH kasutaja, hostinimi ja avaliku SSH võtme
-paigaldamine pole kinnitatud. Nikita saatis 13.10.26 õppejõule oma avaliku
-võtme ning küsis ligipääsuandmeid; vastust pole veel saadud. Production
-deployment on seetõttu `BLOCKED BY EXTERNAL ACCESS`.
+**Droplet:** Nikita Teterev sai õppejõult serveri ligipääsuandmed ning
+kontrollis 16.10.26 võtmega SSH login'it. Ta paigaldas postkontori Ubuntu
+24.04.5 LTS serverile ja käivitas systemd teenuse käsitsi. Gunicorn kuulas
+ainult `127.0.0.1:5001`; `/health` vastas HTTP 200 ja autentimata `/` HTTP 401.
+Ligipääsu puudumine enam paigaldust ei blokeeri. Avalik HTTPS, UFW, SSH
+hardening ja täielik production-kontroll on veel tegemata või kinnitamata.
+Kontrolli ajal oli teenus `active (running)`, autostart `disabled` ja UFW
+`inactive`; hilisem teenuse peatamine ei ole kinnitatud. Tulemused ja piirid
+on allpool 16.10.2026 päevikukandes ning [paigaldusjuhendis](deploy/README.md).
 
 **Laboris veel teha:** päris `pick_place` executor ja kalibratsioon, füüsiline
 Lab 2 end-to-end, mõlemad päris kaamerad, sensor/op-amp ahel ja Andmehõive
@@ -111,8 +116,9 @@ upload ja ülejäänud riistvarakatsed on TODO.
 ## Tehtud töö
 
 See jaotis võtab kokku repos tegelikult valminud ja tarkvaraliselt kontrollitud
-Lab 2 osad. See ei kirjelda tulevikuplaani ega tõenda veel dropleti, robotit või
-füüsilisi seadmeid kasutavat katset.
+Lab 2 osad ning 16.10.26 dropleti esmase paigalduse kontrollid. Roboti ja
+kaamerate füüsilised katsed jäävad lahti; Atomi varasemad katsed on eraldi
+kuupäevaga kirjas.
 
 ### Postkontori server
 
@@ -127,7 +133,9 @@ füüsilisi seadmeid kasutavat katset.
   kordussaatmine ei käivita kontrollimatut uut täitmist.
 - Sama API-ga mock Atom võimaldab serveri töövoogu kontrollida ilma AtomS3R-i,
   station'i või MG400-ta. Serveri käitumine on kaetud Python testidega.
-- Päris dropletile ei ole serverit veel paigaldatud.
+- Nikita paigaldas serveri päris dropletile 16.10.26; loopback health ja
+  autentimata kasutajalehe keeldumine on kontrollitud. Õige veebiparooliga
+  login ning päris HTTP tööde loomine ja salvestamine pole veel kinnitatud.
 
 ### AtomS3R Lab 2 püsivara
 
@@ -196,8 +204,11 @@ füüsilisi seadmeid kasutavat katset.
   backup kasutab SQLite'i turvalist backup API-t.
 - Paigalduse staatilised ja lokaalsed testid kontrollivad muu hulgas localhost
   bind'i, fail-closed saladusi, Caddy piiri ja backup'i terviklikkust.
-- Päris dropletile paigaldust, avalikku HTTPS-katset, tulemüüri sisselülitamist
-  ega SSH hardening'ut ei ole tehtud.
+- Nikita käivitas 16.10.26 päris dropletil `deploy/install.sh` ning seejärel
+  systemd teenuse käsitsi. Env-faili õigused, SQLite fail, loopback-bind,
+  HTTP 200 health ja autentimata HTTP 401 on kontrollitud.
+- Avalik HTTPS, UFW seadistus, SSH hardening, täielik `deploy/verify.sh`,
+  backup ja taastamine jäävad TODO-ks.
 
 ## Tarkvaralise kontrolli tulemused
 
@@ -287,17 +298,30 @@ tulemust; füüsilise katse juurde lisatakse kuupäev, meetod ja failiviide.
   snapshot backendiga; Wi-Fi saladused jäävad ignored private header'isse.
 - [x] Production-paigalduse tarkvaraalus sisaldab localhost Gunicorn unit'it,
   Caddy HTTPS reverse proxy näidist, kaitstud env-malli, SQLite backup'i ning
-  install/update/verify skripte. Päris droplet ja sertifikaat on endiselt TODO.
+  install/update/verify skripte. Dropleti esmane paigaldus on tehtud;
+  sertifikaat ja täielik production-kontroll on endiselt TODO.
 
-### Vajab õppejõult dropleti/hosti
+### Dropleti paigaldus ja production-kontroll
 
 - [ ] Igal kasutataval arvutil on oma SSH võtmepaar; privaatvõtmeid ei jagata
   ega lisata reposse.
-- [ ] Õppejõult on saadud droplet ja hostinimi/alamdomeen või alamtee.
+- [x] Nikita sai õppejõult dropleti ligipääsuandmed ja kontrollis võtmega
+  SSH login'it 16.10.26.
+- [x] Repo on `/opt/smart-solutions-lab2/app`; production-sõltuvused ja
+  systemd teenus on paigaldatud, teenus käivitati käsitsi 16.10.26.
+- [x] Env-fail on `root:root 0600`, täidetud ning placeholder'iteta;
+  veebiparool ja Atomi võti on eraldi paroolihalduris.
+- [x] SQLite fail asub püsirajal; Gunicorn kuulas ainult `127.0.0.1:5001`,
+  `/health` vastas HTTP 200 ning autentimata `/` HTTP 401 (16.10.26).
+- [ ] Teenuse autostart on lubatud ja taaskäivituse järel kontrollitud;
+  16.10.26 oli autostart `disabled`.
 - [ ] Droplet töötab: võtmega sisselogimine, parooliga SSH-sisselogimine
   keelatud, uuendused paigaldatud ja tulemüüris ainult vajalikud pordid.
 - [ ] Domeen/host viitab dropletile ja kasutajaleht töötab kehtiva HTTPS-iga.
-- [ ] Kasutajalehe autentimine on päriselt kontrollitud.
+- [ ] Kasutajalehe login õige veebiparooliga on kontrollitud.
+- [ ] Tööde loomine ja salvestamine on päris hostil HTTP kaudu kontrollitud.
+- [ ] Täielik `deploy/verify.sh` läbib päris hostil.
+- [ ] Päris andmebaasi backup ja taastamine on kontrollitud.
 - [ ] Telefoni mobiilse andmesidega avaneb dropleti postkontori kasutajaleht,
   Wi-Fi on välja lülitatud.
 - [ ] Atom pollib production-hostilt töid ning autentimine toimib seadmesse
@@ -344,7 +368,8 @@ tulemust; füüsilise katse juurde lisatakse kuupäev, meetod ja failiviide.
 - [x] Lab 2 püsivara on AtomS3R-i PlatformIO kaudu üles laaditud 12.10.26.
 - [x] AtomS3R ja lokaalne postkontor on koos kontrollitud ilma MG400
   täitmiseta.
-- [ ] Dropleti ligipääsuandmed ja host on õppejõult saadud.
+- [x] Dropleti ligipääsuandmed on õppejõult saadud ja Nikita võtmega SSH
+  login on kontrollitud 16.10.26; DNS/HTTPS kontroll jääb lahti.
 - [ ] XIAO ESP32S3 Sense füüsiline saadavus on kontrollitud.
 - [ ] USB UHD-kaamera füüsiline saadavus on kontrollitud.
 - [ ] Andmehõive Lab 2 päris rõhukalibratsioon on kättesaadav.
@@ -355,9 +380,9 @@ tulemust; füüsilise katse juurde lisatakse kuupäev, meetod ja failiviide.
 
 | Tulemus | Väärtus või olek |
 | :--- | :--- |
-| Dropleti host, piirkond ja suurus | TODO — õppejõu host required |
-| Avalikud pordid ja põhjendus | TODO — droplet configuration required |
-| HTTPS URL | TODO — droplet/domain required |
+| Dropleti host, piirkond ja suurus | Ligipääs saadud 16.10.26; aadressi siin ei avaldata, piirkond ja suurus TODO |
+| Avalikud pordid ja põhjendus | TODO — UFW oli 16.10.26 `inactive`; Gunicorn ainult `127.0.0.1:5001` |
+| HTTPS URL | TODO — Caddy, DNS ja avalik HTTPS kontrollimata |
 | Kiire polling-intervall | TODO — real test setting required |
 | Kiire pollingu latentsus, keskmine / max | TODO — real measurement required |
 | Aeglane polling-intervall | TODO — real test setting required |
@@ -512,9 +537,9 @@ AtomS3  -> outbound HTTPS polling -> sama Caddy host
 
 Gunicorn ei kuula avalikul liidesel ning SQLite, env ja backup'id asuvad Git
 checkout'ist väljaspool. Dropletile ei lisata station'i, MG400 ega kaamerate
-route'e, proxy't, VPN-i või tunnelit. Need failid on kontrollitav deployment
-foundation, mitte väide päris dropleti valmimise kohta: DNS, sertifikaat,
-serveri hardening, firewall ja recovery drill vajavad endiselt päris hosti.
+route'e, proxy't, VPN-i või tunnelit. Nikita kontrollis 16.10.26 dropletil
+esmast paigaldust ja loopback HTTP vastuseid. DNS, Caddy/sertifikaat, serveri
+hardening, UFW ning backup/taastamiskatse vajavad veel päris hostil kontrolli.
 
 ### Arenduspäevik
 
@@ -677,11 +702,47 @@ ei muudeta.
   töö ja saatmata tulemuse NVS retry-ga, production droplet/HTTPS, päris MG400,
   kaamerad, latentsusmõõtmised ja Andmehõive rõhukalibratsioon jäävad TODO-ks.
 
+**16.10.2026 — Nikita Teterev**
+
+* Tegime: Sain õppejõult serveri ligipääsuandmed ja logisin SSH võtmega
+  DigitalOcean Dropletisse. Kloonisin repo kataloogi
+  `/opt/smart-solutions-lab2/app`, lõin Python virtualenv'i ja paigaldasin
+  production-sõltuvused. Käivitasin `deploy/install.sh`, mis lõi systemd
+  teenuse `smart-solutions-lab2`. Täitsin kaitstud
+  `/etc/smart-solutions-lab2/env` faili, kontrollisin nõutud väärtuste
+  olemasolu ja placeholder'ite puudumist ning käivitasin teenuse käsitsi.
+  Kontrollisin teenuse olekut, kuulamisaadressi, SQLite faili ning kohalikke
+  HTTP vastuseid.
+* Juhtus (numbrid): Ubuntu `24.04.5 LTS`, Python `3.12.3`, Flask `3.1.3` ja
+  Gunicorn `23.0.0`. Install läbis; teenus oli `active (running)`, Gunicorn
+  kuulas ainult `127.0.0.1:5001` ning töötasid `2` worker'it ja `1` master.
+  Env-faili omanik oli `root:root`, õigused `0600`. Andmebaas
+  `/var/lib/smart-solutions-lab2/post-office.sqlite3` oli `24 KB`, omanik
+  `smart-solutions-lab2`, õigused `0600`. `GET /health` vastas HTTP `200` ja
+  JSON-iga `{"ok":true,"service":"lab2-post-office"}`. Autentimata `GET /`
+  vastas HTTP `401` päisega
+  `WWW-Authenticate: Basic realm="Lab 2 post-office"`. Systemd autostart oli
+  kontrolli ajal `disabled`, UFW `inactive`. Teenuse hilisemat peatamist
+  ei ole kinnitatud.
+* Otsustasime, ja miks: Hoidsin veebiparooli ja Atomi API-võtme eraldi
+  paroolihalduris; saladusi ega env-faili sisu reposse ei lisanud. Jätsin
+  Gunicorni loopback-liidesele ja SQLite faili lähtekoodipuust välja.
+  Märkisin tehtuks esmase paigalduse, health'i ja autentimata ligipääsu
+  keeldumise kontrolli. HTTP 401 ei kinnita õige parooliga login'it ning
+  loopback HTTP ei kinnita avalikku HTTPS-i ega Atomi production-pollingut.
+* Lahti järgmiseks korraks: Kontrollida login'it õige veebiparooliga ning
+  tööde loomist ja salvestamist päris HTTP kaudu. Seadistada ja kontrollida
+  Caddy/avalik HTTPS, UFW ning SSH hardening koos password-login'i
+  keelamisega; läbida täielik `deploy/verify.sh`, backup ja taastamine.
+  Lubada ja kontrollida teenuse autostart. Teha telefoni mobiilsidekatse ja
+  AtomS3R production HTTPS polling. MG400, päris kaamerad ja latency
+  mõõtmised jäävad TODO-ks.
+
 ### Väljundid ja tulemused
 
 **Väljundid**
-* Lab 3 saab siit postkontori tarkvara ja dropleti paigaldusaluse; päris dropleti
-  paigaldus ja taastamiskatse on TODO — droplet required.
+* Lab 3 saab siit postkontori tarkvara ning 16.10.26 tehtud dropleti esmase
+  paigalduse kontrollid; avalik HTTPS, hardening ja taastamiskatse on TODO.
 * Lab 3 saab siit Atomi väljamineva pollingu ning lokaalse `letter` tarkvaralepingu;
   AtomS3R upload ja autentitud lokaalne polling on tehtud, kuid MG400
   riistvaraintegratsioon on TODO.
@@ -695,7 +756,8 @@ ei muudeta.
 * Numbrid, mille see labor andis, ühikutega: TODO — real measurement required;
   software-testide arvud ei ole füüsilised mõõtmistulemused.
 * Postkontori paigaldus- ja taastamismallid: teostatud failis
-  `deploy/README.md`; päris dropleti paigaldus on TODO — droplet required.
+  `deploy/README.md`; päris dropleti esmane paigaldus on tehtud 16.10.26,
+  täielik production-kontroll ja taastamine on TODO.
 * Meeskonna ohutuskinnitused: TODO — each team member must confirm personally.
 * Mida me teeksime teisiti: TODO — complete after physical tests.
 * Mida järgmine labor peaks enne alustamist teadma: TODO — complete at the end

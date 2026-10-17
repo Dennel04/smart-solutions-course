@@ -1,9 +1,39 @@
 # Lab 2 postkontori production-paigalduse alus
 
-> **Olek:** siin on korduvkasutatavad konfiguratsioonid ja käitamisjuhised.
-> Ühtegi päris dropletit, DNS-i, sertifikaati, tulemüüri ega SSH-seadet ei ole
-> nende failide loomisel muudetud ega kontrollitud. Kõik päris hosti tulemused
-> jäävad TODO-ks kuni meeskond on need hostil ise kontrollinud.
+> **Olek 16.10.2026:** Nikita Teterev sai õppejõult serveri ligipääsuandmed,
+> logis võtmega SSH kaudu sisse ning kontrollis päris DigitalOcean Dropletil
+> postkontori esmast paigaldust. Teenus töötas loopback HTTP kaudu. Avalik
+> HTTPS, SSH hardening, UFW ja täielik production-kontroll jäävad lahti.
+
+## Kinnitatud paigalduskontrollid — 16.10.2026
+
+Nikita kinnitatud tulemused on kirjas ka [Lab 2 arenduspäevikus](../README.md#arenduspäevik).
+See tabel kirjeldab 16.10.2026 kontrollihetke, mitte serveri praeguse oleku
+uut mõõtmist.
+
+| Kontroll | Tulemus |
+| :--- | :--- |
+| Ligipääs | Õppejõu antud andmetega võtmega SSH login õnnestus |
+| Operatsioonisüsteem | Ubuntu 24.04.5 LTS |
+| Repo | `/opt/smart-solutions-lab2/app` |
+| Python ja production-paketid | Virtualenv loodud; Python 3.12.3, Flask 3.1.3, Gunicorn 23.0.0 |
+| Install | `deploy/install.sh` läbis; systemd teenus `smart-solutions-lab2` loodud |
+| Env-fail | `/etc/smart-solutions-lab2/env`, `root:root`, `0600`; nõutud väärtused olemas, placeholder'id puudusid |
+| Saladused | Eraldi veebiparool ja Atomi API-võti paroolihalduris; väärtusi siin ei avaldata |
+| Teenus ja protsessid | Käsitsi käivitatud, `active (running)`; 2 Gunicorni worker'it ja 1 master |
+| Bind | Ainult `127.0.0.1:5001` |
+| SQLite | `/var/lib/smart-solutions-lab2/post-office.sqlite3`, 24 KB, omanik `smart-solutions-lab2`, õigused `0600` |
+| `GET /health` | HTTP 200, `{"ok":true,"service":"lab2-post-office"}` |
+| Autentimata `GET /` | HTTP 401, `WWW-Authenticate: Basic realm="Lab 2 post-office"` |
+| Systemd autostart | `disabled` |
+| UFW | `inactive`; seadistus ei ole kinnitatud |
+
+Õige veebiparooliga login, tööde loomise ja salvestamise päris HTTP-katsed,
+Caddy/avalik HTTPS, SSH hardening ja password-login'i keelamine, täielik
+`deploy/verify.sh`, backup/taastamine, telefoni mobiilsidekatse ning AtomS3R
+production HTTPS polling on tegemata või kinnitamata. MG400, kaamerate ja
+latency füüsilised katsed jäävad samuti TODO-ks. Teenuse hilisemat peatamist
+ei ole kinnitatud.
 
 ## Arhitektuur ja piir
 
@@ -63,25 +93,28 @@ testide, station-adapteri ja kaamerate sõltuvused on eraldi failis
 - päris väärtused on paroolihalduris, mitte repos ega shelli ajaloos.
 
 Pakette ja Caddyt paigaldatakse nende ametlike Ubuntu juhiste järgi päris
-hostil. Seda pole siin automatiseeritud, sest hosti versioon ja õppejõu
-haldusreeglid tuleb enne teada.
+hostil. Repo ei automatiseeri neid samme; 16.10.26 kinnitati Ubuntu versioon,
+kuid Caddy ja hosti edasised haldustoimingud vajavad veel kontrolli.
 
-## Blokeeritud kuni õppejõud annab ligipääsu
+## Ligipääs saadud; DNS ja HTTPS veel kontrollida
 
-Järgmised väärtused ei ole repos teada ja neid ei tohi oletada:
+Nikita sai ligipääsuandmed ja kontrollis võtmega SSH login'it 16.10.26.
+Väärtusi ei salvestata sellesse dokumenti. Runbook'i käsud kasutavad jätkuvalt
+placeholder'e:
 
 - `<SSH_USER>`: õppejõu antud SSH kasutajanimi;
 - `<DROPLET_IP>`: dropleti avalik aadress;
 - `<HOSTNAME>`: õppejõu antud hostinimi/link;
-- kinnitus, et selle arvuti avalik SSH võti on dropletisse paigaldatud;
-- kinnitus, et `<HOSTNAME>` DNS-kirje viitab `<DROPLET_IP>`-le.
+
+Nikita arvuti võtmega ligipääs on kontrollitud. Kõigi teiste kasutajate
+ligipääs ning `<HOSTNAME>` DNS-kirje vastavus `<DROPLET_IP>`-le vajavad eraldi
+kontrolli; edukas SSH login ei tõenda DNS-i ega avalikku HTTPS-i.
 
 Repo olemasolevates konfiguratsioonimallides tähistab `<TEAM_HOSTNAME>` sama
 õppejõult saadud väärtust, mida selle runbook'i käskudes tähistab `<HOSTNAME>`.
 
-Kuni need viis punkti pole kinnitatud, ei saa tõendada SSH ligipääsu,
-password-login'i olekut, UFW live-reegleid, avalikku TLS-sertifikaati,
-mobiilse andmeside testi ega Atomi production HTTPS pollingut.
+Password-login'i keelamine, UFW reeglid, avalik TLS-sertifikaat, mobiilse
+andmeside test ja Atomi production HTTPS polling pole veel kinnitatud.
 
 ## Kohalik eelkontroll
 
@@ -439,15 +472,26 @@ pärast päris dropleti ja laboririistvaraga katset:
 
 ## Päris dropleti päeva TODO
 
-- [ ] Droplet, distro versioon ja vastutav omanik on kinnitatud.
+- [x] Nikita sai õppejõult ligipääsuandmed ning kontrollis võtmega SSH login'it
+  ja Ubuntu 24.04.5 LTS versiooni 16.10.2026.
+- [x] Repo, virtualenv, production-paketid ja systemd teenus on paigaldatud.
+- [x] Teenus käivitati käsitsi; Gunicorn kuulas ainult loopback-liidesel,
+  `/health` vastas HTTP 200 ja autentimata `/` HTTP 401.
+- [ ] Teenuse autostart ja reboot-järgne käivitumine on kontrollitud;
+  16.10.2026 oli autostart `disabled`.
 - [ ] Kõigi kasutajate võtmega SSH login on teises sessioonis kontrollitud.
 - [ ] Password login on keelatud alles pärast seda kontrolli.
 - [ ] DNS `<TEAM_HOSTNAME>` viitab kinnitatud dropletile.
 - [ ] Caddy avalik sertifikaat ja HTTPS health on kontrollitud.
 - [ ] UFW lubab ainult kokkulepitud SSH, 80/tcp ja 443/tcp; 5001 pole avalik.
-- [ ] Env-fail on `root:root 0600`, placeholder'e ega reposaladusi pole.
-- [ ] SQLite püsib väljaspool Git checkout'i ja backup on kontrollitud.
-- [ ] Kasutaja Basic auth ja Atomi bearer auth on päris hostil kontrollitud.
+- [x] Env-fail on `root:root 0600`, nõutud väärtused on olemas,
+  placeholder'id puuduvad ja saladused on repost väljas.
+- [x] SQLite fail asub Git checkout'ist väljas püsirajal, õigustega `0600`.
+- [ ] Päris andmebaasi backup ja taastamine on kontrollitud.
+- [ ] Kasutaja Basic auth õige veebiparooliga ja Atomi bearer auth on päris
+  hostil kontrollitud; HTTP 401 tõendab ainult autentimata päringu keeldumist.
+- [ ] Tööde loomine ja salvestamine on päris hostil HTTP kaudu kontrollitud.
+- [ ] Täielik `deploy/verify.sh` läbib päris hostil.
 - [ ] Atom pollib aadressi `https://<TEAM_HOSTNAME>` väljamineva ühendusega.
 - [ ] Station'i, MG400 ja kaamerate poole ei ole dropletil route'i/proxy't.
 - [ ] Taasteprotseduur on päriselt läbi proovitud ja tulemus kuupäevaga kirjas.
