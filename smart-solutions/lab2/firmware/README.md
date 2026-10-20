@@ -108,6 +108,31 @@ NVS konfiguratsiooni korral on olek `not_calibrated`: raw ADC võib olla
 nähtav, kuid voltage ja kPa on `null`. Tegelikud koefitsiendid, ADC wiring ja
 kõik füüsilised tulemused peavad tulema Andmehõive Lab 2 katsest.
 
+## Production TLS ettevalmistus — 20.10.2026
+
+Nikita kontrollis Macis `https://narva2.roboarena.org` TLS-ahelat: Let's
+Encrypt YE2, Root YE ja ISRG Root X2. OpenSSL andis
+`Verify return code: 0 (ok)`. Ta laadis ISRG Root X2 juursertifikaadi
+Let's Encrypti ametlikult veebilehelt ja kontrollis SHA-256 fingerprint'i:
+
+`69729b8e15a86efc177a57afb7171dfc64add28c2fca8cf1507e34453ccb1470`
+
+CA on lokaalses `include/post_office_ca_private.h` failis.
+`git check-ignore` kinnitas faili ignoreerimist. Header'it, PEM-i ega
+`firmware.bin` faili Git'i ei lisata; repos säilib CA ettevalmistuse kirjeldus.
+
+`pio run -e atoms3r` läbis tulemusega `SUCCESS`: RAM 15,4%, flash 34,5%,
+aeg 20,98 s. Eraldi kontroll kinnitas ISRG Root X2 PEM-sertifikaadi olemasolu
+`firmware.bin` failis. `bash smart-solutions/lab2/check.sh` lõpetas teatega
+`All software-only regression checks passed.`
+
+Need on Maci TLS- ja lokaalse build'i kontrollid. Päris AtomS3R-i ühendust
+production HTTPS serveriga ega pollingut selle katsega ei kontrollitud.
+Järgmine samm on [projektipüsivara taastamine](#projekti-püsivara-taastamine-pärast-uiflow2)
+ja eraldi seadmekatse: production URL, seadme seaded, autentitud polling
+ning `last_seen` uuenemine. Pressure-extension ja ülejäänud riistvarakatsed
+jäävad lahti.
+
 ## Poll, station-piir ja püsiolek
 
 Klient saadab bearer-autentimisega:
@@ -145,7 +170,9 @@ ei saadeta tähte uuesti: töö muudetakse `ambiguous_after_reboot` põhjusega
 
 - [x] püsivara laadimine päris AtomS3R-i PlatformIO kaudu 12.10.2026;
 - [x] Wi-Fi/setup-AP ja seadete püsimine taaskäivituse järel;
-- [ ] päris hosti CA ja HTTPS-polling;
+- [x] production hosti TLS-ahel Macis kontrollitud; ISRG Root X2 CA-ga
+  lokaalne build ja sertifikaadi olemasolu binaaris kontrollitud 20.10.2026;
+- [ ] päris AtomS3R production HTTPS ühendus ja autentitud polling;
 - [ ] päris USB-ga AtomS3 → station ning Lab 1 MG400 executor'i otsast lõpuni tulemus;
 - [ ] võrgu katkestus ja NVS retry päris seadmel;
 - [ ] pollingu latentsus ja valitud production-intervall;

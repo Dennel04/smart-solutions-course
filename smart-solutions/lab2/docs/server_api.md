@@ -1,8 +1,9 @@
 # Lab 2 postkontori API leping
 
-> **Olek:** allpool kirjeldatud API on lokaalses Flask-serveris teostatud ja
-> automaattestidega kontrollitud. See ei tõenda dropleti, päris AtomS3,
-> lokaalse jaama ega MG400 integratsiooni toimimist.
+> **Olek 20.10.2026:** API on Flask-serveris teostatud ja automaattestidega
+> kontrollitud. Päris dropletil on kontrollitud avalik HTTPS, kasutaja
+> autentimine, `letter A` loomine/aegumine ning kirje püsimine teenuse restardi
+> järel. Päris Atomi production polling ning jaama/MG400 integratsioon on TODO.
 
 ## Piirid ja usaldusmudel
 
@@ -47,7 +48,7 @@ Põhireeglid:
 
 ## Production HTTP piir
 
-Kavandatud production-ahel on `Internet -> HTTPS Caddy -> Gunicorn/Flask ->
+Production-ahel on `Internet -> HTTPS Caddy -> Gunicorn/Flask ->
 SQLite`. Caddy on ainus avalik HTTP(S) endpoint ning Gunicorn kuulab ainult
 `127.0.0.1:5001`; rakenduse porti ei avata tulemüüris. WSGI entrypoint on
 `server.wsgi:app`. Kõik runtime väärtused tulevad kaitstud systemd
@@ -60,9 +61,19 @@ avalik tervisekontroll; ülejäänud marsruutide autentimine jääb allpool
 kirjeldatud Basic/bearer piiridesse.
 
 Systemd, Caddy, env, install/update/backup/verify mallid ning värske Ubuntu
-taastamisjuhend on failis [`../deploy/README.md`](../deploy/README.md). Need on
-tarkvaraliselt kontrollitud mallid; päris DNS-i, TLS-sertifikaati või dropleti
-käitamist ei ole veel tõendatud.
+taastamisjuhend on failis [`../deploy/README.md`](../deploy/README.md).
+Nikita kontrollis 20.10.2026 päris dropleti avalikku HTTPS-i domeenil
+`narva2.roboarena.org`: Maci väline curl sai `/health` päringule HTTP/2 200
+korrektse TLS-iga, Safari Macis ja Chrome telefonis 5G kaudu avasid autentitud
+kasutajalehe. DNS ja avalik HTTPS on kontrollitud 20.10.2026.
+
+Maci OpenSSL kontrollitud TLS-ahelas olid Let's Encrypt YE2, Root YE ja
+ISRG Root X2; tulemus oli `Verify return code: 0 (ok)`. Atomi jaoks on ISRG
+Root X2 CA-ga lokaalne build ette valmistatud, nagu kirjeldab
+[firmware README](../firmware/README.md#production-tls-ettevalmistus--20102026).
+CA olemasolu binaaris ei tõenda päris Atomi TLS-ühendust ega bearer-pollingut:
+need on endiselt TODO. Täielik taaste puhtale hostile ja kogu dropleti reboot
+on samuti kontrollimata.
 
 ## Whitelist
 

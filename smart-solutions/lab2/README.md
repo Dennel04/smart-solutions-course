@@ -51,6 +51,15 @@ Atom on avalikus serveris offline ja production pollingut pole testitud.
 Kogu dropleti reboot ning füüsiline MG400 integratsioon on kontrollimata.
 Kuupäevaga tulemused on päevikus ja [paigaldusjuhendis](deploy/README.md).
 
+**Atomi production TLS ettevalmistus:** Nikita kontrollis 20.10.26 Macis
+serveri TLS-ahelat OpenSSL-iga (`Verify return code: 0 (ok)`). Ta lisas
+ametlikust allikast saadud ja fingerprint'i järgi kontrollitud ISRG Root X2
+CA lokaalsesse ignoreeritud header'isse. CA-ga Atom build läbis ja
+`firmware.bin` sisaldas PEM-sertifikaati; `check.sh` lõpetas teatega
+`All software-only regression checks passed.` See on software-only
+ettevalmistus: päris AtomS3R production HTTPS ühendus ja polling on TODO.
+Üksikasjad: [firmware README](firmware/README.md#production-tls-ettevalmistus--20102026).
+
 **Laboris veel teha:** päris `pick_place` executor ja kalibratsioon, füüsiline
 Lab 2 end-to-end, mõlemad päris kaamerad, sensor/op-amp ahel ja Andmehõive
 Lab 2 rõhukalibratsioon, tegelikud latency/metrics mõõtmised, production
@@ -231,7 +240,7 @@ selgesõnaliselt märgitud päris riistvara.
 | :--- | :--- | :--- |
 | Lab 2 Python `pytest` | 91 testi läbis | software-only; sisaldab 11 deployment-testi |
 | `python -m src.e2e_demo` | `letter` ja `pick_place`: `server_status=done`, sama `job_id` kogu ahelas, `hardware_used=false` | ajutine DB, mock Atom ja mock executor |
-| AtomS3R `pio run -e atoms3r` | SUCCESS; RAM 50 616 / 327 680 baiti (15,4%); flash 1 150 757 / 3 342 336 baiti (34,4%) | build; selle kontrolli käigus upload'i ei tehtud |
+| AtomS3R `pio run -e atoms3r` | 20.10.26 CA-ga build SUCCESS; RAM 15,4%, flash 34,5%; 20,98 s | lokaalne build, CA olemasolu binaaris kontrollitud; päris production ühendus TODO |
 | AtomS3R `pio test -e native` | 29/29 testi läbis | hosti native-testid, mitte seadme test |
 | XIAO `pio run` | SUCCESS, board `seeed_xiao_esp32s3` | build; upload'i ei tehtud |
 | XIAO `pio test -e native` | 6/6 testi läbis | hosti native-testid, mitte kaamerakatse |
@@ -791,6 +800,32 @@ ei muudeta.
   integratsioon, päris kaamerad, rõhuandur/Andmehõive kalibratsioon,
   latency/metrics, ametlik mid-job katkestuskatse ja ohutuskinnitused jäävad
   lahti.
+
+**20.10.2026 — Nikita Teterev (production TLS ettevalmistus, jätk)**
+
+* Tegime: Kontrollisin Macis `https://narva2.roboarena.org` TLS-ahelat
+  OpenSSL-iga. Laadisin Let's Encrypti ametlikult veebilehelt ISRG Root X2
+  juursertifikaadi ja kontrollisin SHA-256 fingerprint'i. Lõin lokaalse
+  `firmware/include/post_office_ca_private.h` faili ning kontrollisin
+  `git check-ignore` abil, et see jääb Git'ist välja. Ehitasin `atoms3r`
+  püsivara, kontrollisin PEM-sertifikaadi olemasolu `firmware.bin` failis
+  ning käivitasin `bash smart-solutions/lab2/check.sh`.
+* Juhtus (numbrid): Kontrollitud TLS-ahelas olid Let's Encrypt YE2,
+  Root YE ja ISRG Root X2. OpenSSL: `Verify return code: 0 (ok)`.
+  ISRG Root X2 SHA-256 fingerprint:
+  `69729b8e15a86efc177a57afb7171dfc64add28c2fca8cf1507e34453ccb1470`.
+  `pio run -e atoms3r`: `SUCCESS`, RAM `15,4%`, flash `34,5%`, aeg `20,98 s`.
+  Eraldi binaarikontroll leidis ISRG Root X2 PEM-sertifikaadi.
+  Regressiooniskript lõpetas teatega
+  `All software-only regression checks passed.`
+* Otsustasime, ja miks: Hoian CA header'i ja build-artifact'id lokaalselt;
+  dokumentatsiooni läheb sertifikaadi nimi ja fingerprint, mitte PEM ega
+  binaar. Maci TLS-kontroll ja CA olemasolu build'is annavad aluse järgmisele
+  seadmekatsele, kuid ei kinnita Atomi production HTTPS ühendust.
+* Lahti järgmiseks korraks: Taastada projektipüsivara päris AtomS3R-i,
+  kontrollida seadeid ja production HTTPS pollingut ning `last_seen`
+  uuenemist. Päris MG400/jaama integratsioon, rõhuanduri ja kaamerate katsed,
+  latency ning ametlik mid-job katkestuskatse jäävad TODO-ks.
 
 ### Väljundid ja tulemused
 
