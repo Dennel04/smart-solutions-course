@@ -1,4 +1,5 @@
 import os
+import json
 from pathlib import Path
 import sqlite3
 import subprocess
@@ -156,3 +157,103 @@ def test_verify_checks_production_file_and_proxy_boundaries():
     assert 'caddy validate --config "$CADDY_FILE"' in verify
     assert "127\\.0\\.0\\.1:5001" in verify
     assert "Caddy has no additional public reverse_proxy target" in verify
+
+
+@pytest.fixture
+def mock_update(tmp_path):
+    """Run a copy with a temp base and fake OS tools; no root or network access."""
+    base = tmp_path / "deployment"
+    lab = base / "app" / "smart-solutions" / "lab2"
+    deploy = lab / "deploy"
+    deploy.mkdir(parents=True)
+    (base / "app" / ".git").mkdir()
+    venv_bin = base / "venv" / "bin"
+    venv_bin.mkdir(parents=True)
+    mock_bin = tmp_path / "bin"
+    mock_bin.mkdir()
+    log = tmp_path / "calls.jsonl"
+    count = tmp_path / "curl-count"
+    source = (DEPLOY / "update.sh").read_text()
+    original_base = "BASE_DIR=/opt/smart-solutions-lab2"
+    assert source.count(original_base) == 1
+    script = deploy / "update.sh"
+    script.write_text(source.replace(original_base, f'BASE_DIR="{base}"'))
+
+    mock_tool = f"#!{sys.executable}\n" + '''import json, os, sys
+from pathlib import Path
+name = Path(sys.argv[0]).name
+with open(os.environ["MOCK_UPDATE_LOG"], "a") as output:
+    output.write(json.dumps([name] + sys.argv[1:]) + "\\n")
+if name == "id":
+    print("0")
+elif name == "curl":
+    count_path = Path(os.environ["MOCK_CURL_COUNT"])
+    attempt = int(count_path.read_text()) + 1 if count_path.exists() else 1
+    count_path.write_text(str(attempt))
+    if attempt <= int(os.environ["MOCK_READY_AFTER"]):
+        print("000", end="")
+        sys.exit(28)
+    print(os.environ["MOCK_HTTP_CODE"], end="")
+elif name == "verify.sh":
+    sys.exit(int(os.environ["MOCK_VERIFY_EXIT"]))
+'''
+    for tool in [*(mock_bin / name for name in ("id", "git", "systemctl", "curl", "sleep")),
+                 venv_bin / "python", deploy / "backup.sh", deploy / "verify.sh"]:
+        tool.write_text(mock_tool)
+        tool.chmod(0o755)
+
+    def run(*, ready_after=0, http_code="200", verify_exit=0):
+        env = os.environ.copy()
+        env.update({
+            "PATH": str(mock_bin) + os.pathsep + env.get("PATH", ""),
+            "MOCK_UPDATE_LOG": str(log), "MOCK_CURL_COUNT": str(count),
+            "MOCK_READY_AFTER": str(ready_after), "MOCK_HTTP_CODE": http_code,
+            "MOCK_VERIFY_EXIT": str(verify_exit),
+        })
+        result = subprocess.run(
+            ["/bin/sh", str(script), "origin/main"], env=env,
+            capture_output=True, text=True, timeout=10, check=False,
+        )
+        calls = [json.loads(line) for line in log.read_text().splitlines()]
+        return result, calls
+
+    return run
+
+
+@pytest.mark.parametrize("ready_after", [0, 2, 14])
+def test_update_waits_until_health_is_ready_before_full_verification(mock_update, ready_after):
+    result, calls = mock_update(ready_after=ready_after)
+    assert result.returncode == 0, result.stderr
+    names = [call[0] for call in calls]
+    assert names.count("curl") == ready_after + 1
+    assert names.count("sleep") == ready_after
+    assert names.count("verify.sh") == 1
+    assert names.index("backup.sh") < names.index("systemctl") < names.index("curl")
+    assert names[-1] == "verify.sh"
+    repo = next(call[2] for call in calls if call[0] == "git")
+    assert ["git", "-C", repo, "merge", "--ff-only", "origin/main"] in calls
+    assert ["systemctl", "restart", "smart-solutions-lab2"] in calls
+    for call in (call for call in calls if call[0] == "curl"):
+        assert call[-1] == "http://127.0.0.1:5001/health"
+        assert call[call.index("--connect-timeout") + 1] == "1"
+        assert call[call.index("--max-time") + 1] == "1"
+        assert call[call.index("--noproxy") + 1] == "*"
+    assert "running full deployment verification" in result.stdout
+
+
+@pytest.mark.parametrize("ready_after,http_code", [(100, "200"), (0, "502"), (0, "301")])
+def test_update_times_out_without_running_verify_on_unready_health(
+    mock_update, ready_after, http_code
+):
+    result, calls = mock_update(ready_after=ready_after, http_code=http_code)
+    assert result.returncode != 0
+    assert sum(call[0] == "curl" for call in calls) == 15
+    assert sum(call[0] == "sleep" for call in calls) == 14
+    assert not any(call[0] == "verify.sh" for call in calls)
+    assert "did not become ready" in result.stderr
+
+
+def test_update_keeps_full_verification_failure_fatal(mock_update):
+    result, calls = mock_update(verify_exit=7)
+    assert calls[-1][0] == "verify.sh"
+    assert result.returncode == 7

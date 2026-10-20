@@ -17,8 +17,8 @@ Atomi väljaminev polling ja Wi-Fi recovery; USB/XIAO kaamerate tarkvaraalus;
 rõhuanduri UI, kalibratsioonimudel ja NVS-seaded; production-paigalduse
 runbook ning software-regressiooni skript `check.sh`.
 
-**Kontrollitud:** Python `91 passed`, Atom native `29/29`, XIAO native `6/6`,
-deployment-testid `11 passed` ning mõlema PlatformIO projekti edukad buildid.
+**Kontrollitud:** Python `113 passed`, Atom native `29/29`, XIAO native `6/6`,
+deployment-testid `18 passed` ning mõlema PlatformIO projekti edukad buildid.
 Mõlema töö software E2E läbib tulemusega `done` ja `hardware_used=false`.
 Varasemad Atomi lokaalse autentitud HTTP pollingu, reboot-püsivuse ning
 Wi-Fi fallback/reconnect/recovery katsed on tehtud päris seadmel. Need
@@ -50,6 +50,17 @@ SQLite kirje säilis teenuse restardi järel. Backup oli 24 576 baiti,
 Atom on avalikus serveris offline ja production pollingut pole testitud.
 Kogu dropleti reboot ning füüsiline MG400 integratsioon on kontrollimata.
 Kuupäevaga tulemused on päevikus ja [paigaldusjuhendis](deploy/README.md).
+
+**Production UI uuendus:** Nikita uuendas 20.10.26 serveri commit'ilt
+`7571582` commit'ile `7d374915f48e9f4cc7e4357e3a2c82df6191f231`
+`deploy/update.sh` kaudu. Fast-forward läbis ja SQLite backup'id loodi enne
+uuendust. Vahetu kontroll pärast restarti sai lokaalse connection refused
+ning avaliku HTTPS 502: Gunicorn polnud veel porti avanud. Pärast Gunicorni
+valmisolekut läbis korduv `deploy/verify.sh` kõik 12 kontrolli (`0 FAIL`),
+serveri tööpuu oli puhas ja `letter A` kirje säilis (`expired`, `ttl_expired`).
+Uus UI, mobiilikaardid ja letter/pick-place väljade vahetus on kontrollitud
+Safari Macis ning Chrome Androidis 5G kaudu. Repos lisatud readiness-ootamine
+on kohalik parandus; seda versiooni pole veel production'is kontrollitud.
 
 **Atomi production TLS ettevalmistus:** Nikita kontrollis 20.10.26 Macis
 serveri TLS-ahelat OpenSSL-iga (`Verify return code: 0 (ok)`). Ta lisas
@@ -238,13 +249,13 @@ selgesõnaliselt märgitud päris riistvara.
 
 | Kontroll | Tegelik tulemus | Piirang |
 | :--- | :--- | :--- |
-| Lab 2 Python `pytest` | 91 testi läbis | software-only; sisaldab 11 deployment-testi |
+| Lab 2 Python `pytest` | 113 testi läbis | software-only; sisaldab 18 deployment-testi |
 | `python -m src.e2e_demo` | `letter` ja `pick_place`: `server_status=done`, sama `job_id` kogu ahelas, `hardware_used=false` | ajutine DB, mock Atom ja mock executor |
 | AtomS3R `pio run -e atoms3r` | 20.10.26 CA-ga build SUCCESS; RAM 15,4%, flash 34,5%; 20,98 s | lokaalne build, CA olemasolu binaaris kontrollitud; päris production ühendus TODO |
 | AtomS3R `pio test -e native` | 29/29 testi läbis | hosti native-testid, mitte seadme test |
 | XIAO `pio run` | SUCCESS, board `seeed_xiao_esp32s3` | build; upload'i ei tehtud |
 | XIAO `pio test -e native` | 6/6 testi läbis | hosti native-testid, mitte kaamerakatse |
-| Deployment-testid | 11 testi läbis | lokaalne/static kontroll; päris hosti ei kasutatud |
+| Deployment-testid | 18 testi läbis | lokaalne/static ja mock readiness-kontroll; päris hosti ei kasutatud |
 | WSGI import ja deploy shell syntax | läbis | lokaalne/static kontroll |
 | `deploy/verify.sh` arendusmasinas | `SKIP` | systemd/Caddy production-kontroll vajab päris Ubuntu dropletit |
 | Mock-kaameraserver | HTTP 200 lehel, API-s ning table/tool snapshot'idel | sünteetilised mock-kaadrid, mitte füüsiline mõõtmine |
@@ -826,6 +837,33 @@ ei muudeta.
   kontrollida seadeid ja production HTTPS pollingut ning `last_seen`
   uuenemist. Päris MG400/jaama integratsioon, rõhuanduri ja kaamerate katsed,
   latency ning ametlik mid-job katkestuskatse jäävad TODO-ks.
+
+**20.10.2026 — Nikita Teterev (production UI uuendus, jätk)**
+
+* Tegime: Uuendasin `narva2.roboarena.org` postkontorit `deploy/update.sh`
+  kaudu commit'ilt `7571582` commit'ile
+  `7d374915f48e9f4cc7e4357e3a2c82df6191f231`. Enne uuendust loodi SQLite
+  backup-failid ning Git fast-forward läbis. Kontrollisin pärast teenuse
+  restarti käivitumist, kordasin `deploy/verify.sh` kontrolli ja vaatasin uut
+  liidest Safari kaudu Macis ning Chrome'iga Androidis 5G kaudu.
+* Juhtus (numbrid): Kohe pärast `systemctl restart` käsku sai kontroll
+  `127.0.0.1:5001` aadressilt connection refused ja avalikult HTTPS-ilt `502`.
+  Lühikese aja järel hakkas Gunicorn kuulama `127.0.0.1:5001`; täpset aega
+  ei mõõdetud. Korduv `deploy/verify.sh`: `12 PASS, 0 FAIL`. Dropleti Git
+  tööpuu oli puhas. Varasem `letter A` säilis SQLite'is olekuga `expired`,
+  põhjusega `ttl_expired`. Telefonis töötasid letter/pick-place väljade
+  ümberlülitus ja tööde mobiilikaardid.
+* Otsustasime, ja miks: Esimene kontroll ebaõnnestus Gunicorni käivitumise
+  ajal; edukas korduskontroll järgnes valmisolekule. `systemctl restart`
+  lõpetamine ei kinnita veel avatud HTTP porti. Lisasime repos `update.sh`
+  skripti enne muutmata `verify.sh` käivitamist piiratud lokaalse `/health`
+  ootamise: kuni 15 päringut, igal päringul 1 s timeout ja katsete vahel 1 s
+  paus. Ainult HTTP 200 lubab jätkata, limiidi ületamine lõpetab uuenduse
+  veaga. Readiness-parandus on praegu ainult lokaalselt testitud.
+* Lahti järgmiseks korraks: Kontrollida parandatud uuendusskripti järgmise
+  lubatud production-uuenduse ajal. Atomi production HTTPS polling, füüsiline
+  MG400/jaama ahel, rõhuandur ja päris kaamerad, latency/metrics ning kogu
+  dropleti reboot jäävad eraldi kontrollideks.
 
 ### Väljundid ja tulemused
 

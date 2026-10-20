@@ -34,6 +34,22 @@ Teenuse restart ja testbaasi taastamine ei kata kogu dropleti reboot'i ega
 täielikku taastamist puhtale hostile. Need, Atomi production HTTPS polling
 ja füüsilised MG400/kaamerate/latency katsed jäävad TODO-ks.
 
+## Production UI uuendus — 20.10.2026
+
+Nikita uuendas postkontorit `deploy/update.sh` kaudu commit'ilt `7571582`
+commit'ile `7d374915f48e9f4cc7e4357e3a2c82df6191f231`. Enne uuendust loodi
+SQLite backup-failid ja Git fast-forward läbis. Kohe pärast
+`systemctl restart` käsku ebaõnnestus kontroll: `127.0.0.1:5001` andis
+connection refused ning avalik HTTPS `502`. Lühikese aja järel avas Gunicorn
+loopback-pordi; täpset käivitusaega ei mõõdetud. Korduv `deploy/verify.sh`
+andis `12 PASS, 0 FAIL` ja dropleti Git tööpuu oli puhas.
+
+Nikita kontrollis uut UI-d Safari kaudu Macis ja Chrome'iga Androidis 5G
+kaudu. Telefonis töötasid letter/pick-place väljade vahetus ja mobiilikaardid.
+SQLite'is säilis varasem `letter A` olekuga `expired`, põhjusega `ttl_expired`.
+See on päris UI-uuenduse kontroll; Atomi production pollingut ega MG400
+täitmist selle tulemusega tehtuks ei märgita.
+
 ## Kinnitatud paigalduskontrollid — 16.10.2026
 
 Nikita kinnitatud tulemused on kirjas ka [Lab 2 arenduspäevikus](../README.md#arenduspäevik).
@@ -359,7 +375,8 @@ MG400 või kaamerate jaoks avalikku reeglit ei lisata.
 
 Uuendamisel vali ja vaata commit/ref enne läbi. Skript nõuab puhast checkout'i,
 teeb enne Git muudatust SQLite online-backup'i, lubab ainult fast-forward
-merge'i, uuendab Python sõltuvused, restardib teenuse ja kontrollib tulemust:
+merge'i, uuendab Python sõltuvused, restardib teenuse, ootab kohalikku HTTP
+valmisolekut ning käivitab muutmata `verify.sh` kontrolli:
 
 ```bash
 cd /opt/smart-solutions-lab2/app/smart-solutions/lab2
@@ -368,6 +385,20 @@ sudo sh deploy/update.sh origin/main
 
 `origin/main` on näide teadlikult valitud ref-ist, mitte automaatne soovitus.
 Skript ei kasuta force/reset käsku ega kustuta andmebaasi.
+
+Pärast restarti võib systemd näidata teenust aktiivsena enne, kui Gunicorn
+kuulamisport on avatud. `update.sh` ootab nüüd
+`http://127.0.0.1:5001/health` HTTP 200 vastust: kuni 15 katset, päringu
+connection timeout ja kogutimeout kumbki 1 s ning ebaõnnestunud katsete vahel
+1 s paus. Maksimaalne ootamine on ligikaudu 30 s (15 päringut ja 14 pausi).
+Päring läheb otse loopback-liidesele, proxy-seadeid kasutamata. Kui endpoint
+ei saa valmis, lõpetab skript veakoodiga ega kuuluta uuendust edukaks.
+Eduka health'i järel peab endiselt läbima täielik `verify.sh`, mille viga
+lõpetab samuti skripti veaga. Timeout ei käivita automaatset rollback'i.
+
+See ootamise parandus on lokaalselt mock curl'iga testitav; production'is
+20.10.26 nähtud võidujooks tekkis enne paranduse lisamist. Parandatud skripti
+production-kontroll on TODO.
 
 Backup'i saab eraldi teha käsuga:
 
