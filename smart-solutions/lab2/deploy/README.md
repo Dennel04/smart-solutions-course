@@ -1,9 +1,38 @@
 # Lab 2 postkontori production-paigalduse alus
 
-> **Olek 16.10.2026:** Nikita Teterev sai õppejõult serveri ligipääsuandmed,
-> logis võtmega SSH kaudu sisse ning kontrollis päris DigitalOcean Dropletil
-> postkontori esmast paigaldust. Teenus töötas loopback HTTP kaudu. Avalik
-> HTTPS, SSH hardening, UFW ja täielik production-kontroll jäävad lahti.
+> **Olek 20.10.2026:** Nikita Teterev kontrollis avalikku HTTPS-i domeenil
+> `narva2.roboarena.org`, autentimist Macis ja telefonis 5G kaudu, SSH
+> autentimisseadeid, UFW-d, töö loomist/aegumist ning SQLite backup'i
+> taastamist eraldi testbaasi. `deploy/verify.sh`: `12 PASS, 0 FAIL, 0 SKIP`.
+> Atom on offline; production polling, kogu dropleti reboot ning MG400
+> füüsiline integratsioon on kontrollimata.
+
+## Kinnitatud deployment-kontrollid — 20.10.2026
+
+Allpool on Nikita kinnitatud tulemused. 16.10.2026 kontrollid jäävad järgmisse
+jaotisse ajaloolise seisuna; uus kontroll ei kirjuta neid üle.
+
+| Kontroll | Tulemus |
+| :--- | :--- |
+| Ubuntu | 24.04.5 LTS; uuendatud 11 paketti |
+| SSH autentimine | `pubkeyauthentication yes`, `passwordauthentication no`, `kbdinteractiveauthentication no` |
+| SSH pärast UFW aktiveerimist | Sõltumatu võtmega login õnnestus |
+| UFW | `active`; sissetulevad TCP 22, 80, 443 lubatud; default `deny incoming` |
+| Swap | 1 GiB swap-fail loodud ja aktiivne, kirje `/etc/fstab` failis |
+| Caddy | 2.11.7, `active`, `enabled` |
+| Avalik HTTPS | `https://narva2.roboarena.org`; Maci väline curl `/health`: HTTP/2 200, korrektne TLS |
+| Kasutajaleht | Autentimine ja UI töötasid Safari Macis ning Chrome telefonis 5G kaudu |
+| Töö ja TTL | `letter A` loodud, tulemus `expired`, põhjus `ttl_expired` |
+| SQLite püsivus | Töö kirje säilis `smart-solutions-lab2` teenuse restardi järel |
+| SQLite backup | 24576 baiti, `root:root`, mode `600` |
+| Taastamine eraldi testbaasi | `integrity_check: ok`; töö kirje taastati |
+| `deploy/verify.sh` | 12 PASS, 0 FAIL, 0 SKIP |
+| `smart-solutions-lab2` | `enabled`, `active` |
+| Atom | Avalikus serveris offline; production pollingut ei testitud |
+
+Teenuse restart ja testbaasi taastamine ei kata kogu dropleti reboot'i ega
+täielikku taastamist puhtale hostile. Need, Atomi production HTTPS polling
+ja füüsilised MG400/kaamerate/latency katsed jäävad TODO-ks.
 
 ## Kinnitatud paigalduskontrollid — 16.10.2026
 
@@ -93,10 +122,10 @@ testide, station-adapteri ja kaamerate sõltuvused on eraldi failis
 - päris väärtused on paroolihalduris, mitte repos ega shelli ajaloos.
 
 Pakette ja Caddyt paigaldatakse nende ametlike Ubuntu juhiste järgi päris
-hostil. Repo ei automatiseeri neid samme; 16.10.26 kinnitati Ubuntu versioon,
-kuid Caddy ja hosti edasised haldustoimingud vajavad veel kontrolli.
+hostil. Repo ei automatiseeri neid samme. 20.10.26 kinnitas Nikita Ubuntu
+24.04.5 LTS, 11 paketi uuendamise ning Caddy 2.11.7 `active/enabled` oleku.
 
-## Ligipääs saadud; DNS ja HTTPS veel kontrollida
+## Ligipääs ja avalik HTTPS kontrollitud
 
 Nikita sai ligipääsuandmed ja kontrollis võtmega SSH login'it 16.10.26.
 Väärtusi ei salvestata sellesse dokumenti. Runbook'i käsud kasutavad jätkuvalt
@@ -106,15 +135,18 @@ placeholder'e:
 - `<DROPLET_IP>`: dropleti avalik aadress;
 - `<HOSTNAME>`: õppejõu antud hostinimi/link;
 
-Nikita arvuti võtmega ligipääs on kontrollitud. Kõigi teiste kasutajate
-ligipääs ning `<HOSTNAME>` DNS-kirje vastavus `<DROPLET_IP>`-le vajavad eraldi
-kontrolli; edukas SSH login ei tõenda DNS-i ega avalikku HTTPS-i.
+Nikita kontrollis 20.10.26 sõltumatut võtmega login'it pärast UFW
+aktiveerimist ning avalikku HTTPS-i domeenil `narva2.roboarena.org`.
+Kõigi teiste kasutajate ligipääs vajab eraldi kontrolli. Runbook'i
+`<HOSTNAME>` ja `<TEAM_HOSTNAME>` tähistavad selle deployment'i puhul
+`narva2.roboarena.org`; serveri IP-d ja SSH kasutajanime siin ei avaldata.
 
 Repo olemasolevates konfiguratsioonimallides tähistab `<TEAM_HOSTNAME>` sama
 õppejõult saadud väärtust, mida selle runbook'i käskudes tähistab `<HOSTNAME>`.
 
-Password-login'i keelamine, UFW reeglid, avalik TLS-sertifikaat, mobiilse
-andmeside test ja Atomi production HTTPS polling pole veel kinnitatud.
+Password-login'i ja keyboard-interactive autentimise keelamine, UFW,
+avalik TLS ning telefoni 5G katse on kontrollitud. Atomi production HTTPS
+polling on veel tegemata; Atom oli avalikus serveris offline.
 
 ## Kohalik eelkontroll
 
@@ -477,21 +509,27 @@ pärast päris dropleti ja laboririistvaraga katset:
 - [x] Repo, virtualenv, production-paketid ja systemd teenus on paigaldatud.
 - [x] Teenus käivitati käsitsi; Gunicorn kuulas ainult loopback-liidesel,
   `/health` vastas HTTP 200 ja autentimata `/` HTTP 401.
-- [ ] Teenuse autostart ja reboot-järgne käivitumine on kontrollitud;
-  16.10.2026 oli autostart `disabled`.
+- [x] `smart-solutions-lab2` ja Caddy on `enabled` ning `active` (20.10.2026).
+- [ ] Teenuste käivitumine pärast kogu dropleti reboot'i on kontrollitud.
 - [ ] Kõigi kasutajate võtmega SSH login on teises sessioonis kontrollitud.
-- [ ] Password login on keelatud alles pärast seda kontrolli.
-- [ ] DNS `<TEAM_HOSTNAME>` viitab kinnitatud dropletile.
-- [ ] Caddy avalik sertifikaat ja HTTPS health on kontrollitud.
-- [ ] UFW lubab ainult kokkulepitud SSH, 80/tcp ja 443/tcp; 5001 pole avalik.
+- [x] SSH effective config: `pubkeyauthentication yes`,
+  `passwordauthentication no`, `kbdinteractiveauthentication no`;
+  Nikita sõltumatu login pärast UFW aktiveerimist õnnestus (20.10.2026).
+- [x] Domeeni `narva2.roboarena.org` avalik HTTPS ja `/health` vastus on
+  välise Maci curl'iga kontrollitud: HTTP/2 200, korrektne TLS (20.10.2026).
+- [x] UFW `active`, sissetulevad TCP 22/80/443 lubatud, default `deny incoming`
+  (20.10.2026).
 - [x] Env-fail on `root:root 0600`, nõutud väärtused on olemas,
   placeholder'id puuduvad ja saladused on repost väljas.
 - [x] SQLite fail asub Git checkout'ist väljas püsirajal, õigustega `0600`.
-- [ ] Päris andmebaasi backup ja taastamine on kontrollitud.
-- [ ] Kasutaja Basic auth õige veebiparooliga ja Atomi bearer auth on päris
-  hostil kontrollitud; HTTP 401 tõendab ainult autentimata päringu keeldumist.
-- [ ] Tööde loomine ja salvestamine on päris hostil HTTP kaudu kontrollitud.
-- [ ] Täielik `deploy/verify.sh` läbib päris hostil.
+- [x] SQLite backup on loodud (24576 baiti, `root:root 600`) ning taastatud
+  eraldi testbaasi: `integrity_check: ok`, töö kirje taastatud (20.10.2026).
+- [x] Kasutaja autentimine ja UI töötavad Safari Macis ja Chrome telefonis
+  5G kaudu (20.10.2026).
+- [ ] Atomi bearer auth ja production polling on päris seadmega kontrollitud.
+- [x] `letter A` loomine, aegumine (`ttl_expired`) ning kirje säilimine teenuse
+  restardi järel on päris hostil kontrollitud (20.10.2026).
+- [x] Täielik `deploy/verify.sh`: `12 PASS, 0 FAIL, 0 SKIP` (20.10.2026).
 - [ ] Atom pollib aadressi `https://<TEAM_HOSTNAME>` väljamineva ühendusega.
 - [ ] Station'i, MG400 ja kaamerate poole ei ole dropletil route'i/proxy't.
 - [ ] Taasteprotseduur on päriselt läbi proovitud ja tulemus kuupäevaga kirjas.
