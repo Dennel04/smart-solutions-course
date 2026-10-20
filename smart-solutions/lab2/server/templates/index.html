@@ -3,91 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Lab 2 postkontor</title>
-    <style>
-      :root {
-        color-scheme: light;
-        --ink: #17233c;
-        --muted: #53627b;
-        --line: #dce3ed;
-        --accent: #4338ca;
-        --radius: 1rem;
-      }
-      * { box-sizing: border-box; }
-      [hidden] { display: none !important; }
-      body { margin: 0; color: var(--ink); background: #f3f5fa; font: 1rem/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-      main { max-width: 84rem; margin: 0 auto; padding: 2.5rem 2rem; }
-      h1, h2, p { margin: 0; }
-      h1 { font-size: clamp(1.75rem, 5vw, 2.5rem); line-height: 1.2; letter-spacing: -.035em; }
-      h2 { font-size: 1.2rem; letter-spacing: -.02em; }
-      .eyebrow { margin-bottom: .6rem; color: var(--accent); font-size: .75rem; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
-      .intro { margin-top: .65rem; color: var(--muted); max-width: 44rem; }
-      .panel { margin-top: 1.5rem; padding: 1.5rem; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 3px 12px #17233c04; }
-      .panel-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; }
-      .section-description { margin-top: .3rem; color: var(--muted); font-size: .9rem; }
-      .atom-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem 1.5rem; margin-top: .65rem; font-size: .9rem; }
-      .atom-meta > span { min-width: 0; }
-      .atom-note { flex-basis: 40rem; flex-grow: 1; color: var(--muted); }
-      .last-seen { color: var(--muted); }
-      code, time { overflow-wrap: anywhere; }
-      code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .8rem; white-space: pre-wrap; }
-      time { font-size: .85rem; font-variant-numeric: tabular-nums; }
-      .status { display: inline-flex; align-items: center; flex-wrap: wrap; gap: .35rem; max-width: 100%; padding: .25rem .6rem; border: 1px solid transparent; border-radius: .5rem; font-size: .8rem; font-weight: 650; }
-      .status::before { content: ""; width: .4rem; height: .4rem; border-radius: 50%; background: currentColor; flex-shrink: 0; }
-      .status code { font-size: .7rem; font-weight: 400; }
-      .status--success { color: #16603d; background: #ecf8f0; border-color: #c9e8d4; }
-      .status--waiting { color: #805300; background: #fff7df; border-color: #f0dfa9; }
-      .status--claimed { color: #3730a3; background: #eeedff; border-color: #d8d5fa; }
-      .status--danger { color: #a12b3b; background: #fff0f1; border-color: #f3ccd1; }
-      .status--neutral { color: #526079; background: #f0f3f7; border-color: #dce3ed; }
-      form { margin-top: 1.3rem; }
-      .form-grid { display: grid; grid-template-columns: 1.2fr 1.5fr 1fr; gap: 1.25rem; align-items: start; }
-      .form-field { display: flex; flex-direction: column; gap: .45rem; min-width: 0; }
-      label { font-size: .9rem; font-weight: 650; }
-      input, select, button { font: inherit; min-height: 2.875rem; border-radius: .6rem; padding: .65rem .8rem; }
-      input, select { width: 100%; min-width: 0; border: 1px solid #aab7cb; background: #fff; color: inherit; }
-      input:hover, select:hover { border-color: #727f98; }
-      .field-help { color: var(--muted); font-size: .8rem; }
-      .field-help code { font-size: inherit; }
-      .form-footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
-      .form-footer p { color: var(--muted); font-size: .85rem; max-width: 42rem; }
-      button { flex-shrink: 0; border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; font-weight: 650; box-shadow: 0 2px 4px #4338ca18; }
-      button:hover { background: #3730a3; }
-      :focus-visible { outline: 3px solid #6366f1; outline-offset: 3px; }
-      .error { margin-top: 1rem; padding: .8rem 1rem; color: #a12b3b; background: #fff0f1; border: 1px solid #f3ccd1; border-radius: .6rem; overflow-wrap: anywhere; }
-      .job-count { color: var(--muted); font-size: .85rem; }
-      .table-wrap { margin-top: 1.25rem; border: 1px solid var(--line); border-radius: .65rem; }
-      table { border-collapse: collapse; table-layout: fixed; width: 100%; }
-      caption { text-align: left; color: var(--muted); font-size: .8rem; padding: .8rem 1rem; }
-      th, td { padding: .9rem .75rem; text-align: left; vertical-align: top; overflow-wrap: anywhere; border-top: 1px solid var(--line); }
-      th { background: #f6f8fc; color: var(--muted); font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; font-weight: 650; }
-      td { font-size: .875rem; }
-      tbody tr:hover { background: #fafbfe; }
-      .field-label { display: none; }
-      .result-label { display: block; color: var(--muted); font-size: .7rem; margin-bottom: .2rem; font-weight: 650; }
-      .result-part + .result-part { margin-top: .65rem; }
-      .empty-state { padding: 2.5rem 1rem; text-align: center; color: var(--muted); }
-      .empty-state strong { display: block; color: var(--ink); margin-bottom: .25rem; }
-      footer { margin: 1.25rem 0 0; color: var(--muted); font-size: .8rem; text-align: center; }
-      @media (max-width: 48rem) {
-        main { padding: 1.5rem 1rem; }
-        .panel { padding: 1.1rem; margin-top: 1rem; }
-        .form-grid { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
-        .form-footer { flex-direction: column; align-items: stretch; margin-top: 1.25rem; }
-        button { width: 100%; }
-        table, caption, tbody { display: block; }
-        colgroup { display: none; }
-        .table-wrap { border: 0; margin-top: .75rem; }
-        caption { padding: 0 0 .75rem; }
-        thead { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-        tbody { display: grid; gap: .85rem; }
-        tbody tr { display: grid; min-width: 0; padding: .9rem; border: 1px solid var(--line); border-radius: .65rem; background: #fff; }
-        td { display: block; min-width: 0; border: 0; padding: .45rem 0; }
-        td + td { border-top: 1px solid #f0f3f7; }
-        .field-label { display: block; margin-bottom: .25rem; color: var(--muted); font-size: .7rem; font-weight: 650; }
-        .empty-state { padding: 1rem 0; }
-      }
-    </style>
+    <title data-i18n="page.title">Lab 2 postkontor</title>
+    {% include '_theme_head.html' %}
   </head>
   <body>
     {% set atom_labels = {'online': 'Ühendatud', 'stale': 'Teade hilineb', 'offline': 'Ühendus puudub'} %}
@@ -95,60 +12,63 @@
     {% set job_labels = {'queued': 'Ootel', 'claimed': 'Vastu võetud', 'done': 'Lõpetatud', 'refused': 'Keeldutud', 'expired': 'Aegunud'} %}
     {% set job_tones = {'queued': 'waiting', 'claimed': 'claimed', 'done': 'success', 'refused': 'danger', 'expired': 'neutral'} %}
     <main>
-      <header>
-        <p class="eyebrow">Nutikad lahendused · Labor 2</p>
-        <h1>Lab 2 postkontor</h1>
-        <p class="intro">Saada kõrgtaseme töö järjekorda ja jälgi selle olekut.</p>
+      <header class="page-header">
+        <div>
+          <p class="eyebrow" data-i18n="page.eyebrow">Nutikad lahendused · Labor 2</p>
+          <h1 data-i18n="page.title">Lab 2 postkontor</h1>
+          <p class="intro" data-i18n="page.intro">Saada kõrgtaseme töö järjekorda ja jälgi selle olekut.</p>
+        </div>
+        {% include '_header_controls.html' %}
       </header>
 
       <section class="panel" aria-labelledby="atom-heading">
         <div class="panel-header">
-          <h2 id="atom-heading">Atomi ühendus</h2>
-          <span class="status status--{{ atom_tones.get(atom.status, 'neutral') }}">{{ atom_labels.get(atom.status, 'Tundmatu olek') }} <code>{{ atom.status }}</code></span>
+          <h2 id="atom-heading" data-i18n="atom.heading">Atomi ühendus</h2>
+          <span class="status status--{{ atom_tones.get(atom.status, 'neutral') }}"><span data-i18n="atom.{{ atom.status if atom.status in atom_labels else 'unknown' }}">{{ atom_labels.get(atom.status, 'Tundmatu olek') }}</span> <code>{{ atom.status }}</code></span>
         </div>
         <div class="atom-meta">
           <p class="atom-note">
-            {% if atom.status == 'online' %}Atom on ühenduses. Roboti töö sõltub jaama kohalikust loast.
-            {% elif atom.status == 'stale' %}Atomi viimane teade hilineb. Töö vastuvõtmine pole kinnitatud.
-            {% else %}Atom ei ole ühenduses. Uus töö jääb järjekorda ja võib enne vastuvõtmist aeguda.{% endif %}
+            {% if atom.status == 'online' %}<span data-i18n="atom.onlineNote">Atom on ühenduses. Roboti töö sõltub jaama kohalikust loast.</span>
+            {% elif atom.status == 'stale' %}<span data-i18n="atom.staleNote">Atomi viimane teade hilineb. Töö vastuvõtmine pole kinnitatud.</span>
+            {% else %}<span data-i18n="atom.offlineNote">Atom ei ole ühenduses. Uus töö jääb järjekorda ja võib enne vastuvõtmist aeguda.</span>{% endif %}
           </p>
-          <span class="last-seen">Viimati nähtud: <code>{{ atom.last_seen or "Pole veel ühendunud" }}</code></span>
+          <span class="last-seen"><span data-i18n="atom.lastSeen">Viimati nähtud:</span> <code{% if not atom.last_seen %} data-i18n="atom.neverSeen"{% endif %}>{{ atom.last_seen or "Pole veel ühendunud" }}</code></span>
         </div>
       </section>
 
       <section class="panel" aria-labelledby="create-heading">
-        <h2 id="create-heading">Uus kõrgtaseme töö</h2>
-        <p class="section-description">Vali töö ja määra, kui kaua see võib järjekorras oodata.</p>
-        {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+        <h2 id="create-heading" data-i18n="form.heading">Uus kõrgtaseme töö</h2>
+        <p class="section-description" data-i18n="form.description">Vali töö ja määra, kui kaua see võib järjekorras oodata.</p>
+        {% if error %}{% include '_form_error.html' %}{% endif %}
         <form method="post" action="{{ url_for('create_job_form') }}">
           <div class="form-grid">
             <div class="form-field">
-              <label for="job">Töö tüüp</label>
+              <label for="job" data-i18n="form.job">Töö tüüp</label>
               <select id="job" name="job" aria-describedby="job-help">
-                <option value="letter">Joonista täht</option>
-                <option value="pick_place">Teisalda detail (eelmääratud)</option>
+                <option value="letter" data-i18n="job.letter">Joonista täht</option>
+                <option value="pick_place" data-i18n="job.pick_placeOption">Teisalda detail (eelmääratud)</option>
               </select>
             </div>
             <div class="form-field" id="letter-field">
-              <label for="letter">Täht A–Z</label>
+              <label for="letter" data-i18n="form.letter">Täht A–Z</label>
               <input id="letter" name="letter" maxlength="1" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-describedby="job-help">
             </div>
             <div class="form-field" id="routine-field">
-              <label for="routine">Eelmääratud tegevus</label>
+              <label for="routine" data-i18n="form.routine">Eelmääratud tegevus</label>
               <select id="routine" name="routine" aria-describedby="routine-help">
-                <option value="source_to_finished">Algkohast valmis detailide alale</option>
+                <option value="source_to_finished" data-i18n="form.routineOption">Algkohast valmis detailide alale</option>
               </select>
-              <p id="routine-help" class="field-help">Tegevus <code>source_to_finished</code>. Jaam peab selle kohapeal lubama.</p>
+              <p id="routine-help" class="field-help"><span data-i18n="form.routinePrefix">Tegevus</span> <code>source_to_finished</code><span data-i18n="form.routineHelp">. Jaam peab selle kohapeal lubama.</span></p>
             </div>
             <div class="form-field">
-              <label for="ttl-seconds">Ooteaeg (TTL), sekundites</label>
+              <label for="ttl-seconds" data-i18n="form.ttl">Ooteaeg (TTL), sekundites</label>
               <input id="ttl-seconds" name="ttl_seconds" type="number" inputmode="numeric" min="1" value="{{ default_ttl }}" aria-describedby="ttl-help" required>
-              <p id="ttl-help" class="field-help">Aeg, mille jooksul uus töö võib oodata, kuni Atom selle vastu võtab.</p>
+              <p id="ttl-help" class="field-help" data-i18n="form.ttlHelp">Aeg, mille jooksul uus töö võib oodata, kuni Atom selle vastu võtab.</p>
             </div>
           </div>
           <div class="form-footer">
-            <p id="job-help">Täida ainult valitud töö väli. Koordinaate ja pumbakäske siin määrata ei saa.</p>
-            <button type="submit">Lisa järjekorda</button>
+            <p id="job-help" data-i18n="form.help">Täida ainult valitud töö väli. Koordinaate ja pumbakäske siin määrata ei saa.</p>
+            <button type="submit" data-i18n="form.submit">Lisa järjekorda</button>
           </div>
         </form>
       </section>
@@ -156,48 +76,48 @@
       <section class="panel" aria-labelledby="jobs-heading">
         <div class="panel-header">
           <div>
-            <h2 id="jobs-heading">Tööde ajalugu</h2>
-            <p class="section-description">Töö täielikud andmed ja viimane teadaolev olek.</p>
+            <h2 id="jobs-heading" data-i18n="history.heading">Tööde ajalugu</h2>
+            <p class="section-description" data-i18n="history.description">Töö täielikud andmed ja viimane teadaolev olek.</p>
           </div>
-          <span class="job-count">{{ jobs | length }} tööd</span>
+          <span class="job-count"><span data-i18n="history.count">Töid:</span> {{ jobs | length }}</span>
         </div>
         <div class="table-wrap">
           <table role="table" aria-labelledby="jobs-heading">
-            <caption>Ajatemplid on UTC-s. ID ja andmed on kuvatud täies mahus.</caption>
+            <caption data-i18n="history.caption">Ajatemplid on UTC-s. ID ja andmed on kuvatud täies mahus.</caption>
             <colgroup><col style="width: 18%"><col style="width: 11%"><col style="width: 17%"><col style="width: 14%"><col style="width: 18%"><col style="width: 22%"></colgroup>
             <thead role="rowgroup">
               <tr role="row">
-                <th scope="col" role="columnheader">ID</th>
-                <th scope="col" role="columnheader">Töö</th>
-                <th scope="col" role="columnheader">Argument</th>
-                <th scope="col" role="columnheader">Olek</th>
-                <th scope="col" role="columnheader">Loodud</th>
-                <th scope="col" role="columnheader">Tulemus / põhjus</th>
+                <th scope="col" role="columnheader" data-i18n="field.id">ID</th>
+                <th scope="col" role="columnheader" data-i18n="field.job">Töö</th>
+                <th scope="col" role="columnheader" data-i18n="field.arg">Argument</th>
+                <th scope="col" role="columnheader" data-i18n="field.status">Olek</th>
+                <th scope="col" role="columnheader" data-i18n="field.created">Loodud</th>
+                <th scope="col" role="columnheader" data-i18n="field.resultReason">Tulemus / põhjus</th>
               </tr>
             </thead>
             <tbody role="rowgroup">
               {% for job in jobs %}
                 <tr role="row">
-                  <td role="cell"><span class="field-label" aria-hidden="true">ID</span><code>{{ job.id }}</code></td>
-                  <td role="cell"><span class="field-label" aria-hidden="true">Töö</span>{{ {'letter': 'Joonista täht', 'pick_place': 'Teisalda detail'}.get(job.job, job.job) }}<br><code>{{ job.job }}</code></td>
-                  <td role="cell"><span class="field-label" aria-hidden="true">Argument</span><code>{{ job.arg | tojson }}</code></td>
-                  <td role="cell"><span class="field-label" aria-hidden="true">Olek</span><span class="status status--{{ job_tones.get(job.status, 'neutral') }}">{{ job_labels.get(job.status, 'Tundmatu olek') }} <code>{{ job.status }}</code></span></td>
-                  <td role="cell"><span class="field-label" aria-hidden="true">Loodud</span><time datetime="{{ job.created_at }}">{{ job.created_at }}</time></td>
+                  <td role="cell"><span class="field-label" aria-hidden="true" data-i18n="field.id">ID</span><code>{{ job.id }}</code></td>
+                  <td role="cell"><span class="field-label" aria-hidden="true" data-i18n="field.job">Töö</span><span data-i18n="job.{{ job.job if job.job in ['letter', 'pick_place'] else 'unknown' }}">{{ {'letter': 'Joonista täht', 'pick_place': 'Teisalda detail'}.get(job.job, 'Tundmatu töö') }}</span><br><code>{{ job.job }}</code></td>
+                  <td role="cell"><span class="field-label" aria-hidden="true" data-i18n="field.arg">Argument</span><code>{{ job.arg | tojson }}</code></td>
+                  <td role="cell"><span class="field-label" aria-hidden="true" data-i18n="field.status">Olek</span><span class="status status--{{ job_tones.get(job.status, 'neutral') }}"><span data-i18n="status.{{ job.status if job.status in job_labels else 'unknown' }}">{{ job_labels.get(job.status, 'Tundmatu olek') }}</span> <code>{{ job.status }}</code></span></td>
+                  <td role="cell"><span class="field-label" aria-hidden="true" data-i18n="field.created">Loodud</span><time datetime="{{ job.created_at }}">{{ job.created_at }}</time></td>
                   <td role="cell">
-                    <div class="result-part"><span class="result-label">Tulemus</span><code>{{ job.result | tojson }}</code></div>
-                    <div class="result-part"><span class="result-label">Põhjus</span><code>{{ job.reason | tojson }}</code></div>
+                    <div class="result-part"><span class="result-label" data-i18n="field.result">Tulemus</span><code>{{ job.result | tojson }}</code></div>
+                    <div class="result-part"><span class="result-label" data-i18n="field.reason">Põhjus</span><code>{{ job.reason | tojson }}</code></div>
                   </td>
                 </tr>
               {% else %}
-                <tr role="row"><td role="cell" colspan="6" class="empty-state"><strong>Töid ei ole.</strong>Esimese töö saad lisada ülaloleva vormiga.</td></tr>
+                <tr role="row"><td role="cell" colspan="6" class="empty-state"><strong data-i18n="history.empty">Töid ei ole.</strong><span data-i18n="history.emptyHelp">Esimese töö saad lisada ülaloleva vormiga.</span></td></tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
       </section>
-      <footer>Postkontor vahendab kõrgtaseme töid. Roboti käivitamise luba antakse jaamas kohapeal.</footer>
+      <footer data-i18n="page.footer">Postkontor vahendab kõrgtaseme töid. Roboti käivitamise luba antakse jaamas kohapeal.</footer>
     </main>
-    <script>
+    <script id="job-fields">
       (() => {
         const job = document.getElementById('job');
         const letter = document.getElementById('letter');
@@ -215,5 +135,6 @@
         updateFields();
       })();
     </script>
+    {% include '_i18n.html' %}
   </body>
 </html>

@@ -1,0 +1,18 @@
+{# Match only known form messages. Unknown text stays escaped and untranslated. #}
+{% set known_errors = {
+  'letter must be a string.': ('error.letter', 'Sisesta üks täht A–Z.'),
+  'letter must be exactly one character A-Z.': ('error.letter', 'Sisesta üks täht A–Z.'),
+  "pick_place routine must be 'source_to_finished'.": ('error.routine', 'Vali tegevus source_to_finished.'),
+  "Only the enabled high-level jobs 'letter' and 'pick_place' are accepted.": ('error.job', 'Vali töö letter või pick_place.'),
+  'TTL must be an integer.': ('error.ttlInteger', 'TTL peab olema täisarv sekundites.'),
+  'ttl_seconds must be an integer.': ('error.ttlInteger', 'TTL peab olema täisarv sekundites.')
+} %}
+<p class="error" role="alert">
+  {% if error in known_errors %}
+    <span data-i18n="{{ known_errors[error][0] }}">{{ known_errors[error][1] }}</span>
+  {% elif error == 'ttl_seconds must be between 1 and %d.' % config.MAX_TTL_SECONDS %}
+    <span data-i18n="error.ttlRange" data-i18n-max="{{ config.MAX_TTL_SECONDS }}">TTL peab olema vahemikus 1–{{ config.MAX_TTL_SECONDS }} sekundit.</span>
+  {% else %}
+    <span data-i18n="error.general">Kontrolli sisestatud andmeid.</span> <code>{{ error }}</code>
+  {% endif %}
+</p>

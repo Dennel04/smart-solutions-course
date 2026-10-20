@@ -1,0 +1,12 @@
+<div class="header-controls">
+  <div class="language-control" id="language-control" hidden>
+    <label id="language-label" class="sr-only" for="ui-language" data-i18n="language.label">Keel</label>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><ellipse cx="12" cy="12" rx="4" ry="9"></ellipse><path d="M3 12h18"></path></svg>
+    <select id="ui-language" aria-labelledby="language-label">
+      <option value="et" lang="et">ET · Eesti</option>
+      <option value="ru" lang="ru">RU · Русский</option>
+      <option value="en" lang="en">EN · English</option>
+    </select>
+  </div>
+  {% include '_theme_toggle.html' %}
+</div>

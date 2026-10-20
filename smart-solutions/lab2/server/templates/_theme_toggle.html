@@ -1,0 +1,30 @@
+<button class="theme-toggle" id="theme-toggle" type="button" aria-label="Tume teema" hidden>
+  <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" focusable="false"><path d="M20 15a8.5 8.5 0 0 1-11-11A8.5 8.5 0 1 0 20 15Z"></path></svg>
+  <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"></path></svg>
+  <span class="theme-label">Tume teema</span>
+</button>
+<script id="theme-control">
+  (() => {
+    const root = document.documentElement;
+    const button = document.getElementById('theme-toggle');
+    const system = window.matchMedia('(prefers-color-scheme: dark)');
+    const isDark = () => root.dataset.theme ? root.dataset.theme === 'dark' : system.matches;
+    const update = () => {
+      const label = window.Lab2I18n
+        ? window.Lab2I18n.t(isDark() ? 'theme.light' : 'theme.dark')
+        : (isDark() ? 'Hele teema' : 'Tume teema');
+      button.querySelector('.theme-label').textContent = label;
+      button.setAttribute('aria-label', label);
+    };
+    button.addEventListener('click', () => {
+      const theme = isDark() ? 'light' : 'dark';
+      root.dataset.theme = theme;
+      try { localStorage.setItem('lab2-theme', theme); } catch (_) { /* Keep this page usable. */ }
+      update();
+    });
+    system.addEventListener('change', update);
+    window.addEventListener('lab2:languagechange', update);
+    update();
+    button.hidden = false;
+  })();
+</script>

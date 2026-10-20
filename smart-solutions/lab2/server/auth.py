@@ -3,7 +3,7 @@
 from functools import wraps
 import hmac
 
-from flask import current_app, jsonify, request
+from flask import current_app, jsonify, make_response, render_template, request
 
 
 def _error(status, code, message, headers=None):
@@ -23,7 +23,7 @@ def user_auth_required(view):
         username = current_app.config["USER_USERNAME"]
         password = current_app.config["USER_PASSWORD"]
         if auth is None:
-            return _error(
+            return _user_error(
                 401,
                 "user_auth_required",
                 "User authentication is required.",
@@ -33,7 +33,7 @@ def user_auth_required(view):
             auth.password or "", password
         )
         if not valid:
-            return _error(
+            return _user_error(
                 401,
                 "invalid_user_credentials",
                 "Invalid user credentials.",
@@ -42,6 +42,15 @@ def user_auth_required(view):
         return view(*args, **kwargs)
 
     return wrapped
+
+
+def _user_error(status, code, message, headers):
+    # Only the browser page/form gets HTML. API error contracts stay unchanged.
+    if request.path in {"/", "/jobs"}:
+        response = make_response(render_template("unauthorized.html"), status)
+        response.headers.update(headers)
+        return response
+    return _error(status, code, message, headers)
 
 
 def atom_auth_required(view):
