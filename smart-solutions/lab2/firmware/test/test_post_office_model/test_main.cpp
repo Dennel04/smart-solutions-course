@@ -2,9 +2,11 @@
 
 #include <cstring>
 #include <limits>
+#include <initializer_list>
 
 #include "post_office_model.h"
 #include "pressure_model.h"
+#include "bench_tests.h"
 
 using namespace postoffice;
 
@@ -271,6 +273,20 @@ void test_pressure_invalid_raw_adc_is_error_not_pressure() {
 
 int main(int argc, char** argv) {
   UNITY_BEGIN();
+  RUN_TEST(test_bench_is_default_without_build_flag);
+  RUN_TEST(test_bench_starts_only_local_services_with_stored_jobs);
+  RUN_TEST(test_bench_ap_failure_has_no_unprotected_or_sta_fallback);
+  RUN_TEST(test_bench_get_endpoints_are_read_only);
+  RUN_TEST(test_bench_blocks_save_health_jobs_and_serial_routes);
+  RUN_TEST(test_bench_unknown_and_non_post_methods_cannot_enable_execution);
+  RUN_TEST(test_bench_only_pressure_post_can_sample_local_input);
+  RUN_TEST(test_bench_password_valid_synthetic_bytes_and_entropy_order);
+  RUN_TEST(test_bench_password_rejects_zero_and_all_constant_buffers);
+  RUN_TEST(test_bench_password_rejects_repeating_and_counting_patterns);
+  RUN_TEST(test_bench_password_rejects_malformed_buffers);
+  RUN_TEST(test_bench_entropy_failure_disables_source_and_clears_output);
+  RUN_TEST(test_bench_unwritten_rng_buffer_is_rejected);
+  RUN_TEST(test_bench_bad_entropy_stops_before_ap_and_http_start);
   RUN_TEST(test_valid_letter_job);
   RUN_TEST(test_invalid_letter_is_refused);
   RUN_TEST(test_valid_pick_place_job);

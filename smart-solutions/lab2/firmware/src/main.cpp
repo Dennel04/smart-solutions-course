@@ -1,3 +1,5 @@
+#include "build_mode.h"
+#if !BENCH_MODE
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <DNSServer.h>
@@ -445,3 +447,4 @@ void loop() {
   // Future Lab 1 display/button and pump work remains on core 1.
   delay(2);
 }
+#endif  // !BENCH_MODE

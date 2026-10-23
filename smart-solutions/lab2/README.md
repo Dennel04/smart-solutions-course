@@ -8,7 +8,7 @@
 
 **Välja antud:** 07.10.26 | **Tellimise kuupäev:** 16.10.26 | **Esimene kaitsmine:** 27.10.26, veebis
 
-## Praegune seis — 20.10.26
+## Praegune seis — 23.10.26
 
 **Tarkvara:** valmis on Flask/SQLite postkontor koos autentimise, TTL-i,
 järjekorra, `last_seen` ja tulemuste käsitlemisega; kõrgtaseme tööd `letter`
@@ -17,21 +17,31 @@ Atomi väljaminev polling ja Wi-Fi recovery; USB/XIAO kaamerate tarkvaraalus;
 rõhuanduri UI, kalibratsioonimudel ja NVS-seaded; production-paigalduse
 runbook ning software-regressiooni skript `check.sh`.
 
-**Kontrollitud:** Python `113 passed`, Atom native `29/29`, XIAO native `6/6`,
-deployment-testid `18 passed` ning mõlema PlatformIO projekti edukad buildid.
+**Kontrollitud:** 23.10.26 Python `480 passed`, Atom native `43/43` ja
+`atoms3r` BENCH_MODE=1 puhas build `SUCCESS`. Varasemad XIAO native `6/6`,
+deployment-testid `18 passed` ja XIAO build jäävad eraldi tarkvaratulemusteks.
 Mõlema töö software E2E läbib tulemusega `done` ja `hardware_used=false`.
 Varasemad Atomi lokaalse autentitud HTTP pollingu, reboot-püsivuse ning
 Wi-Fi fallback/reconnect/recovery katsed on tehtud päris seadmel. Need
 tarkvarakontrollid ei tõenda kogu Lab 2 riistvaravalmidust.
 
-**Praegune AtomS3R:** seadmes on display-diagnostika järel
-`UIFlow2.0 AtomS3R v2.5.3`, mitte projekti Lab 2 püsivara. Projektipolling,
-station bridge ja pressure page ei tööta praegu sellel seadmel. Ekraan jäi
-mustaks ka Lab 1, sõltumatu M5Unified testi ja UIFlow2 korral; võimalik
-ekraani, taustvalgustuse või ühenduse riistvaraprobleem ei ole lõplikult
-tõestatud. Katsed ja järgmised sammud on kirjas failis
-[`docs/atom_display_diagnostic.md`](docs/atom_display_diagnostic.md).
-Taastamisjuhend: [`firmware/README.md`](firmware/README.md#projekti-püsivara-taastamine-pärast-uiflow2).
+**Praegune AtomS3R:** asendusseadmes (ESP32-S3-PICO-1, 8 MB flash) töötab
+23.10.26 üles laaditud `atoms3r` BENCH_MODE=1. Enne laadimist kontrolliti
+Lab 1 täis-flash backup'i suurust ja SHA-256 ning Lab 1 ekraan töötas pärast
+backup'i. LCD näitab `BENCH` / `execution disabled`; MacBook ühines kaitstud
+`Lab2AtomBench` AP-ga ja Safari avas aadressil `http://192.168.4.1` eestikeelse
+read-only lehe. Salvestus- ja postkontori testinupud olid keelatud. Nikita
+Teterev kontrollis hiljem samal päeval MacBookist curl'iga üle selle AP:
+`POST /settings`, `POST /test/post-office` ja `POST /pressure/settings`
+andsid kõik `HTTP/1.1 423`
+ning `{"error":"bench_read_only"}`. Päringutes ei olnud paroole ega API-võtmeid.
+G5 ilma andurita andis `raw_adc=7`,
+`not_calibrated`, voltage/kPa `null`: see on ujuva sisendi vaatlus, mitte
+rõhumõõtmine. Reset'i järel taastus BENCH-ekraan; rakenduse serial-teateid
+ei salvestatud ega kinnitatud. Production-polling ja station-kanal on bench'is
+keelatud. Vana musta ekraaniga seadme rike jääb tõestamata; selle ajalugu on
+[`docs/atom_display_diagnostic.md`](docs/atom_display_diagnostic.md) failis.
+Piirangud ja bench-juhend: [`firmware/README.md`](firmware/README.md).
 
 **Droplet:** Nikita Teterev kontrollis 20.10.26 avalikku postkontorit aadressil
 `https://narva2.roboarena.org`. Maci väline curl sai `/health` päringule
@@ -75,8 +85,8 @@ ettevalmistus: päris AtomS3R production HTTPS ühendus ja polling on TODO.
 Lab 2 end-to-end, mõlemad päris kaamerad, sensor/op-amp ahel ja Andmehõive
 Lab 2 rõhukalibratsioon, tegelikud latency/metrics mõõtmised, production
 HTTPS polling, BOM-i ja tellimuse kontroll ning iga liikme isiklik
-ohutuskinnitus. Kontrollida tuleb praegust ja teist teadaolevalt töötavat
-AtomS3R-i ning taastada projektipüsivara. Lõplik tag tehakse alles pärast
+ohutuskinnitus. Asendus-AtomS3R-i esimene isoleeritud bench-katse on tehtud;
+normaalrežiim vajab eraldi luba ja katseplaani. Lõplik tag tehakse alles pärast
 kriteeriumide täitmist.
 
 ## Eesmärk
@@ -249,10 +259,10 @@ selgesõnaliselt märgitud päris riistvara.
 
 | Kontroll | Tegelik tulemus | Piirang |
 | :--- | :--- | :--- |
-| Lab 2 Python `pytest` | 113 testi läbis | software-only; sisaldab 18 deployment-testi |
+| Lab 2 Python `pytest` | 23.10.26: 480 testi läbis | software-only |
 | `python -m src.e2e_demo` | `letter` ja `pick_place`: `server_status=done`, sama `job_id` kogu ahelas, `hardware_used=false` | ajutine DB, mock Atom ja mock executor |
-| AtomS3R `pio run -e atoms3r` | 20.10.26 CA-ga build SUCCESS; RAM 15,4%, flash 34,5%; 20,98 s | lokaalne build, CA olemasolu binaaris kontrollitud; päris production ühendus TODO |
-| AtomS3R `pio test -e native` | 29/29 testi läbis | hosti native-testid, mitte seadme test |
+| AtomS3R `pio run -e atoms3r` | 23.10.26: BENCH_MODE=1 puhas build SUCCESS | lokaalne build; tavaline postkontoriklient on sellest build'ist väljas |
+| AtomS3R `pio test -e native` | 23.10.26: 43/43 testi läbis | hosti native-testid, mitte seadme test |
 | XIAO `pio run` | SUCCESS, board `seeed_xiao_esp32s3` | build; upload'i ei tehtud |
 | XIAO `pio test -e native` | 6/6 testi läbis | hosti native-testid, mitte kaamerakatse |
 | Deployment-testid | 18 testi läbis | lokaalne/static ja mock readiness-kontroll; päris hosti ei kasutatud |
@@ -263,7 +273,8 @@ selgesõnaliselt märgitud päris riistvara.
 Tabeli software-only tulemused ise ei tõenda seadme upload'i, MG400 täitmist,
 päris kaamerate tööd, internetist kättesaadavat HTTPS-i, SSH hardening'ut ega
 tulemüüri olekut. Hilisem osaline AtomS3R upload/boot-katse on eraldi kirjas
-12.10.26 arenduspäeviku riistvarakande juures; XIAO upload on endiselt TODO.
+12.10.26 arenduspäeviku riistvarakande juures ning asendusseadme isoleeritud
+bench-katse 23.10.26 kandes; XIAO upload on endiselt TODO.
 
 Varasemad testiarvud jäävad kuupäevaga arenduspäeviku kannetes ajalooliseks
 tõendiks. Praegune koond ei ole MG400, pumba, rõhuanduri, XIAO ega kaamerate
@@ -393,6 +404,9 @@ tulemust; füüsilise katse juurde lisatakse kuupäev, meetod ja failiviide.
   lisatud Atomi seadetele.
 - [ ] Atomi rõhutest näitab korraga toorest ADC lugemit, pinget ja kPa väärtust.
 - [ ] Atomi lehe uued väljad, salvestamine ja testinupp on päris seadmel kontrollitud.
+  23.10.26 bench'is avati ainult read-only leht ja prooviti G5 ADC lugemist
+  ilma andurita. Nikita kontrollis hiljem kõigi kolme BENCH POST-route'i
+  HTTP 423 vastuseid; salvestamise normaalrežiim ja NVS-i säilimine on lahti.
 - [ ] Ohutuskokkulepe on kõigil meeskonnaliikmetel päriselt läbi loetud ja
   kinnitused on lisatud `docs/safety.md` faili.
 - [ ] Enne tellimist on BOM laboris üle kontrollitud ja tellimus on valmis 16.10.26.
@@ -403,6 +417,11 @@ tulemust; füüsilise katse juurde lisatakse kuupäev, meetod ja failiviide.
 
 - [ ] BOM-i füüsiline saadavus on laboris kontrollitud.
 - [x] Lab 2 püsivara on AtomS3R-i PlatformIO kaudu üles laaditud 12.10.26.
+- [x] Asendus-AtomS3R: isoleeritud BENCH_MODE=1 upload, LCD, kaitstud AP ja
+  Safari read-only leht kontrollitud 23.10.26; vaata sama kuupäeva päevikukannet.
+- [x] Nikita Teterev: `POST /settings`, `POST /test/post-office` ja
+  `POST /pressure/settings` tagastasid päris BENCH Wi-Fi kaudu HTTP 423
+  `bench_read_only` (23.10.26).
 - [x] AtomS3R ja lokaalne postkontor on koos kontrollitud ilma MG400
   täitmiseta.
 - [x] Dropleti ligipääsuandmed on õppejõult saadud ja Nikita võtmega SSH
@@ -864,6 +883,77 @@ ei muudeta.
   lubatud production-uuenduse ajal. Atomi production HTTPS polling, füüsiline
   MG400/jaama ahel, rõhuandur ja päris kaamerad, latency/metrics ning kogu
   dropleti reboot jäävad eraldi kontrollideks.
+
+**23.10.2026 — Nikita Teterev (AtomS3R BENCH-katse)**
+
+* Tegime: Asendus-AtomS3R-i Lab 1 täis-flash backup loodi Macis väljaspool
+  Git'i; kontrolliti suurust ja SHA-256 ning pärast backup'i töötas endiselt
+  Lab 1 ekraan. Laadisime ühe kontrollitud `atoms3r` BENCH_MODE=1 püsivara.
+  MacBook ühines kaitstud `Lab2AtomBench` AP-ga ja Safari avas
+  `http://192.168.4.1` read-only eestikeelse liidese. Proovisime kohalikku
+  G5 ADC testi ilma andurita. USB Serial Monitor ühendas kiirusel 115200;
+  Reset'i vajutamisel näitas macOS katkestust ja taasühendumist ning LCD
+  naasis `BENCH` / `execution disabled` kuvale. Atom oli kogu katse ajal
+  välisest riistvarast lahti ühendatud.
+* Juhtus (numbrid): ESP32-S3-PICO-1, flash `8 MB`; backup `8 388 608` baiti,
+  SHA-256 kontrollitud, backup'i sisu ei avaldatud. BENCH puhas build
+  `SUCCESS`, native `43/43`, Python `480 passed`. Upload `SUCCESS`, esptool
+  kinnitas kirjutatud andmete hash'i; `erase_flash` ega `uploadfs` ei kasutatud.
+  LCD näitas `BENCH`, `execution disabled`, `Lab2AtomBench`, `192.168.4.1`
+  ja ajutist AP parooli (parooli ei dokumenteerita). ADC vastus:
+  `status=not_calibrated`, `raw_adc=7`, `calibrated=false`,
+  `sensor_connected=not_verified`, `voltage_v=null`, `pressure_kpa=null`.
+  `raw_adc=7` on ujuva sisendi vaatlus, mitte füüsiline rõhumõõtmine.
+  Save- ja postkontori testinupud olid lehel keelatud. HTTP 423 jõustamist
+  kontrollisid software-testid, mitte eraldi päring päris Wi-Fi kaudu.
+  Rakenduse diagnostilisi serial-teateid ei salvestatud ega kinnitatud.
+* Otsustasime, ja miks: Hoidsime BENCH_MODE'i ja välise riistvara isolatsiooni.
+  Kasutaja võttis selle katse jaoks teadlikult vastu ESP-IDF 4.4.7
+  panic/coredump'i ja OTA metadata jääkriski: kogu flash'i muutumatust ei
+  garanteerita. Kaitstud AP ja veebilehe avanemine ei tõenda production
+  HTTPS-i ega pollingut. Reset'i järel nähtav BENCH-ekraan ei tõenda NVS-i
+  säilimist ega puhtaid rakenduse serial-logisid. Salvestame ainult kinnitatud
+  vaatlused; varasemate sessioonide kandeid ei muudeta.
+* Lahti järgmiseks korraks: Püüda rakenduse diagnostilised serial-teated,
+  mõõta päris HTTP 423 vastused ning kavandada NVS-i säilimise kontroll.
+  Normaalrežiimi, production HTTPS/pollingu ja station-adapteri katsed vajavad
+  eraldi luba. MG400, pump, kaamerad, rõhuandur/LM358 ahel, Andmehõive Lab 2
+  kalibratsioon, latency-mõõtmised ja ametlik mid-job katkestuskatse jäävad TODO.
+
+**23.10.2026 — Nikita Teterev (BENCH HTTP 423, jätk)**
+
+* Tegime: Saatsin MacBookist curl'iga kaks POST-päringut päris AtomS3R-ile
+  kohaliku `Lab2AtomBench` Wi-Fi kaudu. Päringutes ei olnud paroole ega API-võtmeid.
+  Atom jäi BENCH_MODE'i; station, MG400, pump ja andurid olid lahti ühendatud.
+* Juhtus (numbrid): `POST http://192.168.4.1/settings` andis `HTTP/1.1 423`
+  ja `{"error":"bench_read_only"}`. `POST http://192.168.4.1/test/post-office`
+  andis samuti `HTTP/1.1 423` ja `{"error":"bench_read_only"}`. Need kaks
+  tulemust kinnitavad firmware HTTP-keeldu riistvaral, lisaks software-testidele.
+  Esimese sama päeva kande HTTP 423 TODO on nende kahe endpoint'i osas täidetud.
+* Otsustasime, ja miks: Kontrollisin keeldu otse HTTP kaudu, sest keelatud
+  nupp brauseris üksi ei tõenda serveripoolset kaitset. See katse ei kinnita
+  `/pressure/settings` POST-i, NVS-i täielikku säilimist ega production-pollingut.
+  Production HTTPS-i/pollingut ei kasutatud; coredump'i jääkrisk jäi samaks.
+* Lahti järgmiseks korraks: Kontrollida `/pressure/settings` POST-i päris
+  HTTP 423 vastust, püüda rakenduse serial-diagnostika ja kavandada NVS-i
+  säilimise kontroll. Production HTTPS, station/MG400, pump, kaamerad ning
+  päris rõhuanduri/op-amp ahel ja kalibratsioon jäävad TODO-ks.
+
+**23.10.2026 — Nikita Teterev (BENCH pressure/settings HTTP 423, jätk)**
+
+* Tegime: Saatsin MacBookist curl'iga kohaliku `Lab2AtomBench` Wi-Fi kaudu
+  kolmanda safety-päringu päris AtomS3R-ile. Kasutasin käsku
+  `curl --noproxy '*' -i --max-time 5 -X POST http://192.168.4.1/pressure/settings`.
+* Juhtus (numbrid): Vastus oli `HTTP/1.1 423`,
+  `Content-Type: application/json`, keha `{"error":"bench_read_only"}`.
+  Koos eelmise jätkukandega on kõik kolm POST-route'i (`/settings`,
+  `/test/post-office`, `/pressure/settings`) riistvaral HTTP 423-ga kontrollitud.
+* Otsustasime, ja miks: Säilitame BENCH_MODE'i piiratud kontrolli tulemuse.
+  Kolm keeldumist kinnitavad nende HTTP-handler'ite kaitset, mitte täielikku
+  NVS-i säilimist või kogu flash'i read-only olekut. ESP-IDF coredump'i risk jääb.
+* Lahti järgmiseks korraks: Rakenduse serial-diagnostika ja füüsilise NVS-i
+  säilimise kontroll. Production HTTPS/polling, station/MG400, pump, kaamerad,
+  rõhuandur/op-amp ja kalibratsioon ning ametlikud mõõtmised jäävad TODO-ks.
 
 ### Väljundid ja tulemused
 
