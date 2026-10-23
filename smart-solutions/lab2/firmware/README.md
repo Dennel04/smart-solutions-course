@@ -20,6 +20,139 @@ pio run
 pio test -e native
 ```
 
+### Eraldi Wi-Fi/HTTPS kontroll: atoms3r_health
+
+23.10.2026 laadis Nikita Teterev selle püsivara päris AtomS3R-i ning
+kontrollis LCD-d ja USB-helper'it. Redmi telefoni hotspot'iga sai ta
+`WIFI CONNECTED`, `TLS VERIFIED`, seejärel `HEALTH ERROR`. Helper naasis
+shell'i. HTTP 200 ja oodatud JSON ei ole kinnitatud; katse ei läbinud
+HTTPS `/health` otsast lõpuni kontrolli. Vaikimisi `atoms3r` jääb BENCH-iks;
+`atoms3r_normal` startup ja käitumine ei muutu. Health-build kasutab sama
+`m5stack-atoms3` board'i ja partition table'it ning eraldi build-kausta.
+Selle M5Unified 0.2.25, M5GFX 0.2.32 ja ArduinoJson 7.4.3 versioonid vastavad
+kohaliku kontrollitud BENCH-build'i teekidele.
+
+`HEALTH_ONLY=1` ja täpne source filter kaasavad ainult `health_only_main.cpp`
+ning olemasoleva `bench_nvs_guard.cpp`. `BENCH_MODE=1` säilitab NVS-guard'id;
+see eraldi environment lubab ainult allkirjeldatud STA/HTTPS katset, mitte
+BENCH AP-d. Postkontoriklient, stores, station bridge ja jobs ei kompileeru.
+Normal-build näeb uue entry point'i asemel tühja translation unit'it.
+
+LCD/USB algolek on `HEALTH ONLY`, `execution disabled`, `WAITING FOR USB`.
+Seade ei käivita Wi-Fi-d enne kohalikku luba. Python helper küsib SSID ja
+parooli peidetud terminalisisendina ning kasutaja kinnitab `HEALTH ONCE`.
+USB `HELLO` saab käivitusepõhise juhusliku avaliku challenge'i; ainult selle
+challenge'iga korrektne ühekordne raam lubab katse. Helper ei korda ühendust
+ega käsku. Restart nõuab uut luba; vana challenge ei sobi. Vigane sisend,
+osaline rida üle 10 s või kinnituse puudumine 60 s jooksul lõpetab sessiooni.
+Pärast edu või viga ei saa sama boot'i ajal uut katset käivitada.
+
+Piiratud sisend: prinditav ASCII SSID 1–32 baiti, WPA2 parool 8–63 baiti,
+ilma juhtmärkideta; avatud võrk, Unicode SSID/parool ja 64-märgiline PSK
+pole selle testi osa. Helper ei pane paroole käsureale ega faili ja keeldub
+terminali echo-fallback'ist. Rakendus kustutab sisendpuhvrid ja konfiguratsiooni
+ajutised koopiad; Python ja Wi-Fi/TLS driver ei taga kõigi RAM-koopiate nullimist.
+
+STA kasutab `nvs_enable=0`, `WIFI_STORAGE_RAM`, WPA2 miinimumnõuet ning ühte
+15 s ühenduskatset. Setup AP-d, reconnect'i, NTP-d, web-serverit, ADC-d ega
+salvestatud Wi-Fi/postkontori seadeid siin ei kasutata. NVS-i ega LittleFS-i
+ei avata ja erase'i ei vajata. Võrk võib teha DHCP/DNS ning TLS handshake'i;
+ainus rakenduse HTTP-päring on fikseeritud `GET /health` hostile
+`narva2.roboarena.org`, port 443, ilma Authorization-päiseta. Redirect'e,
+HTTP fallback'i, pollingut ega result retry'd ei ole.
+
+TLS kasutab kohalikku ignoreeritud `post_office_ca_private.h` faili ja
+`POST_OFFICE_ROOT_CA` väärtust. CA puudumine/viga lõpetab testi enne võrku.
+Verifier kontrollib binaaris avaliku ISRG Root X2 sertifikaadi SHA-256
+fingerprint'i; header'it ega binaari Git'i ei lisata. Ühe CA asemel bundle'i
+lisamine vajab uut review'd, praegune parser lubab ühe trust anchor'i.
+
+Arduino-ESP32 2.0.17 `WiFiClientSecure::connect(IPAddress, port, hostname,
+CA, nullptr, nullptr)` kontrollib ahelat ja hostname'i ning säilitab SNI.
+ESP-IDF 4.4.7 `CONFIG_MBEDTLS_HAVE_TIME_DATE` on välja lülitatud. Seetõttu
+kasutame enne GET-i `getPeerCertificate()` ja `mbedtls_x509_crt_verify()`
+uut kontrolli sama CA ja hostname'iga. SDK kutsub callback'i valitud
+usaldusahela iga sertifikaadi jaoks trust anchor'ist leaf'ini. Callback
+kontrollib iga `valid_from`/`valid_to` välja UTC vastu ega kustuta SDK lippe.
+Puuduv peer/anchor, poolik tee, vigane kuupäev või verification flag keelab GET-i.
+See kontroll ei sõltu väljalülitatud SDK date-helper'ist.
+
+UTC tuleb Maci kellast USB kaudu; kontrolli enne testi Maci kuupäeva ja
+kella sünkroonimist. Rakendus lisab katse ajal kulunud sekundid. Protokoll
+lubab aastaid 2024–2036 ning GET eeldab alla 60 s vanust autoriseerimist.
+Need piirid ei tõenda Maci kella õigsust. Vale usaldatud lokaalne kell võib
+muuta expiry-kontrolli ekslikuks; see pole autentitud võrguaja teenus.
+CRL/OCSP revocation-kontrolli selles katses ei lisata.
+
+Socket connect/read/write timeout on 5 s, TLS handshake kuni 8 s ja vastuse
+kogumisel 8 s tähtaeg; DNS kasutab SDK lõplikku retry-piiri. Edu eeldab
+HTTP 200 ja JSON-i `{"ok":true,"service":"lab2-post-office"}`. Parser piirab
+vastuse 2048 ja body 256 baidiga, nõuab Content-Length'i ning JSON Content-Type'i;
+chunked või muu toetamata framing annab FAIL, mitte korduspäringu.
+Pärast üht GET-i või viga suletakse TLS ja peatatakse/deinit'itakse Wi-Fi.
+Stop/deinit'i viga annab `RADIO STOP ERROR`, mitte `HEALTH OK`; automaatset kordust pole.
+LCD/USB näitavad ainult olekukoode; helper ei kuva suvalist serial-sisu.
+
+#### HEALTH ERROR: 23.10.2026 piiratud tulemus ja järgmine diagnostika
+
+`TLS VERIFIED` tähendab, et enne HTTP etappi läbis klient hostname'i,
+CA-ahela ja USB kaudu saadud UTC põhise sertifikaadiaegade kontrolli.
+`HEALTH ERROR` koondab praegu `getHealth()` vead: lühike request-write,
+lugemisviga, sulgemata socket või 8 s tähtaeg, liiga suur vastus ning
+HTTP/framing/JSON kontrolli ebaõnnestumine. Teade ei kinnita, et server
+sai terve GET-päringu või vastas HTTP 200-ga. Serveri riket ei ole tõendatud.
+
+Parser nõuab `Content-Length` päist ja lükkab `Transfer-Encoding: chunked`
+tagasi. See on võimalik ühilduvuspiirang, mitte tuvastatud vea põhjus:
+päris vastuse staatus ega framing ei ole salvestatud. Ette valmistatud
+diagnostikaplaan on eristada piiratud veakoodidega write/read/timeout,
+HTTP staatust, framing'ut ja JSON valideerimist, ilma body, SSID või parooli
+logimiseta. Praegune püsivara neid eraldi koode veel ei väljasta.
+Järgmine muudatus ja uus riistvarakatse vajavad eraldi luba; automaatset
+korduspäringut ega üleminekut normal-režiimi ei tehta.
+
+Kohalikud kontrollid firmware-kaustas (ei ava serialit ega production-võrku):
+
+```bash
+pio test -e native
+pio run -e atoms3r_health
+python3 tools/verify_health_only.py --nm "$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-nm"
+pio run -e atoms3r
+```
+
+Verifieri PASS tähendab ainult lähtekoodi/build'i isolatsiooni kontrolli,
+mitte upload-luba ega riistvaralist HTTPS tulemust. Native-testid kasutavad
+fake-transporti ja sünteetilist sertifikaadiahelat; hosti Python-testid
+kompileerivad päris protokolliparseri. Need ei testi päris TLS serverit.
+
+23.10.2026 avaldamiseelne korduskontroll: Python `541 passed`, native
+`57/57` (HEALTH_ONLY `14/14`), `atoms3r_health` build `SUCCESS`, RAM
+`49 112 / 327 680` baiti ja flash `982 297 / 3 342 336` baiti. ELF isolation
+ja ISRG Root X2 fingerprint'i kontroll läbisid. Need on lokaalsed tulemused;
+ülalkirjeldatud päris `/health` katse lõppes endiselt veaga.
+
+Riistvarasamm vajab eraldi luba ja USB-only ühenduse kinnitust. Säilita Lab 1
+backup väljaspool Git'i ning kontrollitud BENCH build/hash tagasitee jaoks;
+health-upload asendab seadmes töötava BENCH püsivara. SDK flash-coredump ja
+võimalikud OTA metadata kirjutused jäävad alles. Panic võib salvestada RAM-is
+olevad Wi-Fi credentials. Varasem ühe BENCH-upload'i riskinõusolek ei anna
+automaatselt luba uueks upload'iks; kogu flash'i muutumatust ei garanteerita.
+
+Pärast eraldi lubatud health-upload'i ja uut portide kontrolli saab kasutaja
+käivitada repo Lab 2 venv'iga (käsk ise lubab ühe production-päringu alles
+interaktiivse kinnituse järel):
+
+```bash
+../.venv/bin/python tools/health_only_session.py --port <ACTUAL_PORT>
+```
+
+Helper ei pulseeri DTR/RTS-i; OS/USB driver'i käitumist tuleb kontrollida
+riistvaral. Ära ava samal ajal serial monitori või station-adapterit.
+PASS: `WIFI CONNECTED`, `TLS VERIFIED`, `HEALTH OK`, võrk peatub. FAIL:
+veakood, puuduv tulemus või restart; ära korda automaatselt ega lülitu normal'isse.
+Health ei vaja Atomi API-võtit, ei claim'i tööd ega uuenda `last_seen` väärtust.
+Bearer-auth, production polling ja robotiahel jäävad eraldi katseteks.
+
 ### Isoleeritud esimene käivitus: BENCH_MODE
 
 **23.10.2026: esimene piiratud BENCH-katse tehtud.** Kasutaja aktsepteeris
@@ -164,8 +297,9 @@ lisatakse siia reposse, tehakse see eraldi PlatformIO projektina.
 
 Vanas AtomS3R-is oli 13.10.26 ekraanikontrolli järel
 `UIFlow2.0 AtomS3R v2.5.3`. Projekti polling, station bridge ja pressure page
-pole selle püsivaraga saadaval. Asendusseadmes töötab 23.10.26 katsest
-BENCH_MODE=1; allolev UIFlow2 taastamisjuhend käsitleb vana seadme olukorda. Vaata
+pole selle püsivaraga saadaval. Asendusseadmes kontrolliti 23.10.26
+BENCH_MODE=1 ja seejärel eraldi HEALTH_ONLY püsivara; allolev UIFlow2
+taastamisjuhend käsitleb vana seadme olukorda. Vaata
 [ekraani diagnostikat](../docs/atom_display_diagnostic.md).
 
 Alusta taastamist isoleeritud bench-püsivaraga repo juurkaustast.
@@ -358,6 +492,10 @@ ei saadeta tähte uuesti: töö muudetakse `ambiguous_after_reboot` põhjusega
 - [x] production hosti TLS-ahel Macis kontrollitud; ISRG Root X2 CA-ga
   lokaalne build ja sertifikaadi olemasolu binaaris kontrollitud 20.10.2026;
 - [ ] päris AtomS3R production HTTPS ühendus ja autentitud polling;
+- [x] HEALTH_ONLY upload, LCD/USB, telefoni hotspot ja `WIFI CONNECTED` /
+  `TLS VERIFIED` 23.10.2026; katse lõppes `HEALTH ERROR`;
+- [ ] HEALTH_ONLY `/health` HTTP 200 ja oodatud JSON; üldise veateate
+  täpne põhjus vajab eraldi diagnostikat;
 - [ ] päris USB-ga AtomS3 → station ning Lab 1 MG400 executor'i otsast lõpuni tulemus;
 - [ ] võrgu katkestus ja NVS retry päris seadmel;
 - [ ] pollingu latentsus ja valitud production-intervall;

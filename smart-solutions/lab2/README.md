@@ -17,7 +17,10 @@ Atomi väljaminev polling ja Wi-Fi recovery; USB/XIAO kaamerate tarkvaraalus;
 rõhuanduri UI, kalibratsioonimudel ja NVS-seaded; production-paigalduse
 runbook ning software-regressiooni skript `check.sh`.
 
-**Kontrollitud:** 23.10.26 Python `480 passed`, Atom native `43/43` ja
+**Kontrollitud:** 23.10.26 pärast HEALTH_ONLY lisamist Python `541 passed`,
+Atom native `57/57` (sh HEALTH_ONLY `14/14`) ja health-build `SUCCESS`;
+ELF isolation ja kohaliku CA fingerprint'i kontroll läbisid. Varasemad
+BENCH-kontrollid olid Python `480 passed`, Atom native `43/43` ja
 `atoms3r` BENCH_MODE=1 puhas build `SUCCESS`. Varasemad XIAO native `6/6`,
 deployment-testid `18 passed` ja XIAO build jäävad eraldi tarkvaratulemusteks.
 Mõlema töö software E2E läbib tulemusega `done` ja `hardware_used=false`.
@@ -25,8 +28,8 @@ Varasemad Atomi lokaalse autentitud HTTP pollingu, reboot-püsivuse ning
 Wi-Fi fallback/reconnect/recovery katsed on tehtud päris seadmel. Need
 tarkvarakontrollid ei tõenda kogu Lab 2 riistvaravalmidust.
 
-**Praegune AtomS3R:** asendusseadmes (ESP32-S3-PICO-1, 8 MB flash) töötab
-23.10.26 üles laaditud `atoms3r` BENCH_MODE=1. Enne laadimist kontrolliti
+**Asendus-AtomS3R-i BENCH-katse:** seadmesse (ESP32-S3-PICO-1, 8 MB flash)
+laaditi 23.10.26 `atoms3r` BENCH_MODE=1. Enne laadimist kontrolliti
 Lab 1 täis-flash backup'i suurust ja SHA-256 ning Lab 1 ekraan töötas pärast
 backup'i. LCD näitab `BENCH` / `execution disabled`; MacBook ühines kaitstud
 `Lab2AtomBench` AP-ga ja Safari avas aadressil `http://192.168.4.1` eestikeelse
@@ -42,6 +45,16 @@ ei salvestatud ega kinnitatud. Production-polling ja station-kanal on bench'is
 keelatud. Vana musta ekraaniga seadme rike jääb tõestamata; selle ajalugu on
 [`docs/atom_display_diagnostic.md`](docs/atom_display_diagnostic.md) failis.
 Piirangud ja bench-juhend: [`firmware/README.md`](firmware/README.md).
+
+**HEALTH_ONLY katse 23.10.26:** Nikita Teterev laadis seejärel eraldi
+`atoms3r_health` püsivara ning kontrollis LCD-d ja USB-helper'it. Redmi
+telefoni hotspot'i kaudu sai ta `WIFI CONNECTED`, `TLS VERIFIED`,
+seejärel `HEALTH ERROR`; helper naasis shell'i. HTTP 200 ega oodatud
+`/health` JSON ei ole kinnitatud. Production-pollingut, jobs'i ega station
+dispatch'i selles build'is ei ole. Vea täpne HTTP/read/framing põhjus
+on lahtine; [diagnostikaplaan](firmware/README.md#health-error-23102026-piiratud-tulemus-ja-järgmine-diagnostika)
+ei tähenda paranduse ega eduka korduskatse läbimist. Seadme hilisemat
+olekut teiste kursuste katsetes see kanne ei kinnita.
 
 **Droplet:** Nikita Teterev kontrollis 20.10.26 avalikku postkontorit aadressil
 `https://narva2.roboarena.org`. Maci väline curl sai `/health` päringule
@@ -78,7 +91,8 @@ ametlikust allikast saadud ja fingerprint'i järgi kontrollitud ISRG Root X2
 CA lokaalsesse ignoreeritud header'isse. CA-ga Atom build läbis ja
 `firmware.bin` sisaldas PEM-sertifikaati; `check.sh` lõpetas teatega
 `All software-only regression checks passed.` See on software-only
-ettevalmistus: päris AtomS3R production HTTPS ühendus ja polling on TODO.
+ettevalmistus. 23.10.26 eraldi HEALTH_ONLY katses kinnitas Atom Wi-Fi ja TLS-i,
+kuid `/health` lõppes veaga; edukas HTTP/JSON ja production-polling on TODO.
 Üksikasjad: [firmware README](firmware/README.md#production-tls-ettevalmistus--20102026).
 
 **Laboris veel teha:** päris `pick_place` executor ja kalibratsioon, füüsiline
@@ -259,10 +273,11 @@ selgesõnaliselt märgitud päris riistvara.
 
 | Kontroll | Tegelik tulemus | Piirang |
 | :--- | :--- | :--- |
-| Lab 2 Python `pytest` | 23.10.26: 480 testi läbis | software-only |
+| Lab 2 Python `pytest` | 23.10.26 pärast HEALTH_ONLY lisamist: 541 testi läbis | software-only |
 | `python -m src.e2e_demo` | `letter` ja `pick_place`: `server_status=done`, sama `job_id` kogu ahelas, `hardware_used=false` | ajutine DB, mock Atom ja mock executor |
 | AtomS3R `pio run -e atoms3r` | 23.10.26: BENCH_MODE=1 puhas build SUCCESS | lokaalne build; tavaline postkontoriklient on sellest build'ist väljas |
-| AtomS3R `pio test -e native` | 23.10.26: 43/43 testi läbis | hosti native-testid, mitte seadme test |
+| AtomS3R `pio test -e native` | 23.10.26: 57/57 testi läbis (43 olemasolevat ja 14 HEALTH_ONLY) | hosti native-testid, mitte seadme test |
+| `pio run -e atoms3r_health` ja ELF verifier | SUCCESS; RAM 49 112 B, flash 982 297 B; isolation ja CA PASS | lokaalne build; flash-coredump jääkrisk säilib; päris `/health` katse lõppes veaga |
 | XIAO `pio run` | SUCCESS, board `seeed_xiao_esp32s3` | build; upload'i ei tehtud |
 | XIAO `pio test -e native` | 6/6 testi läbis | hosti native-testid, mitte kaamerakatse |
 | Deployment-testid | 18 testi läbis | lokaalne/static ja mock readiness-kontroll; päris hosti ei kasutatud |
@@ -954,6 +969,30 @@ ei muudeta.
 * Lahti järgmiseks korraks: Rakenduse serial-diagnostika ja füüsilise NVS-i
   säilimise kontroll. Production HTTPS/polling, station/MG400, pump, kaamerad,
   rõhuandur/op-amp ja kalibratsioon ning ametlikud mõõtmised jäävad TODO-ks.
+
+**23.10.2026 — Nikita Teterev (AtomS3R HEALTH_ONLY, jätk)**
+
+* Tegime: Laadisin asendus-AtomS3R-i eraldi `atoms3r_health` püsivara ja
+  kontrollisin ekraani ning USB-helper'iga suhtlust. Lubasin ühe health-katse
+  Redmi telefoni Wi-Fi hotspot'i kaudu. Varasemad BENCH-tulemused jäävad
+  eraldi katseteks; neid kandeid ei kirjutata ümber.
+* Juhtus (numbrid): Päris upload õnnestus. Helper näitas järjest
+  `WIFI CONNECTED`, `TLS VERIFIED`, `HEALTH ERROR` ning naasis shell'i.
+  Edukat HTTP 200 ega `{"ok":true,"service":"lab2-post-office"}` vastust
+  ei kinnitatud. Wi-Fi ja TLS-i tulemus ei ole edukas `/health` end-to-end test.
+* Otsustasime, ja miks: Säilitame isoleeritud ühe päringu build'i, USB kaudu
+  antava ühekordse loa, RAM-only Wi-Fi seaded ning NVS-guard'id. API-võtit,
+  pollingut, claim'i, result retry'd ega station/actuator-käske see katse ei
+  vaja. Üldine `HEALTH ERROR` ei erista write/read/timeout'i, HTTP staatust,
+  framing'ut ega JSON kontrolli. Dokumenteerisime piiratud diagnostikakoodide
+  plaani; neid koode ei ole veel püsivarasse lisatud. Chunked-framing on
+  parseris keelatud, kuid selle seost päris veaga ei ole tõendatud.
+  ESP-IDF flash-coredump'i ja OTA metadata jääkrisk, Maci UTC usaldamine
+  ning CRL/OCSP puudumine jäävad kehtima. Saladusi ega backup'i ei avaldata.
+* Lahti järgmiseks korraks: Eristada HTTP etapi viga ilma saladuste või body
+  logimiseta ning teha eraldi lubatud `/health` korduskatse. Autentitud
+  production-polling, füüsiline station/MG400/pump, kaamerad, Andmehõive
+  kalibratsioon, NVS-i säilimine, latency ja ametlik mid-job katse jäävad TODO.
 
 ### Väljundid ja tulemused
 
