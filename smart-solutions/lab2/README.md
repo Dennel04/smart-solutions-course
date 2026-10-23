@@ -6,7 +6,9 @@
 
 **Töömaht:** 28 tundi | **Hindamine:** 20 punkti | **Meeskond:** 3 tudengit
 
-**Välja antud:** 07.10.26 | **Tellimise kuupäev:** 16.10.26 | **Esimene kaitsmine:** 27.10.26, veebis
+**Välja antud:** 07.10.26 | **Tellimise kuupäev:** 16.10.26 | **Esimene kaitsmine:** 29.10.26, veebis
+
+Kaitsmise kuupäev: [õppejõu ajakohane ülesanne](https://github.com/KKallas/Narva-subjects/blob/main/EST/2026-27/Smart%20Solutions/Smart%20Solutions%20%5BLab%202%5D%20EST.md).
 
 ## Praegune seis — 23.10.26
 
@@ -126,18 +128,21 @@ Labor 1 jääb muutmata lähtebaasiks:
 - Labori 1 Atomi püsivara ning sama seadete/testide leht on edasise töö alus;
 - Labori 1 MG400 ohutusreeglid kehtivad täielikult edasi.
 
-Kavandatud andmevoog:
+Kavandatud ühendused (tervikahel vajab laborikatset):
 
 ```text
-kasutaja brauser --HTTPS--> dropleti postkontor <--polling-- Atom
-                                                           |
-                                              Labori 1 lokaalne kanal
-                                                           v
-                                                         jaam --> MG400
-
-lauakaamera -------- kohalik võrk/USB --------> jaama leht
-tööriistakaamera ---- kohalik Wi-Fi ----------> jaama leht
+MG400 <--- Ethernet/TCP ---> station PC
+Verbatim AWC-03 <--- USB ---> station PC
+AtomS3R <--- USB Serial ---> station PC
+AtomS3R --- Wi-Fi/HTTPS ---> droplet <--- HTTPS --- kasutaja brauser
+station PC --- kohalik IP-võrk / Wi-Fi / GET /snapshot.jpg ---> XIAO
+USB-C toiteallikas (TODO) ---> XIAO
 ```
+
+Ethernetiga station PC peab jõudma Wi-Fi-s oleva XIAO IP-ni. Alamvõrgud,
+marsruutimine ja Wi-Fi client isolation tuleb laboris kontrollida; PC enda
+Wi-Fi adapter pole vajalik, kui võrgud lubavad IP-liiklust. XIAO toiteallikas
+ja kaablitee on TODO. Droplet ei vahenda videovooge. Täpsemalt: [kaamerad](docs/cameras.md).
 
 ![Lab 2 süsteemiarhitektuur](docs/system.svg)
 
@@ -162,8 +167,8 @@ oma `platformio.ini`, lähtekoodipuu ja native-testid. Lab 2 AtomS3 projekt on
 kaustas `firmware/`; Labori 1 püsivara ei ole tervikuna kopeeritud. Mõlema
 projekti `pio run` build on tarkvaraliselt kontrollitud. AtomS3R-i Lab 2
 püsivara laaditi 12.10.26 PlatformIO-ga seadmesse; Atomi autentitud lokaalne
-polling, reboot-persistence ja Wi-Fi reconnect kontrolliti 13.10.26. XIAO
-upload ja ülejäänud riistvarakatsed on TODO.
+polling, reboot-persistence ja Wi-Fi reconnect kontrolliti 13.10.26. Selle
+repo XIAO Wi-Fi firmware upload ja ülejäänud integratsioonikatsed on TODO.
 
 ## Tehtud töö
 
@@ -229,8 +234,10 @@ kuupäevaga kirjas.
 
 - Valmis on ühine kaameraabstraktsioon, USB OpenCV backend ja XIAO HTTP
   snapshot backend.
-- Eraldi lokaalne station'i leht näitab kahte kaamerat ning pakub snapshot- ja
-  MJPEG route'e. Mock-kaamerad võimaldavad mõlemat rada riistvarata testida.
+- Eraldi `src.camera_server` leht näitab kahte kaamerat ning pakub snapshot- ja
+  MJPEG route'e. Vaikebind on `127.0.0.1:5002`, autentimist ei ole. Olemasoleva
+  station'i lehega ühendamine ja kaitstud LAN-ligipääs on TODO. Mock-kaamerad
+  võimaldavad mõlemat rada riistvarata testida.
 - Tarkvaralised loendurid mõõdavad kaadrite arvu, väljastatud baite ning
   arvutatud FPS/Mbit/s väärtusi; need ei ole füüsiliste kaamerate mõõtetulemused.
 - Kaamerakiht ja route'id on kaetud testidega. Päris USB- ja XIAO-kaameraid ei
@@ -245,8 +252,15 @@ kuupäevaga kirjas.
   `/snapshot.jpg`.
 - HTTP leping sobib station'i XIAO snapshot backendiga. PlatformIO build ja
   native-testid läbivad.
-- **Püsivara ei ole füüsilisse XIAO ESP32S3 Sense seadmesse üles laaditud ega
-  päris kaameraga testitud.**
+- Lab 2 põhipüsivara on `firmware-xiao-camera/`, kohalik Wi-Fi HTTP
+  `GET /snapshot.jpg`. **Selle püsivara upload ja Wi-Fi töö on kinnitamata.**
+- [3D Printing Lab 2](https://github.com/Dennel04/3d-printing-course/blob/main/3d-print/lab2/README.md)
+  kinnitab 23.10.26 J4 kinnituses XIAO OV3660 ühe JPEG-i `1600 × 1200`
+  saamist USB Serial COM5 kaudu. Sealne `tool-camera/firmware/` jääb
+  diagnostiliseks varuks, mitte selle Wi-Fi lahenduse kinnituseks.
+  J4 paigutus on meeskonna dokumenteeritud variant, mille kohta 3D Printing
+  kirjeldab õpetaja suulist luba. Verbatim AWC-03 (49580) on üldvaatekaamerana
+  identifitseeritud; lõplik paigaldus, kogu laua FOV ja mõõtmised on TODO.
 
 ### Dropleti paigalduse alus
 
@@ -289,7 +303,7 @@ Tabeli software-only tulemused ise ei tõenda seadme upload'i, MG400 täitmist,
 päris kaamerate tööd, internetist kättesaadavat HTTPS-i, SSH hardening'ut ega
 tulemüüri olekut. Hilisem osaline AtomS3R upload/boot-katse on eraldi kirjas
 12.10.26 arenduspäeviku riistvarakande juures ning asendusseadme isoleeritud
-bench-katse 23.10.26 kandes; XIAO upload on endiselt TODO.
+bench-katse 23.10.26 kandes; selle repo XIAO Wi-Fi firmware upload on TODO.
 
 Varasemad testiarvud jäävad kuupäevaga arenduspäeviku kannetes ajalooliseks
 tõendiks. Praegune koond ei ole MG400, pumba, rõhuanduri, XIAO ega kaamerate
@@ -441,8 +455,10 @@ tulemust; füüsilise katse juurde lisatakse kuupäev, meetod ja failiviide.
   täitmiseta.
 - [x] Dropleti ligipääsuandmed on õppejõult saadud ja Nikita võtmega SSH
   login on kontrollitud 16.10.26; avalik HTTPS kontrollitud 20.10.26.
-- [ ] XIAO ESP32S3 Sense füüsiline saadavus on kontrollitud.
-- [ ] USB UHD-kaamera füüsiline saadavus on kontrollitud.
+- [x] XIAO olemasolu ja USB Serial diagnostiline JPEG on 3D Printing Lab 2-s
+  kinnitatud 23.10.26; Smart Solutions Wi-Fi püsivara kontroll jääb eraldi.
+- [ ] Identifitseeritud Verbatim AWC-03 (49580) lõplik paigaldus ja sobivus
+  kogu laua üldvaateks on kontrollitud.
 - [ ] Andmehõive Lab 2 päris rõhukalibratsioon on kättesaadav.
 - [ ] 3D Printing Lab 2 laua- ja tööriistakaamera kinnitused on valmis ning
   füüsiliselt kontrollitud.
@@ -575,8 +591,9 @@ python -m src.camera_server --mock
 Leht on aadressil `http://127.0.0.1:5002/`. See näitab kõrvuti Table camera
 ja Tool camera mock-pilte, allika olekut, resolutsiooni ning tarkvaralisi
 FPS/ribalaiuse loendureid. Demo ei pöördu dropleti, MG400 ega päris kaamera
-poole ja ei ava brauserit automaatselt. Päris USB- ja XIAO-seaded, kohalik
-autentimine ning kõik mõõtmised on TODO; täpsemalt vt `docs/cameras.md`.
+poole ja ei ava brauserit automaatselt. See on eraldi autentimiseta leht
+localhost-bind'iga; olemasoleva station'i lehega ühendamine, kaitstud
+LAN-ligipääs, päris USB/XIAO seaded ja mõõtmised on TODO; vt `docs/cameras.md`.
 
 Testid ja import-/süntaksikontroll:
 

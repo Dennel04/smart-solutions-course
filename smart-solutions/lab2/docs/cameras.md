@@ -1,12 +1,12 @@
 # Lab 2 kohalik kaamera-arhitektuur
 
 > **Olek:** station'i tarkvarakiht, mock-allikad ja automaattestid on valmis.
-> Päris USB- ja XIAO-kaamera, vaateväli, jõudlus ning kinnitused on veel
-> kontrollimata. Selles failis ei ole laborimõõtmiste tulemusi.
+> 3D Printing Lab 2 kinnitab XIAO USB Serial diagnostilise JPEG-i; Smart
+> Solutions Wi-Fi firmware upload, kogu laua vaade ja jõudlus on kontrollimata.
 
 ## Rollid ja süsteemipiir
 
-- **Table camera** on USB UHD-kaamera, mille tulevane ülesanne on näidata kogu
+- **Table camera** on Verbatim AWC-03 (49580), mille tulevane ülesanne on näidata kogu
   tööala, ruudustikku ja robotit.
 - **Tool camera** on XIAO ESP32S3 Sense, mille tulevane ülesanne on näidata
   tööriista otsikut ja selle all olevat detaili. Station saab temalt JPEG-pildi
@@ -16,13 +16,37 @@ Mõlemat pilti näitab ainult station-arvuti lokaalne leht. Dropleti
 postkontoris ei ole kaamera route'e, proxy't ega voogu. Lab 2 ei loo selleks
 VPN-i, WireGuardi ega pöördtunnelit.
 
-```text
-USB UHD camera -------- USB ----------> station camera worker ---+
-                                                               |--> local page
-XIAO Sense -- local Wi-Fi JPEG/HTTP --> station camera worker ---+
+Valitud ühendusskeem (võrgurada vajab veel kontrolli):
 
-droplet post-office <--- Atom outbound polling     (eraldi rada)
+```text
+MG400 <--- Ethernet/TCP ---> station PC
+Verbatim AWC-03 <--- USB ---> station PC
+AtomS3R <--- USB Serial ---> station PC
+AtomS3R --- Wi-Fi/HTTPS ---> droplet post-office (videot ei vahenda)
+station PC --- kohalik IP-võrk / Wi-Fi / GET /snapshot.jpg ---> XIAO
+USB-C toiteallikas (TODO) ---> XIAO
 ```
+
+Station PC Etherneti ja XIAO Wi-Fi vahel peab olema IP-ligipääs. Kontrollida
+laboris alamvõrke, marsruutimist ja client isolation'it; seda pole kinnitatud.
+XIAO USB-C toite lõplik allikas ja kaablitee vajavad liikumisulatuses kontrolli.
+
+## Kinnitatud lähtefaktid ja püsivara valik
+
+[3D Printing Lab 2 README](https://github.com/Dennel04/3d-printing-course/blob/main/3d-print/lab2/README.md)
+kirjeldab 23.10.26 XIAO-d prinditud kinnituses MG400 J4 mootori nelikandil:
+OV3660 sensor, üks JPEG `1600 × 1200` USB Serial COM5 kaudu, toide USB-C-ga
+arvutist. J4 on meeskonna dokumenteeritud paigutusvariant; samas allikas on
+04.10.26 õpetaja suuline luba valida kinnituskoht. See ei kinnita veel
+töökoha FOV-d, kaabli ohutust kogu liikumisel ega lõplikku toidet.
+
+Smart Solutions põhipüsivara on [`firmware-xiao-camera/`](../firmware-xiao-camera/README.md)
+ja selle Wi-Fi HTTP `GET /snapshot.jpg` leping.
+[USB Serial püsivara](https://github.com/Dennel04/3d-printing-course/tree/main/3d-print/lab2/tool-camera/firmware)
+jääb diagnostiliseks varuks. USB tulemus ei tõenda Smart Solutions Wi-Fi
+püsivara upload'i, Wi-Fi ühendust ega station'i HTTP snapshot'i.
+Üldvaatekaamera on 3D Printingus identifitseeritud Verbatim AWC-03 (49580);
+lõplik paigaldus, kogu laua vaade ja mõõtmised jäävad TODO-ks.
 
 Kaamerakood ei impordi station'i job-adapterit, executor'it ega MG400 klienti.
 Ühe kaamera rike ei muuda tööde vastuvõtmise või täitmise rada.
@@ -71,7 +95,8 @@ URL-i ennast.
 
 Firmware kasutab ametlikku Seeed pin mapping'ut, boardi 8 MB PSRAM-i ja
 `esp_camera` automaatset sensorituvastust. Driver toetab nii varasemat OV2640
-kui uuemat OV3660 revision'it; meeskonna päris revision on veel TODO. Pidevat
+kui uuemat OV3660 revision'it; 3D Printing USB-katse tuvastas OV3660.
+Selle Wi-Fi build'i tuvastus on veel TODO. Pidevat
 XIAO MJPEG handler'it ei lisatud, sest olemasolev station backend vajab ainult
 snapshot'i ning loob lokaalse MJPEG voo ise. See hoiab XIAO status endpoint'i
 diagnostiliselt kasutatavana ja capture ownership'i üheselt mutex'i taga.
@@ -100,8 +125,8 @@ Lokaalsed route'id:
 | `GET /stream/{table|tool}.mjpg` | MJPEG multipart-voog |
 
 Need route'id kuuluvad eraldi `src.camera_server` protsessile, mitte avalikku
-`server.app` postkontorisse. Päris laborivõrgus tuleb station'i lehele lisada
-sama lokaalne autentimispiir nagu station'i juhtimislehel; selle kontroll on TODO.
+`server.app` postkontorisse. Olemasoleva station'i lehega integreerimine ja
+kaitstud LAN-ligipääs on TODO.
 
 Praegu autentimist camera route'idel ei ole ja vaikebind `127.0.0.1` hoiab need
 ainult station-arvutis. Kui päris laborikatse nõuab hiljem station'i lehe
@@ -160,16 +185,19 @@ protsesside tegelikku koormusmõju. Tulemused lähevad pärast päriskatset fail
 Järgmised sammud tehakse ainult päris riistvaraga. Mock-kaadreid ega software
 loendureid ei kanta mõõtmistulemustena CSV-failidesse.
 
-1. Kontrollida laboris USB UHD-kaamera ja XIAO ESP32S3 Sense olemasolu ning
-   täpsed seadmerevisionid. Kontrollida eraldi USB-pikendust, XIAO toidet ja
+1. Kontrollida identifitseeritud Verbatim AWC-03 ja OV3660 XIAO kasutusvalmidust
+   Smart Solutions töövoos. Kontrollida eraldi USB-pikendust, XIAO toidet ja
    station'i vabu USB-/võrguühendusi.
 2. Paigaldada 3D Printing Lab 2 kinnitused: laua kaamera robotist kõrgemale ja
-   tööriistakaamera iminapa kõrvale. Enne kinnitamist kontrollida kaabli
-   tegelik marsruut, liikumisvaru ja strain relief.
+   tööriistakaamera dokumenteeritud J4 asendisse. Kontrollida otsiku ja detaili
+   nähtavust; enne katset kontrollida kaabli tegelikku marsruuti,
+   liikumisvaru ja strain relief'i.
 3. Kontrollida laua kaamera vaatevälja: kogu laud, Gridfinity ruudustik servast
    servani, robot ja hoidikud peavad olema samas kaadris; ruutude nimed peavad
    valitud kuvamisresolutsioonis loetavaks jääma.
-4. Laadida olemasolev PlatformIO firmware päris XIAO-sse ja kontrollida
+4. Kontrollida Etherneti station PC IP-ligipääsu Wi-Fi XIAO-le (alamvõrgud,
+   marsruutimine, client isolation). Eraldi loa järel laadida selle repo
+   PlatformIO Wi-Fi firmware päris XIAO-sse ja kontrollida
    `/status`, tuvastatud sensorit, PSRAM-i, Wi-Fi reconnect'i ning
    `/snapshot.jpg` JPEG-vastust. Salajast `wifi_private.h` faili reposse ei
    lisata ja XIAO endpoint'i internetti ei avaldata.
@@ -194,9 +222,9 @@ loendureid ei kanta mõõtmistulemustena CSV-failidesse.
 
 ## Riistvara TODO
 
-- ühendada ja identifitseerida päris UHD USB-kaamera;
+- kontrollida Verbatim AWC-03 lõplikku paigaldust ja kogu laua vaadet;
 - valida vaatevälja ja loetavuse põhjal capture- ja stream-resolutsioon;
-- laadida valmis XIAO PlatformIO firmware päris seadmesse, kontrollida sensor
+- laadida valitud Smart Solutions XIAO Wi-Fi firmware päris seadmesse, kontrollida sensor
   ning määrata lokaalne URL ja võimalik autentimine;
 - kontrollida mõlema allika reconnect'i päris katkestustega;
 - mõõta viide, FPS, ribalaius ning 0/1/2 kaamera juhtimislatentsus;

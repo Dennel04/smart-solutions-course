@@ -6,8 +6,18 @@ Seade ei tunne dropleti postkontorit, MG400-t ega VPN-i ning ei saada pilte ise
 kuhugi. HTTP serverit ei tohi internetti port-forward'ida. Lab 3 võib hiljem
 anda VPN-i kaudu ligipääsu station'i lehele, mitte avalikustada XIAO serverit.
 
-> **Software status:** hardware build ja native unit tests läbivad. Päris XIAO,
-> kaamera, Wi-Fi, pildikvaliteet ja reconnect ei ole veel füüsiliselt testitud.
+> **Valitud põhipüsivara:** Smart Solutions Lab 2 kasutab seda Wi-Fi HTTP
+> `GET /snapshot.jpg` projekti. Build ja native-testid läbivad; selle püsivara
+> upload, päris Wi-Fi snapshot, jõudlus ja reconnect on kinnitamata.
+
+[3D Printing Lab 2](https://github.com/Dennel04/3d-printing-course/blob/main/3d-print/lab2/README.md)
+kinnitab 23.10.26 XIAO kasutamise MG400 J4 kinnituses: OV3660, üks JPEG
+`1600 × 1200` USB Serial COM5 kaudu. Sealne
+[`tool-camera/firmware/`](https://github.com/Dennel04/3d-printing-course/tree/main/3d-print/lab2/tool-camera/firmware)
+jääb diagnostiliseks varuks. See USB-katse ei kinnita käesoleva Wi-Fi build'i
+upload'i ega HTTP tööd. J4 on meeskonna dokumenteeritud variant; 3D Printingus
+on kirjas õpetaja suuline luba. Toide oli USB-C arvutist, lõplik toiteallikas,
+kaablitee ja tööriista/detaili FOV vajavad veel laborikontrolli.
 
 ## PlatformIO
 
@@ -74,8 +84,8 @@ kuid camera status on `unavailable`; rapid reboot loop'i ei ole.
 `esp_camera` driver tuvastab sensori PID pärast initialization'it. `/status`
 kasutab driver'i tuvastatud nime; OV2640, OV3660 ja OV5640 on tarkvaraliselt
 lubatud. OV3660 jaoks rakendatakse alles pärast detection'it ametliku Arduino
-camera näite vflip/brightness/saturation korrektsioon. Meeskonna päris sensor:
-**TODO — verify on hardware**.
+camera näite vflip/brightness/saturation korrektsioon. 3D Printing USB-katses
+tuvastati OV3660; selle Wi-Fi püsivara sensorituvastus tuleb eraldi kontrollida.
 
 ## Development camera settings
 
@@ -88,7 +98,14 @@ latency and bandwidth measurements.**
 
 ## HTTP contract
 
-Server käivitub ainult station'iga samas lokaalses laborivõrgus.
+XIAO kavandatud võrk on kohalik labori Wi-Fi. Ethernetiga station PC peab
+jõudma selle IP-ni; alamvõrgud, marsruutimine ja client isolation on laboris
+kontrollimata. USB-C kannab toidet; selle töövoo JPEG tuleb Wi-Fi kaudu.
+Verbatim AWC-03 ühendub station'iga USB kaudu, MG400 Ethernet/TCP kaudu,
+Atom USB Seriali kaudu ning Atom suhtleb dropletiga väljamineva Wi-Fi/HTTPS-iga.
+Droplet videovooge ei vahenda. `src.camera_server` on praegu eraldi
+autentimiseta leht, vaikebind `127.0.0.1:5002`; station'i olemasoleva lehega
+integreerimine ja kaitstud LAN-ligipääs on TODO. [Ühendused ja katseplaan](../docs/cameras.md).
 
 | Endpoint | Vastus |
 | :--- | :--- |
@@ -120,7 +137,7 @@ HTTP saatmisvea korral. Poolik JPEG lükatakse tagasi ega suurenda frame counter
 
 ## Hardware TODO
 
-- kinnitada füüsilise mooduli sensor revision;
+- kinnitada selle Wi-Fi build'iga varem USB kaudu tuvastatud OV3660;
 - laadida firmware XIAO-sse kontrollitud laborietapil;
 - kontrollida päris Wi-Fi, `/status` ja `/snapshot.jpg`;
 - kontrollida frame-buffer release'i client disconnect'i ja võrgu katkestuse ajal;
