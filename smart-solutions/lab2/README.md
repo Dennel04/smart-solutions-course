@@ -154,6 +154,29 @@ Täpne protokoll on failis [`docs/server_api.md`](docs/server_api.md).
 Kohalik kaamera-arhitektuur ja tulevaste pärismõõtmiste metoodika on failis
 [`docs/cameras.md`](docs/cameras.md).
 
+Kõik Lab 2 dokumendid:
+
+- [`docs/server_api.md`](docs/server_api.md) — postkontori API, whitelist ja tulemused;
+- [`docs/atom_page.md`](docs/atom_page.md) — Atomi lehe Lab 2 väljad ja testid;
+- [`docs/cameras.md`](docs/cameras.md) — kohalikud kaamerad ja mõõtmismetoodika;
+- [`docs/safety.md`](docs/safety.md) — ohutuskokkulepe ja meeskonna kinnitused;
+- [`docs/bom.md`](docs/bom.md) — BOM ja tellimiseelne kontroll;
+- [`docs/pick_place_executor.md`](docs/pick_place_executor.md) — `pick_place`
+  Lab 1 integratsiooni ettevalmistus ja blokeeringud;
+- [`docs/pick_place_simulation.md`](docs/pick_place_simulation.md) —
+  `source_to_finished` software-only simulatsioon;
+- [`docs/ownership_gateway.md`](docs/ownership_gateway.md) — MG400 ühise
+  omaniku software-only prototüüp;
+- [`docs/atom_display_diagnostic.md`](docs/atom_display_diagnostic.md) — vana
+  AtomS3R-i musta ekraani diagnostika;
+- [`firmware/README.md`](firmware/README.md),
+  [`firmware-xiao-camera/README.md`](firmware-xiao-camera/README.md) ja
+  [`deploy/README.md`](deploy/README.md) — püsivara ja paigaldus;
+- mõõtmiste CSV-mallid: [`latency_poll_fast.csv`](docs/latency_poll_fast.csv),
+  [`latency_poll_slow.csv`](docs/latency_poll_slow.csv),
+  [`camera_metrics.csv`](docs/camera_metrics.csv) ja
+  [`control_latency_cameras.csv`](docs/control_latency_cameras.csv).
+
 ## Püsivara töövoog
 
 AtomS3 püsivara arendatakse, ehitatakse ja laaditakse seadmesse PlatformIO
@@ -330,8 +353,16 @@ tulemust; füüsilise katse juurde lisatakse kuupäev, meetod ja failiviide.
   sama töö kontrollimatu kordusväljastuse.
 - [x] Atom API on väljamineva pollingu jaoks; droplet ei loo ühendust
   Atomi, jaama ega robotiga.
-- [x] Poll uuendab heartbeat-/olekuinfot; leht näitab `last_seen` põhjal
+- [ ] Poll uuendab heartbeat-/olekuinfot; leht näitab `last_seen` põhjal
   online/offline olekut, roboti olekut ja polling-intervalli.
+  - 25.10.26 parandus: kasutajaleht (`server/templates/index.html`) näitab
+    ainult online/stale/offline olekut ja `last_seen` aega. Roboti olek
+    (`atom.device.reported.station.robot_state`) ja
+    `atom.device.poll_interval_ms` on ainult autentitud JSON-is
+    (`GET /api/status`, `GET /api/jobs`).
+  - 25.10.26: märge võeti maha, sest kasutajalehel puuduvad roboti olek ja
+    polling-intervall (vt parandus ülal). Uuesti märgitakse pärast nende
+    lisamist lehele.
 - [x] Sama terminaltulemuse kordussaatmine sama töö ID-ga on serveris idempotentne.
 - [x] Postkontori API leping on kirjas failis `docs/server_api.md`.
 - [x] Kohalik Flask postkontor, SQLite store ja minimaalne kasutajaleht on teostatud.
