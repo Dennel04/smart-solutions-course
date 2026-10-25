@@ -83,6 +83,13 @@ valideeritakse koefitsiendid uuesti. Puuduv, osaliselt kirjutatud või vigane
 NVS konfiguratsioon muutub fail-closed `uncalibrated` olekuks. See tarkvaraline
 püsivusmudel on builditud; reboot-püsivus tuleb veel päris Atomil kontrollida.
 
+Normaalrežiimi samal lehel on märkeruut kontrollitud anduriühenduse
+kinnitamiseks (`sensor_confirmed=1`; kinnitamata `0`). Kinnitus jääb ainult
+RAM-i ja kaob taaskäivitamisel. Puuduv väli vanas kliendis tähendab
+kinnitamata ühendust; muu väärtus annab HTTP 400. Kalibratsioonikoefitsiendid
+üksi ei kinnita anduri olemasolu. Enne märkimist kontrollib kasutaja wiring'ut
+ja G5 lubatud sisendpinget.
+
 ## Rõhu test
 
 Nupp `TEST PRESSURE SENSOR` kuvab ühe ja sama proovi kohta korraga:
@@ -93,9 +100,12 @@ Nupp `TEST PRESSURE SENSOR` kuvab ühe ja sama proovi kohta korraga:
 
 Kolm väärtust peavad pärinema samast proovist, et eristada ADC-/ühendusviga
 teisendusvalemi või kalibratsiooni veast. Leht ei tohi näidata arvutatud kPa-d
-kehtiva kalibratsiooni puudumisel. Praegune endpoint keskmistab kaheksa G5 raw
-ADC lugemit ja tagastab `status: not_calibrated`, raw väärtuse ning `null`
-pinge/kPa. Kehtiva kalibratsiooniga arvutatakse pinge ja kPa sama keskmistatud
+kehtiva kalibratsiooni või kinnitatud anduriühenduse puudumisel.
+Normaalrežiimi endpoint keskmistab kaheksa G5 raw ADC lugemit. Kinnitamata
+ühendusega tagastab ta `status: sensor_not_confirmed`, `sensor_confirmed:false`,
+raw väärtuse ning `null` pinge/kPa, ka varem salvestatud koefitsientidega.
+Kinnitatud ühenduse, kuid puuduva kalibratsiooniga jääb olekuks
+`not_calibrated`. Kehtiva kalibratsiooni ja kinnitusega arvutatakse pinge ja kPa sama keskmistatud
 raw väärtuse põhjal. Vahemikuviga annab error-vastuse, mitte arvulise rõhu.
 ADC rail-koodid `0` ja `4095` käsitletakse samuti veana, sest need võivad
 tähendada saturatsiooni, lühist või kasutuskõlbmatut tööpunkti.
@@ -147,7 +157,8 @@ andur on olemas; seetõttu ei tõenda edukas HTTP vastus sensor chain'i korrasol
 6. Võrrelda software kPa tulemust referentsiga ning mitte märkida kriteeriumi
    tehtuks, kuni mõõteviga ja kasutatav vahemik on kinnitatud.
 7. Taaskäivitada Atom, avada sama leht ja kontrollida NVS kalibratsiooni
-   püsivust ilma koefitsiente uuesti sisestamata.
+   püsivust ilma koefitsiente uuesti sisestamata. Andurikinnitus peab olema
+   lähtestatud: enne uut kohalikku kinnitamist jäävad pinge ja kPa `null`.
 8. Korrata `TEST PRESSURE SENSOR` nuppu ning kinnitada, et raw ADC, voltage ja
    kPa kuvatakse koos; ühendus-/vahemikuviga peab olema error, mitte usutav
    võltsrõhk.

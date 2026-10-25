@@ -4,13 +4,58 @@
 #include <HTTPClient.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
+#include <atomic>
+#include <esp_sntp.h>
+#include <mbedtls/x509_crt.h>
 #include <time.h>
+#include "normal_tls.h"
+
+#ifndef MBEDTLS_SSL_KEEP_PEER_CERTIFICATE
+#error "Normal TLS validity checking requires retained peer certificates"
+#endif
 
 namespace postoffice {
 namespace {
 
 constexpr uint32_t kResultRetryMs = 2000;
 constexpr int64_t kClockPlausibleAfter = 1700000000LL;
+std::atomic<bool> utcSynchronized{false};
+
+void timeSynchronized(struct timeval* value) {
+  utcSynchronized.store(value && normaltls::utcValid(true,value->tv_sec));
+}
+
+bool trustedClock() {
+  return normaltls::utcValid(utcSynchronized.load(),static_cast<int64_t>(time(nullptr)));
+}
+
+class ValidityCheckedClient : public WiFiClientSecure {
+ public:
+  explicit ValidityCheckedClient(const char* ca): ca_(ca) { setCACert(ca); }
+  int connect(const char* host,uint16_t port,int32_t timeout) override {
+    return normaltls::connectVerified(trustedClock,
+      [&] { return WiFiClientSecure::connect(host,port,timeout); },
+      [&] {
+        mbedtls_x509_crt roots;
+        mbedtls_x509_crt_init(&roots);
+        auto* peer=const_cast<mbedtls_x509_crt*>(getPeerCertificate());
+        bool ok=false;
+        if (ca_ && mbedtls_x509_crt_parse(&roots,
+            reinterpret_cast<const unsigned char*>(ca_),strlen(ca_)+1)==0) {
+          ok=normaltls::verifyChain(peer,&roots,host,static_cast<int64_t>(time(nullptr)),
+            MBEDTLS_X509_BADCERT_OTHER,
+            [](mbedtls_x509_crt* chain,mbedtls_x509_crt* ca,const char* name,
+               uint32_t* flags,int (*cb)(void*,mbedtls_x509_crt*,int,uint32_t*),void* ctx) {
+              return mbedtls_x509_crt_verify(chain,ca,nullptr,name,flags,cb,ctx);
+            });
+        }
+        mbedtls_x509_crt_free(&roots);
+        return ok;
+      },[&] { stop(); });
+  }
+ private:
+  const char* ca_;
+};
 
 void logLine(const String& message) {
   Serial.println("# POST " + message);
@@ -91,6 +136,7 @@ void PostOfficeClient::begin(const String& deviceId, PersistentState& state,
   state_ = &state;
   bridge_ = &bridge;
   rootCa_ = rootCa;
+  sntp_set_time_sync_notification_cb(timeSynchronized);
 }
 
 void PostOfficeClient::configure(const Settings& settings) {
@@ -125,6 +171,10 @@ bool PostOfficeClient::transportReady(String& reason) const {
     reason = "wifi_disconnected";
     return false;
   }
+  if (settings_.serverUrl.startsWith("https://") && !trustedClock()) {
+    reason = "https_time_unavailable";
+    return false;
+  }
   return true;
 }
 
@@ -138,11 +188,11 @@ int PostOfficeClient::postJson(const String& path, const String& payload, String
   HTTPClient http;
   http.setConnectTimeout(1500);
   http.setTimeout(2500);
+  http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
   const String url = endpoint(path);
   int code = -1;
   if (url.startsWith("https://")) {
-    WiFiClientSecure client;
-    client.setCACert(rootCa_);
+    ValidityCheckedClient client(rootCa_);
     if (!http.begin(client, url)) return -1;
     http.addHeader("Content-Type", "application/json");
     http.addHeader("Authorization", "Bearer " + settings_.atomKey);
@@ -171,11 +221,11 @@ int PostOfficeClient::get(const String& path, String& response) {
   HTTPClient http;
   http.setConnectTimeout(1500);
   http.setTimeout(2500);
+  http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
   const String url = endpoint(path);
   int code = -1;
   if (url.startsWith("https://")) {
-    WiFiClientSecure client;
-    client.setCACert(rootCa_);
+    ValidityCheckedClient client(rootCa_);
     if (!http.begin(client, url)) return -1;
     http.addHeader("Authorization", "Bearer " + settings_.atomKey);
     code = http.GET();
@@ -260,7 +310,8 @@ void PostOfficeClient::pollOnce(uint32_t nowMs) {
   if (!parseJobResponse(response, job, hasJob, refusalReason)) {
     // The server has already claimed a response job. If an ID is available,
     // report a terminal refusal rather than silently dropping it.
-    if (job.id[0] != '\0') state_->queueRefused(job.id, refusalReason);
+    if (job.id[0] != '\0' && state_->startClaim(job.id))
+      state_->queueRefused(job.id, refusalReason);
     setStatus("job_refused:" + refusalReason);
     logLine(statusText_);
     return;
@@ -292,6 +343,7 @@ void PostOfficeClient::pollOnce(uint32_t nowMs) {
 
 void PostOfficeClient::sendPendingResult(uint32_t nowMs) {
   const PendingResult pending = state_->pendingResult();
+  if (!state_->healthy()) { setStatus("nvs_state_error"); return; }
   if (!pending.present) return;
 
   JsonDocument document;
@@ -308,7 +360,10 @@ void PostOfficeClient::sendPendingResult(uint32_t nowMs) {
   String response;
   const int code = postJson("/api/atom/result", payload, response);
   if (code == 200) {
-    state_->acknowledgeResult(pending.jobId);
+    if (!state_->acknowledgeResult(pending.jobId)) {
+      setStatus("nvs_state_error");
+      return;
+    }
     setStatus("result_sent");
     logLine("result sent id=" + pending.jobId);
   } else {
@@ -320,13 +375,16 @@ void PostOfficeClient::sendPendingResult(uint32_t nowMs) {
 
 void PostOfficeClient::tick(uint32_t nowMs) {
   if (state_ == nullptr || bridge_ == nullptr) return;
-  if (state_->pendingResult().present) {
+  if (!state_->healthy()) { setStatus("nvs_state_error"); return; }
+  const PendingResult pending = state_->pendingResult();
+  if (!state_->healthy()) { setStatus("nvs_state_error"); return; }
+  if (pending.present) {
     if (static_cast<int32_t>(nowMs - nextResultAttemptAtMs_) >= 0) {
       sendPendingResult(nowMs);
     }
     return;
   }
-  if (!state_->activeJobId().isEmpty()) return;
+  if (!state_->canPoll()) return;
   if (static_cast<int32_t>(nowMs - nextPollAtMs_) < 0) return;
   nextPollAtMs_ = nowMs + settings_.pollIntervalMs;
   pollOnce(nowMs);

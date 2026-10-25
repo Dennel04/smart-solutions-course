@@ -49,6 +49,7 @@ enum class ReadingCode : uint8_t {
   InvalidRawAdc,
   ConvertedVoltageOutOfRange,
   ConvertedPressureOutOfRange,
+  SensorUnconfirmed,
 };
 
 struct Reading {
@@ -63,5 +64,6 @@ struct Reading {
 };
 
 Reading convertReading(int rawAdc, const Calibration& calibration);
+Reading convertSensorReading(int rawAdc, const Calibration& calibration, bool sensorConfirmed);
 
 }  // namespace pressure

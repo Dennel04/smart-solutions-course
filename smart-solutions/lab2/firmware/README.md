@@ -412,6 +412,17 @@ ignoreeritud faili `include/post_office_ca_private.h`, kus defineeritakse
 `setInsecure()`. Ilma CA-ta keeldub klient HTTPS-päringust. `http://` on
 lubatud ainult eraldi arenduslipuga kohalikuks testiks.
 
+Normaalrežiimis ootab HTTPS-kliendi ajakontroll selle käivituse SNTP
+sünkroonimise teadet ja UTC-d vahemikus 2024–2036. Ilma selleta keeldub
+transport veaga `https_time_unavailable`; pollingu üldolek võib olla
+`poll_failed`. ESP-IDF 4.4.7 eelkompileeritud mbedTLS-is puudub
+`MBEDTLS_HAVE_TIME_DATE`, seega kontrollib klient lisaks CA-le ja hostname'ile
+valitud sertifikaadiahela `notBefore`/`notAfter` aega, kaasa arvatud usaldatud
+juursertifikaat. HTTPClient saab ühenduse õnnestumise alles pärast seda
+kontrolli; enne seda ei saada klient bearer-päist, polli ega tulemust.
+Ümbersuunamised on keelatud. SNTP on olemasoleva võrgukella usaldusallikas,
+kuid see ei paku autenditud aega; CRL/OCSP kontrolli siin ei lisata.
+
 Nupp `TEST SERVER HEALTH` teeb ainult ühe `GET /health` päringu. See ei polli,
 claim'i tööd, kutsu station'it ega liiguta robotit.
 
@@ -420,6 +431,13 @@ Samal lehel olev rõhuosa salvestab neli lineaarset teisenduskoefitsienti ning
 NVS konfiguratsiooni korral on olek `not_calibrated`: raw ADC võib olla
 nähtav, kuid voltage ja kPa on `null`. Tegelikud koefitsiendid, ADC wiring ja
 kõik füüsilised tulemused peavad tulema Andmehõive Lab 2 katsest.
+
+Normaalrežiimis peab kasutaja samal rõhuseadete lehel kinnitama kontrollitud
+anduriühenduse märkeruuduga `sensor_confirmed`. Kinnitus kehtib ainult RAM-is
+kuni taaskäivituseni. Ilma kinnituseta tagastab test `sensor_not_confirmed`,
+raw ADC ning `null` pinge/kPa ka varem salvestatud kehtivate koefitsientidega.
+Üks ADC väärtus ei tõenda anduri olemasolu. Kinnitamine ei asenda wiring'u,
+sisendpinge ega Andmehõive kalibratsiooni füüsilist kontrolli.
 
 ## Production TLS ettevalmistus — 20.10.2026
 
@@ -473,11 +491,34 @@ Lab 2 software-adapter rakendab selle lepingu kaustas `../src/` ning kasutab
 mock executor'it. See ei muuda Lab 1 station'it ega tõenda päris USB või MG400
 integratsiooni; riistvara otsast lõpuni kontroll on TODO.
 
-Terminaltulemus salvestatakse enne aktiivse claim'i kustutamist ja seda
-korratakse pärast võrgu taastumist sama ID-ga kuni server vastab edukalt.
-Uut tööd vahepeal ei küsita. Kui seade taaskäivitub ebaselge aktiivse claim'iga,
+Terminaltulemuse salvestamisel kontrollib klient iga NVS-kirjutuse tulemust
+ja loeb väärtuse tagasi. `resultReady=true` avaldatakse pärast kohustuslikke
+välju; `activeId` jääb alles kuni serveri HTTP 200 kinnituseni. Alles siis
+kirjutab klient lisamarkeri `ackedId` ja koristab tulemuse. Katkenud koristuse
+lõpetab ta järgmisel käivitusel selle markeri järgi. Võrgu taastumisel saadab
+klient sama ID-ga salvestatud tulemust uuesti. Uut tööd vahepeal ei küsita.
+NVS-viga blokeerib selle käivituse pollingu ja tulemuste saatmise olekuga
+`nvs_state_error`. Vigane või ilma claim'ita poolik kirje vajab kohalikku
+ülevaatust; automaatset kustutamist ei tehta. Vanad terviklikud terminalkirjed
+sobivad ka ilma `activeId`-ta. Pooleli `ackedId` koristusega seadmele ei tohi
+taastada vana firmware'it enne oleku ülevaatust.
+
+Serial-tulemuse ja võrgukliendi NVS-üleminekud kasutavad sama lukku.
+Hilinenud terminalvastus ei saa pärast kinnitatud koristust claim'i uuesti
+luua. Ka serverist saadud vigase töö keeldumine vajab enne kohalikku claim'i.
+Kui allesolev `resultId` erineb `ackedId`-st, jätab klient kirjed alles ja
+keeldub koristamisest.
+
+Kui seade taaskäivitub ebaselge aktiivse claim'iga,
 ei saadeta tähte uuesti: töö muudetakse `ambiguous_after_reboot` põhjusega
 `refused` tulemuseks, mis vajab serverisse saatmist.
+
+Need normal-režiimi parandused on tarkvaralised. Native-testid kontrollivad
+TLS-aja ja andurikinnituse loogikat; pytest kompileerib tegeliku
+`persistent_state.cpp` sünteetilise Preferences-asendusega ning katkestab
+kirjutusi ja kustutusi. Need testid ei tõenda päris NVS-i käitumist
+toitekatkestusel ega uut production HTTPS ühendust. BENCH jääb vaikimisi
+environment'iks; HEALTH_ONLY ja varasemad riistvaratulemused jäävad alles.
 
 ## Veel kontrollimata
 

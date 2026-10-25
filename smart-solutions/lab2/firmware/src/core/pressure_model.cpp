@@ -157,4 +157,13 @@ Reading convertReading(int rawAdc, const Calibration& calibration) {
   return reading;
 }
 
+Reading convertSensorReading(int rawAdc, const Calibration& calibration, bool sensorConfirmed) {
+  if (sensorConfirmed) return convertReading(rawAdc,calibration);
+  Reading reading;
+  reading.rawAdc=rawAdc;
+  reading.code=ReadingCode::SensorUnconfirmed;
+  reading.status="sensor_not_confirmed";
+  return reading;
+}
+
 }  // namespace pressure

@@ -24,6 +24,7 @@ button{margin:.4rem .4rem .4rem 0;padding:.5rem}.note{color:#555}.error{color:#a
 <hr><h2>Pressure sensor</h2>
 <p class="note">Software-only foundation. Use only calibration constants verified in Data Acquisition Lab 2.</p>
 <label><input id="pressureCalibrated" type="checkbox" style="width:auto"> Calibration verified and enabled</label>
+<label><input id="sensorConfirmed" type="checkbox" style="width:auto"> Andur on ühendatud ja juhtmestik kontrollitud (kuni taaskäivituseni)</label>
 <label>ADC voltage scale (V/count)<input id="voltsPerCount" inputmode="decimal" placeholder="not calibrated"></label>
 <label>ADC voltage offset (V)<input id="voltageOffset" inputmode="decimal" placeholder="not calibrated"></label>
 <label>Pressure scale (kPa/V)<input id="kpaPerVolt" inputmode="decimal" placeholder="not calibrated"></label>
@@ -51,11 +52,12 @@ statusEl.textContent=t;statusEl.className=r.ok?'':'error';wifiPass.value='';atom
 async function testServer(){statusEl.textContent='Testing health endpoint…';const r=await fetch('/test/post-office',{method:'POST'});
 const t=await r.text();statusEl.textContent=t;statusEl.className=r.ok?'':'error'}
 async function loadPressure(){try{const r=await fetch('/pressure/settings');const p=await r.json();
-pressureCalibrated.checked=!!p.calibrated;voltsPerCount.value=p.volts_per_count??'';
+pressureCalibrated.checked=!!p.calibrated;sensorConfirmed.checked=!!p.sensor_confirmed;voltsPerCount.value=p.volts_per_count??'';
 voltageOffset.value=p.voltage_offset_v??'';kpaPerVolt.value=p.kpa_per_volt??'';
 pressureOffset.value=p.pressure_offset_kpa??'';pressureStatus.textContent=p.calibrated?'Calibration loaded.':'Not calibrated.';
 pressureStatus.className='note'}catch(e){pressureStatus.textContent='Pressure settings load failed: '+e.message;pressureStatus.className='error'}}
 async function savePressure(){const f=new URLSearchParams();f.set('pressure_calibrated',pressureCalibrated.checked?'1':'0');
+f.set('sensor_confirmed',sensorConfirmed.checked?'1':'0');
 f.set('volts_per_count',voltsPerCount.value);f.set('voltage_offset_v',voltageOffset.value);
 f.set('kpa_per_volt',kpaPerVolt.value);f.set('pressure_offset_kpa',pressureOffset.value);
 const r=await fetch('/pressure/settings',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:f});

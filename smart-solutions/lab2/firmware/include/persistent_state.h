@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include <Preferences.h>
+#include <mutex>
 
 #include "post_office_model.h"
 
@@ -17,6 +18,10 @@ struct PendingResult {
 class PersistentState {
  public:
   bool begin();
+  bool healthy() const {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    return healthy_;
+  }
   bool canPoll() const;
   bool isDuplicate(const String& jobId) const;
   String activeJobId() const;
@@ -33,8 +38,15 @@ class PersistentState {
   bool recoverAmbiguousClaim();
 
  private:
+  bool fail() const { healthy_ = false; return false; }
+  bool writeString(const char* key,const String& value);
+  bool removeIfPresent(const char* key);
+  bool finishAcknowledgement();
   bool queueTerminal(const String& jobId, const char* status, const String& reason);
   mutable Preferences preferences_;
+  // Serial results and network delivery run on different ESP32 cores.
+  mutable std::recursive_mutex mutex_;
+  mutable bool healthy_ = false;
 };
 
 }  // namespace postoffice

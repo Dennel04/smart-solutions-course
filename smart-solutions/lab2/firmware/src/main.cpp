@@ -37,6 +37,7 @@ postoffice::PostOfficeClient postOfficeClient;
 postoffice::Settings settings;
 pressure::SettingsStore pressureSettingsStore;
 pressure::Calibration pressureCalibration;
+bool pressureSensorConfirmed = false;  // RAM only; local confirmation expires at reboot.
 String serialLine;
 bool accessPointActive = false;
 bool wifiRecoveryActive = false;
@@ -232,6 +233,7 @@ void handlePressureSettingsGet() {
   pressureCalibration = pressureSettingsStore.load();
   JsonDocument document;
   document["calibrated"] = pressureCalibration.calibrated;
+  document["sensor_confirmed"] = pressureSensorConfirmed;
   document["adc_pin"] = "G5";
   if (pressureCalibration.calibrated) {
     document["volts_per_count"] = pressureCalibration.voltsPerCount;
@@ -250,6 +252,11 @@ void handlePressureSettingsGet() {
 }
 
 void handlePressureSettingsPost() {
+  const String sensorConfirmedValue = webServer.arg("sensor_confirmed");
+  if (!sensorConfirmedValue.isEmpty() && sensorConfirmedValue!="0" && sensorConfirmedValue!="1") {
+    webServer.send(400,"application/json","{\"error\":\"invalid_sensor_confirmation\"}");
+    return;
+  }
   const String calibratedValue = webServer.arg("pressure_calibrated");
   if (calibratedValue != "0" && calibratedValue != "1") {
     webServer.send(400, "application/json",
@@ -276,6 +283,7 @@ void handlePressureSettingsPost() {
     return;
   }
   pressureCalibration = candidate;
+  pressureSensorConfirmed = sensorConfirmedValue == "1";
   logLine(candidate.calibrated ? "pressure calibration saved"
                                : "pressure calibration disabled");
   webServer.send(200, "application/json",
@@ -295,12 +303,13 @@ int readPressureRawAdc() {
 void handlePressureTest() {
   pressureCalibration = pressureSettingsStore.load();
   const pressure::Reading reading =
-      pressure::convertReading(readPressureRawAdc(), pressureCalibration);
+      pressure::convertSensorReading(readPressureRawAdc(), pressureCalibration, pressureSensorConfirmed);
   JsonDocument document;
   document["status"] = reading.status;
   document["sample_count"] = kPressureSampleCount;
   document["raw_adc"] = reading.rawAdc;
   document["calibrated"] = pressureCalibration.calibrated;
+  document["sensor_confirmed"] = pressureSensorConfirmed;
   if (reading.voltageAvailable) {
     document["voltage_v"] = reading.voltageV;
   } else {
@@ -314,7 +323,8 @@ void handlePressureTest() {
   String response;
   serializeJson(document, response);
   const bool safeResponse = reading.ok() ||
-                            reading.code == pressure::ReadingCode::NotCalibrated;
+                            reading.code == pressure::ReadingCode::NotCalibrated ||
+                            reading.code == pressure::ReadingCode::SensorUnconfirmed;
   webServer.send(safeResponse ? 200 : 503, "application/json", response);
 }
 
@@ -328,6 +338,7 @@ void handleState() {
   document["pending_result_id"] = pending.present ? pending.jobId : "";
   document["pressure_available"] = false;
   document["pressure_calibrated"] = pressureCalibration.calibrated;
+  document["pressure_sensor_confirmed"] = pressureSensorConfirmed;
   document["pressure"] = nullptr;
   String response;
   serializeJson(document, response);
