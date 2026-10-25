@@ -8,7 +8,7 @@ süsteemis ennustatud ja seejärel mõõdetud.
 - Käsk ja kuupäev: TODO
 - Toorväljund või tõendi fail: TODO
 
-| Route | Interface/gateway | Selgitus oma sõnadega |
+| Marsruut | Liides / järgmine lüüs | Selgitus oma sõnadega |
 |---|---|---|
 | TODO | TODO | TODO |
 
@@ -18,7 +18,7 @@ süsteemis ennustatud ja seejärel mõõdetud.
 - Vaate/ekspordi kuupäev: TODO
 - Toorväljund või tõendi fail: TODO
 
-| Route | Interface/gateway | Selgitus oma sõnadega |
+| Marsruut | Liides / järgmine lüüs | Selgitus oma sõnadega |
 |---|---|---|
 | TODO | TODO | TODO |
 
@@ -28,9 +28,14 @@ Ennustus kirjutatakse enne mõõtmiskäsu käivitamist.
 
 | Teekond | Ennustatud hüpped | Tegelik mõõdetud teekond | Erinevuse selgitus |
 |---|---|---|---|
-| Station → MG400 | TODO | TODO | TODO |
-| Station → droplet | TODO | TODO | TODO |
-| Station → internet | TODO | TODO | TODO |
+| Jaam → MG400 | TODO | TODO | TODO |
+| Jaam → droplet | TODO | TODO | TODO |
+| Jaam → internet | TODO | TODO | TODO |
+
+Iga teekonna juurde lisatakse enne mõõtmist ennustuse kuupäev ning pärast
+mõõtmist sihtaadress, käsk/tööriist, kuupäev ja toorväljundi failiviide.
+Vastamata hüpet ei esitata tõendatud ruuterina. Ühtegi ping'i,
+traceroute'i tulemust ega ekraanipilti selles etapis ei looda.
 
 ## NAT
 
@@ -38,6 +43,13 @@ Ennustus kirjutatakse enne mõõtmiskäsu käivitamist.
 - Vaatluse kuupäev ja meetod: TODO
 - Miks see ei ole jaama kohalik aadress: TODO
 - Mitu aadressiteisendust teel täheldati: TODO
+- Dropleti logi järgi nähtud Atomi päringu lähteaadress ja logiviide: TODO
+- Avaliku lähteaadressi omanik / ülesvoolu võrgu allikas ja tõend: TODO
+- Teisenduskohad, mida tõendid kinnitavad, ning eraldi teadmata kohad: TODO
+- Miks vastus jõuab õigele seadmele tagasi: TODO
+
+LAN/WAN piirid on [aadressiplaanis](network_plan.md). Mitme ruuteri olemasolu
+ei tõenda iseenesest NAT-ide arvu; kinnitamata teisendused jäävad TODO.
 
 ## Tahtlikult katkine marsruut
 

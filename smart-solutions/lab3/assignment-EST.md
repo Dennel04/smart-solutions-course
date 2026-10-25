@@ -1,6 +1,6 @@
 ## Nutikad Lahendused: Labor 3 — Ruuter ja VPN
 
-**Töömaht:** 30 tundi | **Hindamine:** 20 punkti | **Meeskond:** 3 tudengit | **Välja antud:** 28.10.26 | **Tellimise kuupäev:** 06.11.26 | **Esimene kaitsmine:** 17.11.26, veebis
+**Töömaht:** 30 tundi | **Hindamine:** 20 punkti | **Meeskond:** 3 tudengit | **Välja antud:** 28.10.26 | **Tellimise kuupäev:** 06.11.26 | **Esimene kaitsmine:** 19.11.26, veebis
 
 ### Kuidas see dokument töötab
 
@@ -184,7 +184,7 @@ Kirjuta üles: latentsuse tabel, labor ja tunnel, keskmine ja maksimum; kaamerat
 
 #### 5. Atomi leht
 
-Andmehõive Labor 3 paneb Atomi külge solenoidklapi, mis valib, kas pump töötab napaga või süstlaga, ja UV LED-i, mis liimi kõvendab. Labori 1 reegel: mõlemad saavad seaded ja testinupu Atomi lehele. Uut lehte ei tehta.
+Andmehõive Labor 3 paneb Atomi külge solenoidklapi, mis laseb pumba õhu süstlasse ja tilga lõppedes süstla rõhu õhku, ja UV LED-i, mis liimi kõvendab. Labori 1 reegel: mõlemad saavad seaded ja testinupu Atomi lehele. Uut lehte ei tehta.
 
 * **Klapp:** impulsi pikkus millisekundites ja testinupp, mis teeb ühe impulsi.
 * **UV LED:** põlemise aeg ja selle ülempiir, ja testinupp.
@@ -203,7 +203,7 @@ Kirjuta üles: Atomi lehe seadete ja testide nimekiri failis `docs/atom_page.md`
 * Üks ohutusseade selles ruumis töötab ka siis, kui kedagi kohal ei ole, ja tasub teada, milline. MG400 seisab kaldseinaga aluses: kui robot millegi vastu läheb, ronib ta alusest välja ja jääb seisma. Tarkvara seda ei tee ja internet seda ei takista. Aga tagasi alusesse paneb ta ainult inimene — ehk kaugelt sa pärast seda enam midagi käima ei pane. Kirjuta üles, kuidas sa kaugelt aru saad, et see juhtus: mille pealt sa seda lehel või kaameras näed.
 * **Tunneli võti on ruumi võti.** Privaatne võti ei lähe reposse ega vestlusse. Kui telefon kaob, võetakse tema võti dropletist maha samal päeval.
 * **Ühenduse katkemine keset liigutust on läbi mängitud enne, kui robot kaugelt esimest korda liigub.** Mitte pärast.
-* **UV LED-i ei lülitata kaugelt.** 405 nm valgus ja silmad: testinuppu vajutab inimene, kes on ruumis, kellel on kaitseprillid ees ja kes näeb, kuhu lamp on suunatud. LED kustub alati ise.
+* **UV LED-i ei lülitata kaugelt.** 405 nm valgus ja silmad: testinuppu vajutab inimene, kes on ruumis, kellel on kaitseprillid ees ja kes näeb, kuhu lamp on suunatud. Valgustamine käib katte all, nii et valgus välja ei paista. 405 nm paistab silmale palju tuhmim, kui ta on, nii et põlevat LED-i on kerge alahinnata. LED kustub alati ise.
 * Postkontor ja tunnel jäävad lahku. Avalik server ei saa tunnelisse midagi saata.
 * MG400 reeglid Laborist 1 kehtivad edasi: käed ei ole laual, kui robot on sisse lülitatud; uue jada esimene jooks 20 % kiirusel; käsklusi saadab robotile korraga ainult üks programm.
 

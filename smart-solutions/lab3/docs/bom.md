@@ -1,17 +1,21 @@
 # Lab 3 BOM ja inventuur
 
-**Tellimise tähtaeg:** 06.11.26
+**Tellimise tähtaeg:** 06.11.2026
 
-Selles ettevalmistuses ei eeldata ühtegi ostu. Enne tellimist kontrollitakse
-füüsiline inventuur ning iga puuduva rea juurde lisatakse põhjendus.
+Ruuteri annab õppejõud ja droplet on Lab 2 sõltuvus. Mõlema kasutusvalmidus
+kontrollitakse, kuid neid ei lisata põhjenduseta uue ostuna.
+Lab 2 dokumenteeritud droplet ei kinnita veel WireGuardi valmidust.
 
-| Item | Availability | Required action / reason |
+| Positsioon | Lähteinfo | Vajalik kontroll enne 06.11.2026 |
 |---|---|---|
-| Router | teacher-provided / verify | TODO — verify physical availability before 06.11.26 |
-| LAN cables | TODO physical inventory | TODO — verify physical availability before 06.11.26 |
-| Ethernet adapter if needed | TODO | TODO — verify physical availability before 06.11.26 |
-| Power supplies | TODO | TODO — verify physical availability before 06.11.26 |
-| Any missing networking items | TODO | TODO — verify physical availability before 06.11.26 |
-| Phone mobile-data availability | verify, not purchase assumption | TODO — verify physical availability before 06.11.26 |
+| Ruuter | Õppejõult | TODO — füüsiline saadavus, mudel, admin-ligipääs ja WireGuardi tugi |
+| Droplet | Lab 2 olemasolev host | TODO — kasutusõigus ja VPN-i tulevane sobivus; uut ostu ei eeldata |
+| LAN-kaablid | Inventuur puudub | TODO — füüsiline arv, pikkused ja seisukord |
+| Etherneti adapter vajaduse korral | Jaama vaba port pole kinnitatud | TODO — kontrollida tegelikku vajadust |
+| Toiteallikad | Inventuur puudub | TODO — ruuteri ja kaameramooduli toite olemasolu |
+| Muud puuduvad võrguosad | Vajadus pole kinnitatud | TODO — lisada ainult inventuuri järel põhjendusega |
+| Telefoni mobiilne andmeside | Olemasolu ja maht kontrollida | TODO — kaamerakatseteks sobivus; ostu ei eeldata |
 
-Lõplik tellimus ja ühise tellimistabeli kinnitus: TODO
+Lõplikud kogused, ostuvajadused ja põhjendused: TODO pärast inventuuri.
+[Ühine tellimistabel](https://moodle.ut.ee/mod/url/view.php?id=1535601):
+TODO — meeskond kinnitab vajalikud read enne tähtaega.

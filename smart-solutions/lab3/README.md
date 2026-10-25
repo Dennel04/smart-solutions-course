@@ -1,128 +1,157 @@
 # Nutikad Lahendused: Labor 3 — Ruuter ja VPN
 
-> Labor 3 füüsiline töö ei ole veel alanud. See tööleht ja failistruktuur on
-> loodud ettevalmistusena. Tegelikud IP-aadressid, ruutimistabelid, VPN-i
-> võtmed, latentsused, kaameramõõdikud ja 48 tunni logi jäävad kuni päris
-> katseteni märgendiga **TODO**. Laborite 1 ja 2 tulemusi võib siia üle tuua
-> ainult pärast vastavate failide kontrollimist.
+> Labor 3 füüsiline töö ei ole veel alanud. See on tulevase labori
+> dokumentaalne ettevalmistus. IP-aadressid, marsruudid, seadmevalikud,
+> latentsused, kaameramõõdikud ja 48 tunni logi jäävad kuni päris kontrollini
+> **TODO**. Varasemate laborite tulemusi kasutatakse ainult kontrollitud
+> failiviidetega. Privaatvõtmeid, paroole ja tokeneid ei lisata siia kunagi.
 
-**Töömaht:** 30 tundi
-**Hindamine:** 20 punkti
-**Meeskond:** 3 tudengit
-**Välja antud:** 28.10.26
-**Tellimise kuupäev:** 06.11.26
-**Esimene kaitsmine:** 17.11.26, veebis
+**Töömaht:** 30 tundi | **Hindamine:** 20 punkti | **Meeskond:** 3 tudengit
 
-Õppejõu täielik ülesanne on failis
-[`assignment-EST.md`](assignment-EST.md) (originaal, muutmata).
+**Välja antud:** 28.10.26 | **Tellimise kuupäev:** 06.11.2026 | **Esimene kaitsmine:** 19.11.2026, veebis
+
+## Allikad ja tõendite piirid
+
+[Ametliku ülesande täpne koopia](assignment-EST.md) vastab 25.10.2026
+[õppejõu algallikale](https://github.com/KKallas/Narva-subjects/blob/main/EST/2026-27/Smart%20Solutions/Smart%20Solutions%20%5BLab%203%5D%20EST.md):
+Git blob SHA `2d991551f8edd69751cf8a6940b77a6231e60d51`.
+[Ametlik kokkuvõte](https://github.com/KKallas/Narva-subjects/blob/main/EST/2026-27/Smart%20Solutions/Smart%20Solutions%20%5BLabor%203%20kokkuv%C3%B5te%5D%20EST.md)
+on abiallikas. Täielik ametlik ülesanne on varasemate plaanide suhtes ülimuslik.
+Originaalkoopia ainepassi suhteline viide on säilitatud muutmata ja ei ole
+selle repo kohalik faililink; siin navigeerimiseks kasuta allolevaid tööfailide
+ning kontrollitud algallikate linke.
+
+| Tõendi liik | Praegune seis ja piir |
+|---|---|
+| Valmis tarkvaraalus | Lab 2 Flask/SQLite, Atomi polling, XIAO HTTP ja kohalik kaameraserver koos mock-testidega; täpne seis [Lab 2 README-s](../lab2/README.md). See ei tõenda terviklikku robotirada. |
+| Modelleerimine ja simulatsioon | Seotud kursuste CAD ja simulatsioonid ei kinnita uue tööriista füüsilist sobivust, võrku ega roboti ohutuskäitumist. |
+| Dokumentaalne ettevalmistus | Siin on nõuded, kontrollimata otsuste väljad ja tühjad mõõtemallid. |
+| Päris katsed | Lab 2 kuupäevaga kinnitatud tulemusi eristatakse allpool selle TODO-dest. Lab 3 võrgu-, VPN-, liikumis-, klapi- ja UV-katseid pole tehtud. |
 
 ## Eesmärk ja arhitektuur
 
-Labor 2 avalik postkontor jääb kõrgtaseme tööde teeks:
+Kaks sõltumatut kanalit jäävad lahku. Avalik HTTPS-postkontor võtab vastu
+ainult lubatud kõrgtaseme töid. Atom algatab väljamineva pollingu ja edastab
+vastuvõetud töö lokaalsele jaamale. Avalik postkontor ei vahenda otseseid
+MG400 käske ega videovooge.
 
 ```text
-User
-  |
-HTTPS
-  v
-Public post-office
-  ^
-  |
-outbound polling
-  |
-Atom
-  |
-local
-  v
-Station -> MG400
+Kasutaja --HTTPS--> avalik postkontor <--väljaminev polling-- Atom
+                                                             |
+                                                        kohalik kanal
+                                                             v
+                                                           jaam --> MG400
 ```
 
-Labor 3 lisab sellest eraldi VPN-i kaudu otsejuurdepääsu laborivõrgule:
+Privaatne WireGuardi kanal võimaldab tulevikus lubatud ligipääsu jaamale,
+kohalikele kaameratele ja MG400 juhtimisele. Telefon on omaette peer;
+ruuter algatab dropleti poole väljamineva ühenduse.
 
 ```text
-Phone
-  |
-WireGuard
-  v
-Droplet
-  |
-WireGuard tunnel
-  v
-Lab router
-  |
-  +-- Station
-  +-- MG400
-  +-- Atom
-  +-- XIAO camera
+Telefon --WireGuard--> droplet <--WireGuard-- labori ruuter
+                                              |
+                                              +-- jaam --> MG400
+                                              |     ^
+                                              |     +-- USB lauakaamera
+                                              |     +-- kohalik HTTP XIAO kaamera
+                                              +-- AtomS3R
+                                              +-- XIAO ESP32S3 Sense
 ```
 
-Skeemid on ainult kontseptuaalsed. Alamvõrk, IP-aadressid, ruuteri mudel,
-WireGuardi pordid ja võtmed valitakse või kontrollitakse alles päris seadmetega.
-Avalik postkontor ei ole VPN-i juhtimistee.
+See on kontseptuaalne vaade; tegelik aadressiplaan ja lubatud teed on **TODO**.
+WireGuardi lõpetamine jaamas on õpetaja lubatud varuvariant ainult siis,
+kui päris ruuteri mudeli ja toe kontroll näitab selle vajadust.
+Avalikul veebirakendusel ei tohi olla võimalust tunneli kaudu robotit juhtida ega kaameraid vahendada. Selle piirangu tegelik rakendamine ja kontroll on TODO.
+
+**KAARDISTA ISE — eesmärk nii, nagu ta tegelikult välja tuli.**
+
+TODO — täita pärast meeskonna tegelikke otsuseid ja katseid.
 
 ## Kontrollnimekiri
 
-- [ ] Aadressiplaan on paberil ja draw.io-s: iga seade, aadress, alamvõrk ja aadressi allikas.
-- [ ] Ruuter on seadistatud ning robot, jaam, Atom ja kaameramoodul saavad tema võrgus püsivad aadressid; vaikimisi admin-parool on vahetatud.
-- [ ] Laborite 1 ja 2 funktsioonid töötavad uues võrgus edasi.
-- [ ] Jaama ja ruuteri ruutimistabelid on loetud ning iga rida on selgitatud.
-- [ ] Jaam → MG400, jaam → droplet ja jaam → internet teekonnad on enne ennustatud ning seejärel mõõdetud.
-- [ ] NAT on vaadeldud ja dropleti nähtud lähteaadress on selgitatud.
-- [ ] WireGuardi tunnel ruuteri ja dropleti vahel töötab ning taastub pärast ruuteri taaskäivitust.
-- [ ] Telefon on VPN-is; jaama leht avaneb väljalülitatud Wi-Fi ja mobiilse andmesidega.
-- [ ] Jaama leht ning robot ei ole väljast ilma tunnelita kättesaadavad.
-- [ ] Üks marsruut on tahtlikult katki tehtud; ennustus ja tegelik tulemus on dokumenteeritud.
-- [ ] Tehtud on 30 kohaliku võrgu latentsusmõõtmist.
-- [ ] Tehtud on 30 VPN-i latentsusmõõtmist.
-- [ ] Mõlemad kaamerad töötavad VPN-i kaudu ning latentsus, FPS ja ribalaius on mõõdetud.
-- [ ] Ühenduse katkemist liikumise ajal on ohutult katsetatud kolm korda.
-- [ ] Droplet on kogunud tunneli 48 tunni logi 10-sekundilise kontrollsammuga.
-- [ ] Labori 2 ohutuskokkulepet on otsejuhtimise jaoks täiendatud ja kõik liikmed on selle kinnitanud.
-- [ ] Atomi lehel on klapi seaded ja testinupp.
-- [ ] Atomi lehel on UV LED-i seaded, ülempiir, testinupp ja automaatne väljalülitus.
-- [ ] BOM on täidetud failis [`docs/bom.md`](docs/bom.md) hiljemalt 06.11.26.
-- [ ] Repo ja arenduspäevik on valmis.
-- [ ] Esitamisel on loodud tag `smart-solutions-lab3`.
+Järgmised 17 punkti on ametlikust ülesandest sõna-sõnalt ja samas järjekorras.
+Dokumentatsiooni sünkroonimine ei täida neid kriteeriume.
 
-Kõik punktid on alguses lahti ning märgitakse tehtuks ainult kontrollitava
-tulemuse või päris katse järel.
+- [ ] Aadressiplaan paberil ja draw.io-s: iga seade, aadress, alamvõrk, kes aadressi andis.
+- [ ] Ruuter seadistatud: robot, jaam, Atom ja kaameramoodul on tema võrgus ja saavad iga kord sama aadressi. Ruuteri vaikimisi parool on vahetatud.
+- [ ] Labori 1 ja 2 asjad töötavad uues võrgus edasi: jaam liigutab robotit, Atom käib postkontoris ja sõnum paneb roboti tööle, kaamerad on jaama lehel.
+- [ ] Ruutimistabel loetud jaamas ja ruuteris, iga rea kohta üks lause. Kolm teekonda ennustatud ja siis mõõdetud.
+- [ ] NAT nähtud: mis aadressi pealt droplet sind näeb, ja miks see ei ole su jaama aadress.
+- [ ] Tunnel üleval ruuteri ja dropleti vahel. Tuleb pärast ruuteri taaskäivitust ise tagasi.
+- [ ] Telefon on tunnelis: jaama leht avaneb telefonist, mille WiFi on välja lülitatud, ja nupud liigutavad robotit.
+- [ ] Ilma tunnelita ei pääse jaamani ega robotini väljast keegi. Kontrollitud väljast.
+- [ ] Üks marsruut meelega katki tehtud: ennustus, mis lakkab töötamast, ja mis päriselt lakkas.
+- [ ] Latentsus mõõdetud: 30 vajutust labori võrgus ja 30 läbi tunneli.
+- [ ] Mõlemad kaamerad läbi tunneli: viide, kaadrisagedus, ribalaius.
+- [ ] Ühenduse katkemine keset liigutust otsustatud, tehtud ja kolm korda läbi proovitud.
+- [ ] Tunneli logi 48 tundi dropleti poolt, katkestused üles loetud.
+- [ ] Labori 2 ohutuskokkulepe otsejuhtimise jaoks täiendatud ja kõigil meeskonnaliikmetel loetud.
+- [ ] Klapi ja UV LED-i seaded ja testinupud Atomi lehel, `docs/atom_page.md` uuendatud.
+- [ ] Tellimus 06.11 failis `docs/bom.md`.
+- [ ] Repo ja arenduspäevik täidetud, tag `smart-solutions-lab3`.
+
+**KAARDISTA ISE — kuupäevad ja sinu enda sammud.**
+
+TODO — täita päris töö käigus.
 
 ## Vajalikud sisendid varasematest laboritest
 
 ### Smart Solutions Lab 2
 
-Vaja on päris dropletit ja HTTPS-i, töötavat postkontorit, päris Atomi
-pollingut, lubatud tööde nimekirja, ohutuskokkulepet, mõlemat füüsilist
-kaamerat jaama lehel ning kaamera- ja juhtimislatentsuse lähteväärtusi.
-Labor 2 on veel töös; selle tegelik lõppseis ja väärtused tuleb võtta ainult
-kaustast [`../lab2/`](../lab2/).
+Kontrollitud lähteallikad: [README](../lab2/README.md),
+[kaamerad](../lab2/docs/cameras.md) ja [ohutuskokkulepe](../lab2/docs/safety.md).
 
-### Data Acquisition Lab 3
+- Tarkvaraalus sisaldab Flask/SQLite postkontorit, lubatud `letter` ja
+  `pick_place` töid, Atomi pollingut, station-adapterit ning USB/XIAO
+  kaameraserverit. `pick_place` executor on mock.
+- 20.10.2026 on dokumenteeritud päris dropleti, avaliku HTTPS-i ja
+  autentitud lehe kontroll mobiilse andmesidega; need pole Lab 3 VPN-testid.
+- Atomi lokaalne autentitud polling, reboot-püsivus ja Wi-Fi recovery on
+  varasemate kuupäevadega dokumenteeritud. 23.10 HEALTH_ONLY kinnitas Wi-Fi
+  ja TLS-i, kuid HTTP/JSON ebaõnnestus; production-polling on TODO.
+- XIAO diagnostiline USB JPEG teises kursuses ei kinnita Smart Solutions
+  Wi-Fi firmware upload'i ega HTTP snapshot'i station'is.
+- Mõlemad füüsilised kaamerad station'i lehel, kogu laua vaade, kaitstud
+  LAN-ligipääs, station'i integreerimine ja MG400 tervikahel on TODO.
+  Eraldi kaameraserveri vaikebind on loopback ja autentimine puudub;
+  seda ei avata VPN/LAN-i enne kohaliku ligipääsupiiri otsust.
+- Kaamera- ja juhtimislatentsuse lähteväärtused ning iga liikme isiklik
+  ohutuskinnitus tuleb võtta ainult kinnitatud Lab 2 tõenditest; puuduv jääb TODO.
 
-Vaja on solenoidklapi ja UV LED-i käske, ohutuskäitumist ning vajaduse korral
-alarmi-/sündmuselepingut.
+### Andmehõive Lab 3
 
-**TODO — Data Acquisition Lab 3 physical implementation not available yet**
+[Kontrollitud dokumentatsioon, commit 74764e6](https://github.com/Dennel04/data-acquisition-course/blob/74764e6dc8a83f868b90862edb48158d3619b595/data-acquisition/lab3/README.md):
+`pump → Y1 → iminapp / 3/2 klapp → süstal`.
+Napp jääb otse pumba harusse. Klapp juhib ainult süstlaharu: voolu all pump
+süstlasse, vooluta pump lahutatud ja süstal atmosfääri. See ei ole pumba
+ümberlüliti napa ning süstla vahel. Tööjärjekord on
+**doseerimine → klaasi tõstmine → kõvendamine → väljund**.
 
-### 3D Printing Lab 3
+Klapi ja UV LED-i käsud, riistvaraliides, vahemikud, ohutuskäitumine ning
+alarmi-/sündmuseleping kooskõlastatakse enne koodi kirjutamist.
+Dokumenteeritud JSON-käsud on seni näited, mitte kinnitatud teostus.
+**TODO — füüsiline teostus ja liidese kokkulepe pole veel kinnitatud.**
 
-Vaja on ühendatud tööriista: iminapp, süstal, UV-lamp ja kaamera, koos
-kontrollitud tööriistanihetega.
+### 3D printimise Lab 3
 
-**TODO — 3D Printing Lab 3 physical implementation not available yet**
+[Kontrollitud dokumentatsioon, commit 6068053](https://github.com/Dennel04/3d-printing-course/blob/6068053f90d09fa301889ee4476e139a78dd82ad/3d-print/lab3/README.md):
+ühine tööriist iminapa, süstla, UV-lambi ja kaameraga; sama Y-pneumaatika ning
+musta katte all kõvendamine. Vajalikud on neli kontrollitud flantsinihet:
+iminapp, süstla otsik, UV-laigu keskpunkt ja kaamera pildi keskpunkt.
+Uue tööriistaga õpetatakse/kontrollitakse punktid uuesti.
+**TODO — uus tööriist, neli nihet ja füüsiline sobivus pole veel kinnitatud.**
 
 ## Tööfailid
 
-- [`docs/network_plan.md`](docs/network_plan.md) — tulevane aadressiplaan.
-- [`docs/routing.md`](docs/routing.md) — ruutimistabelid, teekonnad, NAT ja katkine marsruut.
-- [`docs/safety.md`](docs/safety.md) — Labori 2 ohutuskokkuleppe laiendus.
-- [`docs/atom_page.md`](docs/atom_page.md) — klapi ja UV LED-i tulevane leheliides.
-- [`docs/bom.md`](docs/bom.md) — inventuur ja võimalik tellimus.
-- [`data/latency_local.csv`](data/latency_local.csv) ja
-  [`data/latency_vpn.csv`](data/latency_vpn.csv) — latentsuse mõõtmismallid.
-- [`data/camera_vpn_metrics.csv`](data/camera_vpn_metrics.csv) — VPN-kaamerate mõõtmismall.
-- [`data/tunnel_48h.csv`](data/tunnel_48h.csv) — 48 tunni tunneli logimall.
-- `docs/wireguard/` — tulevased võtmeteta WireGuardi dokumendid.
+- [Aadressiplaan](docs/network_plan.md) — LAN/WAN, seadmed ja tõendite allikad.
+- [Ruutimine ja NAT](docs/routing.md) — tabelid, ennustused ning päris tulemuste väljad.
+- [WireGuardi plaan](docs/wireguard/README.md) — peer'id, lubatud teed ja tulevased kontrollid.
+- [Ohutuskokkulepe](docs/safety.md) — otsejuhtimine, katkestused ja UV.
+- [Atomi leht](docs/atom_page.md) — olemasoleva lehe klapi/LED-i seaded ja testid.
+- [BOM](docs/bom.md) — inventuur ja põhjendatud tellimisvajadus.
+- [Mõõtemetoodika](docs/measurements.md) — ühikud, ajabaas ja analüüsi plaan.
+- [Kohalik latentsus](data/latency_local.csv) ja [VPN-latentsus](data/latency_vpn.csv).
+- [VPN-kaamerad](data/camera_vpn_metrics.csv) ja [48 tunni tunneli logi](data/tunnel_48h.csv).
 
 ### Arenduspäevik
 
@@ -140,12 +169,20 @@ kontrollitud tööriistanihetega.
 * Otsustasime, ja miks: IP-aadresse, ruute, võtmeid ega mõõtetulemusi ei täideta enne päris süsteemi kontrollimist, et ettevalmistust ei esitletaks tehtud laborina.
 * Lahti järgmiseks korraks: lõpetada kõigepealt Labor 2 ning alustada Labor 3 tööd alles siis, kui selle sõltuvused on päriselt saadaval.
 
+**25.10.2026 — dokumentatsiooni sünkroonimine; osalejad teadmata**
+
+* Tegime: kontrollisime ametlikku ülesannet ja kokkuvõtet ning seotud Andmehõive ja 3D printimise Lab 3 avaldatud dokumente; uuendasime ainult Lab 3 dokumentatsiooni ja juurkausta juhiseid.
+* Juhtus (numbrid): ametliku ülesande blob SHA on `2d991551f8edd69751cf8a6940b77a6231e60d51`; 17 kontrollpunkti kopeeriti sõna-sõnalt ja kõik jäid lahti. Esimene kaitsmine on nüüd 19.11.2026; tellimise tähtaeg on 06.11.2026. Need on allika ja ajakava andmed, mitte mõõtmised.
+* Otsustasime, ja miks: klapp juhib süstlaharu ning tühjendab selle vooluta atmosfääri; UV kasutamine on ainult kohalik, läbipaistmatu katte all ja Atomi taimeriga. Aadressid, AllowedIPs, ohutu katkestuskäitumise teostus ja kõik päris tulemused jäävad TODO.
+* Tegelik tulemus: dokumentaalne ettevalmistus. Füüsilist sessiooni, riistvara koostamist, võrgu seadistamist, firmware laadimist ega mõõtmisi ei toimunud; ruuterit, tunnelit, dropletit, MG400-t, klappi ja LED-i ei katsetatud. Varasem päevikukanne säilitati muutmata; selle 17.11 kuupäev kajastab toonast ülesannet.
+* Lahti järgmiseks korraks: kontrollida Lab 2 sõltuvusi, ruuteri mudelit ja inventuuri; kooskõlastada riistvaraliides, otsejuhtimise ohutus ning neli tööriistanihet enne päris Lab 3 tööd.
+
 ### Väljundid ja tulemused
 
 **Väljundid**
-* Data Acquisition L3: TODO — kontrollitud klapi ja UV LED-i käsud, seaded, testid ning vajaduse korral alarmisündmus.
-* 3D Printing L3: TODO — kaugelt nähtav ühendatud tööriist ja kontrollitud tööriistanihked.
-* Smart Solutions L4: TODO — kontrollitud võrk, tunnel ja droplet.
+* Andmehõive L3: TODO — kontrollitud klapi ja UV LED-i käsud, seaded, testid ning vajaduse korral alarmisündmus.
+* 3D printimine L3: TODO — kaugelt nähtav ühendatud tööriist ja kontrollitud tööriistanihked.
+* Nutikad Lahendused L4: TODO — kontrollitud võrk, tunnel ja droplet.
 
 **KAARDISTA ISE, lõpus.**
 * Git repo ja tag: TODO — tag luuakse alles esitamisel.

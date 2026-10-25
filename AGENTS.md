@@ -69,6 +69,18 @@ Each later lab under `smart-solutions/labN/` follows the same pattern.
   measurements. Never store private SSH or WireGuard keys in the repo. The
   public post-office and VPN are separate paths; physical results require real
   hardware, and Lab 3 devlog entries are appended rather than rewritten.
+- Lab 3 direct VPN control requires a person in the room at the physical
+  e-stop and a working full-table camera; the tool camera alone is insufficient.
+  Design, implement, and test connection-loss fail-safe behavior before the
+  first remote motion. A software Stop is not a physical e-stop substitute.
+- UV activation is local only, never through remote VPN control. Use 405 nm
+  eye protection and an opaque enclosure that contains the light; Atom's timer
+  must turn the LED off independently of the browser or network connection.
+- Coordinate Lab 3 with the current Data Acquisition and 3D Printing documents:
+  the Y branch feeds the suction cup directly; the valve controls only the
+  syringe, disconnecting the pump and venting the syringe when unpowered.
+  Confirm commands and all four tool offsets before implementation; plans,
+  examples, CAD, and simulations do not prove physical completion.
 - Git tag per lab only at final submission, e.g. `smart-solutions-lab1`.
 
 ## Tools in play
