@@ -563,8 +563,13 @@ Reaalset porti kasutava software-only mock adapteri näidiskäsk:
 python -m src.station_adapter --port COM4 --baud 115200 --allow-mock-jobs
 ```
 
-Ilma `--allow-mock-jobs` liputa on lokaalne täitmine keelatud. Ka lipuga
-kasutatakse ainult mock executor'it; MG400 klienti ei impordita ega ühendata.
+Vaikimisi on lokaalne täitmine keelatud. `--allow-mock-jobs` kasutab ainult
+mock executor'it; MG400 klienti ei impordita ega ühendata. Eraldi
+`--allow-live-letter` nõuab nii `--confirm-local-safety` kui ka
+`--confirm-exclusive-control` kinnitust ning kasutab olemasolevat Lab 1 HTTP
+täitmisrada. Live `pick_place` puudub. Kohapealne ettevalmistus, käivituskäsud
+ja interlock'i reeglid on [kontrollitud letter-katse juhendis](docs/live_letter_runbook.md).
+See on tarkvaraline ettevalmistus, mitte kinnitatud füüsiline integratsioon.
 Serial-porti tohib omada ainult üks programm. Porti kadumisel proovib adapter
 uuesti ühenduda, vigane üksikrida ei lõpeta protsessi.
 

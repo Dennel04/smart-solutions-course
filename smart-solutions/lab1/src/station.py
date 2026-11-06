@@ -189,6 +189,8 @@ def validate_message(payload: object) -> tuple[str, str, int, int | None]:
     if not isinstance(session, str) or not session.strip():
         raise ValueError("session must be a non-empty string")
     session = session.strip()[:64]
+    if session == "text":
+        raise ValueError("session 'text' is reserved for internal text jobs")
 
     seq = payload.get("seq", 0)
     if isinstance(seq, bool) or not isinstance(seq, int) or seq < 0:
@@ -647,6 +649,44 @@ def receive_letter():
         ),
         202,
     )
+
+
+@app.get("/api/letter/status")
+def letter_status():
+    """Read an existing letter event; never submit or reconstruct execution."""
+    headers = {"Cache-Control": "no-store"}
+    sessions = request.args.getlist("session")
+    sequences = request.args.getlist("seq")
+    if len(sessions) != 1 or not sessions[0].strip() or len(sessions[0].strip()) > 64:
+        return jsonify(ok=False, error="invalid session"), 400, headers
+    session = sessions[0].strip()
+    # Text jobs share the dictionary but do not belong to the letter API.
+    if session == "text":
+        return jsonify(ok=False, error="session 'text' is reserved for internal text jobs"), 400, headers
+    if len(sequences) != 1 or not sequences[0].isascii() or not sequences[0].isdecimal():
+        return jsonify(ok=False, error="seq must be a non-negative integer"), 400, headers
+    try:
+        seq = int(sequences[0])
+    except ValueError:
+        return jsonify(ok=False, error="seq must be a non-negative integer"), 400, headers
+
+    identity = {"session": session, "seq": seq}
+    if CONFIG.dry_run:
+        return jsonify(
+            ok=False, error="dry-run has no physical letter result",
+            execution_mode="dry-run", dry_run=True, **identity,
+        ), 409, headers
+    with SEQ_LOCK:
+        record = EXECUTION_EVENTS.get((session, seq))
+        if record is None:
+            return jsonify(
+                ok=False, error="unknown letter execution",
+                execution_mode="execute", dry_run=False, **identity,
+            ), 404, headers
+        return jsonify(
+            ok=True, execution_status=record.state, error=record.error,
+            execution_mode="execute", dry_run=False, **identity,
+        ), 200, headers
 
 
 @app.get("/")

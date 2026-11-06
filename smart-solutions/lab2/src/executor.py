@@ -19,10 +19,17 @@ DEFAULT_LAB1_LETTERS = (
 class ExecutionOutcome:
     status: str
     reason: str | None = None
+    completion_confirmed: bool = False
+
+    def __post_init__(self) -> None:
+        if type(self.completion_confirmed) is not bool or (
+            self.completion_confirmed and (self.status != "done" or self.reason is not None)
+        ):
+            raise ValueError("confirmed completion requires done without a refusal reason")
 
     @classmethod
-    def done(cls) -> "ExecutionOutcome":
-        return cls("done")
+    def done(cls, *, completion_confirmed: bool = False) -> "ExecutionOutcome":
+        return cls("done", completion_confirmed=completion_confirmed)
 
     @classmethod
     def refused(cls, reason: str) -> "ExecutionOutcome":

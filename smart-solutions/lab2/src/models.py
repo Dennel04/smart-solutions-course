@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from hashlib import sha256
 import json
 import re
 from typing import Any, Union
@@ -10,6 +11,8 @@ from typing import Any, Union
 
 COMMON_FIELDS = {"job", "session", "seq", "atom_sent_ms", "job_id"}
 JOB_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,80}$")
+LEGACY_IDENTITY = "legacy"
+LAB1_LETTER_IDENTITY = "lab1-letter-v1"
 STABLE_REASONS = {
     "invalid_message",
     "invalid_letter",
@@ -37,6 +40,12 @@ class AtomLetterJob:
     seq: int
     job_id: str
     atom_sent_ms: int | None = None
+    # Internal metadata, never accepted as a field in the Atom wire protocol.
+    identity_scheme: str = LEGACY_IDENTITY
+
+    def for_lab1(self) -> "AtomLetterJob":
+        session, seq = lab1_letter_identity(self.job_id)
+        return replace(self, session=session, seq=seq, identity_scheme=LAB1_LETTER_IDENTITY)
 
     @property
     def job_type(self) -> str:
@@ -65,6 +74,13 @@ class AtomPickPlaceJob:
 
 
 AtomJob = Union[AtomLetterJob, AtomPickPlaceJob]
+
+
+def lab1_letter_identity(job_id: str) -> tuple[str, int]:
+    """Derive a bounded Lab 1 key independently of Atom boot/session metadata."""
+    if not isinstance(job_id, str) or not JOB_ID_PATTERN.fullmatch(job_id):
+        raise ValueError("invalid job_id for Lab 1 letter identity")
+    return sha256(("lab2-letter:" + job_id).encode("ascii")).hexdigest(), 0
 
 
 @dataclass(frozen=True)
