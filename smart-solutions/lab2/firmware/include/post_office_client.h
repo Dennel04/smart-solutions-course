@@ -5,13 +5,14 @@
 #include "persistent_state.h"
 #include "post_office_settings.h"
 #include "station_bridge.h"
+#include "display_image_job.h"
 
 namespace postoffice {
 
 class PostOfficeClient {
  public:
   void begin(const String& deviceId, PersistentState& state, StationBridge& bridge,
-             const char* rootCa);
+             const char* rootCa, DisplayImageJob* display = nullptr);
   void configure(const Settings& settings);
   void tick(uint32_t nowMs);
 
@@ -34,6 +35,7 @@ class PostOfficeClient {
   String deviceId_;
   PersistentState* state_ = nullptr;
   StationBridge* bridge_ = nullptr;
+  DisplayImageJob* display_ = nullptr;
   const char* rootCa_ = nullptr;
   uint32_t nextPollAtMs_ = 0;
   uint32_t nextResultAttemptAtMs_ = 0;

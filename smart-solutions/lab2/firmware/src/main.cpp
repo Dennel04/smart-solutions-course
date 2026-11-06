@@ -11,6 +11,8 @@
 #include <time.h>
 
 #include "persistent_state.h"
+#include "display_image_job.h"
+#include "display_image_renderer.h"
 #include "post_office_ca.h"
 #include "post_office_client.h"
 #include "post_office_model.h"
@@ -34,6 +36,7 @@ postoffice::SettingsStore settingsStore;
 postoffice::PersistentState persistentState;
 postoffice::StationBridge stationBridge;
 postoffice::PostOfficeClient postOfficeClient;
+postoffice::DisplayImageJob displayImageJob;
 postoffice::Settings settings;
 pressure::SettingsStore pressureSettingsStore;
 pressure::Calibration pressureCalibration;
@@ -91,13 +94,7 @@ String deviceId() {
 }
 
 void showStatus(const String& heading, const String& detail) {
-  M5.Display.fillScreen(TFT_BLACK);
-  M5.Display.setTextColor(TFT_GREEN, TFT_BLACK);
-  M5.Display.setTextSize(1);
-  M5.Display.setCursor(4, 5);
-  M5.Display.println(heading);
-  M5.Display.setTextColor(TFT_WHITE, TFT_BLACK);
-  M5.Display.println(detail);
+  localdisplay::showStatus(heading.c_str(), detail.c_str());
 }
 
 void startSetupAccessPoint(bool enableRecovery) {
@@ -395,7 +392,9 @@ void pollSerialStationBoundary() {
     if (character == '\n' || character == '\r') {
       if (!serialLine.isEmpty()) {
         const postoffice::PendingResult before = persistentState.pendingResult();
-        if (stationBridge.handleResultLine(serialLine, persistentState)) {
+        if (displayImageJob.handleStationResult(persistentState, [&] {
+              return stationBridge.handleResultLine(serialLine, persistentState);
+            })) {
           const postoffice::PendingResult after = persistentState.pendingResult();
           if (!before.present && after.present) logLine("local station result queued");
         }
@@ -427,7 +426,8 @@ void setup() {
   pinMode(kPressureAdcPin, INPUT);
   analogReadResolution(12);
   analogSetPinAttenuation(kPressureAdcPin, ADC_11db);
-  postOfficeClient.begin(deviceId(), persistentState, stationBridge, POST_OFFICE_ROOT_CA);
+  postOfficeClient.begin(deviceId(), persistentState, stationBridge, POST_OFFICE_ROOT_CA,
+                        &displayImageJob);
   postOfficeClient.configure(settings);
 
   WiFi.onEvent(handleWifiEvent);
@@ -455,6 +455,7 @@ void setup() {
 void loop() {
   M5.update();
   pollSerialStationBoundary();
+  displayImageJob.processPending(persistentState, localdisplay::render);
   // Future Lab 1 display/button and pump work remains on core 1.
   delay(2);
 }

@@ -7,6 +7,7 @@
 #include "post_office_model.h"
 #include "pressure_model.h"
 #include "bench_tests.h"
+#include "display_images.h"
 
 using namespace postoffice;
 
@@ -21,6 +22,42 @@ static Job validJob() {
 
 void test_valid_letter_job() {
   TEST_ASSERT_TRUE(validateJob(validJob(), 1000, true).ok());
+}
+
+void test_display_image_whitelist_and_resource_sizes() {
+  for (const char* id : {"lab2_logo", "lab2_check"}) {
+    Job job = validJob();
+    std::strcpy(job.type, "display_image");
+    std::strcpy(job.imageId, id);
+    TEST_ASSERT_TRUE(validateJob(job, 1000, true).ok());
+    const auto* image = localdisplay::findImage(id);
+    TEST_ASSERT_NOT_NULL(image);
+    TEST_ASSERT_EQUAL(256, image->count);
+  }
+  const auto* logo = localdisplay::findImage("lab2_logo");
+  const auto* check = localdisplay::findImage("lab2_check");
+  TEST_ASSERT_NOT_EQUAL(0, std::memcmp(logo->pixels, check->pixels, 512));
+}
+
+void test_display_image_rejects_unknown_ids() {
+  for (const char* id : {"", "unknown", "https://x", "../lab2_logo", "LAB2_LOGO"}) {
+    Job job = validJob();
+    std::strcpy(job.type, "display_image");
+    std::strcpy(job.imageId, id);
+    TEST_ASSERT_EQUAL(static_cast<int>(ValidationCode::InvalidImage),
+                      static_cast<int>(validateJob(job, 1000, true).code));
+  }
+  TEST_ASSERT_NULL(localdisplay::findImage(nullptr));
+}
+
+void test_display_image_preserves_motion_clock_and_ttl_guards() {
+  Job job = validJob();
+  std::strcpy(job.type, "display_image");
+  std::strcpy(job.imageId, "lab2_logo");
+  TEST_ASSERT_FALSE(validateJob(job, 2000, true).ok());
+  TEST_ASSERT_FALSE(validateJob(job, 1000, false).ok());
+  job.hasDirectMotionData = true;
+  TEST_ASSERT_FALSE(validateJob(job, 1000, true).ok());
 }
 
 void test_invalid_letter_is_refused() {
@@ -288,6 +325,9 @@ int main(int argc, char** argv) {
   RUN_TEST(test_bench_unwritten_rng_buffer_is_rejected);
   RUN_TEST(test_bench_bad_entropy_stops_before_ap_and_http_start);
   RUN_TEST(test_valid_letter_job);
+  RUN_TEST(test_display_image_whitelist_and_resource_sizes);
+  RUN_TEST(test_display_image_rejects_unknown_ids);
+  RUN_TEST(test_display_image_preserves_motion_clock_and_ttl_guards);
   RUN_TEST(test_invalid_letter_is_refused);
   RUN_TEST(test_valid_pick_place_job);
   RUN_TEST(test_invalid_pick_place_routine_is_refused);

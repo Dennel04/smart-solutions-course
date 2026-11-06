@@ -40,10 +40,16 @@ PendingResult PersistentState::pendingResult() const {
   result.status = preferences_.getString("resultStatus", "");
   if (preferences_.isKey("resultReason"))
     result.reason = preferences_.getString("resultReason", "");
+  if (preferences_.isKey("resultSource"))
+    result.source = preferences_.getString("resultSource", "");
+  else if (result.status == "done")
+    result.source = "local_station";  // Legacy terminal results have no source key.
   if (result.jobId.isEmpty() || result.jobId.length()>kMaxJobId ||
       (result.status!="done" && result.status!="refused") ||
       (result.status=="refused" && result.reason.isEmpty()) ||
-      (result.status=="done" && !result.reason.isEmpty())) fail();
+      (result.status=="done" && (!result.reason.isEmpty() ||
+        (result.source!="local_station" && result.source!="local_display"))) ||
+      (result.status=="refused" && !result.source.isEmpty())) fail();
   return result;
 }
 
@@ -69,14 +75,17 @@ bool PersistentState::startClaim(const String& jobId) {
 }
 
 bool PersistentState::queueTerminal(const String& jobId, const char* status,
-                                    const String& reason) {
+                                    const String& reason, const String& source) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   if (!healthy_ || jobId.isEmpty() || jobId.length() > kMaxJobId ||
-      (String(status)=="refused" && reason.isEmpty())) return false;
+      (String(status)=="refused" && reason.isEmpty()) ||
+      (String(status)=="done" && source!="local_station" && source!="local_display"))
+    return false;
   const PendingResult current = pendingResult();
   if (!healthy_) return false;
   if (current.present) {
-    return current.jobId == jobId && current.status == status && current.reason == reason;
+    return current.jobId == jobId && current.status == status && current.reason == reason &&
+           current.source == source;
   }
   const String active = activeJobId();
   // A late serial result must not recreate a claim after acknowledged cleanup.
@@ -85,18 +94,23 @@ bool PersistentState::queueTerminal(const String& jobId, const char* status,
   if (reason.isEmpty()) {
     if (!removeIfPresent("resultReason")) return false;
   } else if (!writeString("resultReason",reason)) return false;
+  // The new source is committed before resultReady. Keep the legacy station
+  // representation unchanged, including its existing interrupted-write recovery.
+  if (source == "local_display") {
+    if (!writeString("resultSource",source)) return false;
+  } else if (!removeIfPresent("resultSource")) return false;
   if (preferences_.putBool("resultReady",true)!=sizeof(bool) ||
       !preferences_.getBool("resultReady",false)) return fail();
   // Retain activeId until the server acknowledges the terminal result.
   return true;
 }
 
-bool PersistentState::queueDone(const String& jobId) {
-  return queueTerminal(jobId, "done", "");
+bool PersistentState::queueDone(const String& jobId, const String& source) {
+  return queueTerminal(jobId, "done", "", source);
 }
 
 bool PersistentState::queueRefused(const String& jobId, const String& reason) {
-  return queueTerminal(jobId, "refused", reason);
+  return queueTerminal(jobId, "refused", reason, "");
 }
 
 bool PersistentState::acknowledgeResult(const String& jobId) {
@@ -118,7 +132,7 @@ bool PersistentState::finishAcknowledgement() {
       preferences_.getString("resultId", "")!=acked) return fail();
   if (preferences_.putBool("resultReady",false)!=sizeof(bool) ||
       preferences_.getBool("resultReady",true)) return fail();
-  for (const char* key : {"resultId","resultStatus","resultReason","activeId"})
+  for (const char* key : {"resultId","resultStatus","resultReason","resultSource","activeId"})
     if (!removeIfPresent(key)) return false;
   return removeIfPresent("ackedId");
 }
@@ -136,7 +150,7 @@ bool PersistentState::recoverAmbiguousClaim() {
   }
   if (!active.isEmpty()) return queueRefused(active, "ambiguous_after_reboot");
   if (preferences_.isKey("resultId") || preferences_.isKey("resultStatus") ||
-      preferences_.isKey("resultReason")) return fail();
+      preferences_.isKey("resultReason") || preferences_.isKey("resultSource")) return fail();
   return true;
 }
 

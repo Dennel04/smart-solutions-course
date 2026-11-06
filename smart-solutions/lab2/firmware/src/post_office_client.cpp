@@ -131,10 +131,11 @@ bool hasUnsupportedJobField(JsonObjectConst object) {
 }  // namespace
 
 void PostOfficeClient::begin(const String& deviceId, PersistentState& state,
-                             StationBridge& bridge, const char* rootCa) {
+                             StationBridge& bridge, const char* rootCa, DisplayImageJob* display) {
   deviceId_ = deviceId;
   state_ = &state;
   bridge_ = &bridge;
+  display_ = display;
   rootCa_ = rootCa;
   sntp_set_time_sync_notification_cb(timeSynchronized);
 }
@@ -262,14 +263,19 @@ bool PostOfficeClient::parseJobResponse(const String& response, Job& job, bool& 
   const char* letter = argument["letter"] | "";
   job.letter = strlen(letter) == 1 ? letter[0] : 0;
   strlcpy(job.routine, argument["routine"] | "", sizeof(job.routine));
+  const JsonString imageId = argument["image_id"].as<JsonString>();
+  const bool validImageString = !imageId.isNull() && imageId.size() <= kMaxImageId &&
+      imageId.size() == strlen(imageId.c_str());
+  if (validImageString) strlcpy(job.imageId, imageId.c_str(), sizeof(job.imageId));
   const bool expectedArgument =
       (strcmp(job.type, "letter") == 0 && argument.size() == 1 &&
        argument["letter"].is<const char*>()) ||
       (strcmp(job.type, "pick_place") == 0 && argument.size() == 1 &&
-       argument["routine"].is<const char*>());
+       argument["routine"].is<const char*>()) ||
+      (strcmp(job.type, "display_image") == 0 && argument.size() == 1 && validImageString);
   job.hasDirectMotionData = hasUnsupportedJobField(object) || hasDirectMotionField(object) ||
                             hasDirectMotionField(argument) || !expectedArgument;
-  if (!parseUtc(object["expires_at"] | nullptr, job.expiresEpoch)) {
+  if (!parseUtc(object["expires_at"].as<const char*>(), job.expiresEpoch)) {
     refusalReason = "invalid_expiration";
     return false;
   }
@@ -327,6 +333,16 @@ void PostOfficeClient::pollOnce(uint32_t nowMs) {
     setStatus("duplicate_job");
     return;
   }
+  if (strcmp(job.type, "display_image") == 0) {
+    if (display_ && display_->accept(job, *state_)) {
+      setStatus("awaiting_local_display");
+    } else {
+      if (!display_ && state_->startClaim(job.id))
+        state_->queueRefused(job.id, "display_unavailable");
+      setStatus("display_claim_failed");
+    }
+    return;  // Local LCD jobs never reach the USB station boundary.
+  }
   if (!state_->startClaim(job.id)) {
     state_->queueRefused(job.id, "claim_state_conflict");
     setStatus("claim_state_conflict");
@@ -350,7 +366,7 @@ void PostOfficeClient::sendPendingResult(uint32_t nowMs) {
   document["id"] = pending.jobId;
   document["status"] = pending.status;
   if (pending.status == "done") {
-    document["result"]["source"] = "local_station";
+    document["result"]["source"] = pending.source;
   } else {
     document["reason"] = pending.reason;
   }

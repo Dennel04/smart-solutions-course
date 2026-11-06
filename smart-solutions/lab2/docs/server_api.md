@@ -81,6 +81,7 @@ on samuti kontrollimata.
 | :--- | :--- | :--- |
 | `letter` | objekt väljaga `letter`, üks suurtäht `A`–`Z` | serveris lubatud ja testitud; hardware integration TODO |
 | `pick_place` | täpselt `{"routine":"source_to_finished"}` | software-only ahelas lubatud ja testitud; MG400/pump TODO |
+| `display_image` | täpselt `{"image_id":"lab2_logo"}` või `{"image_id":"lab2_check"}` | NORMAL täidab Atomi LCD-l; päriskatse TODO |
 
 `pick_place` ei tohi sisaldada kasutaja antud X/Y/Z/R koordinaate, kiirust,
 pumba-/DO-käske, korduste arvu, trajektoori või skripti. Avalik argument valib
@@ -88,11 +89,13 @@ ainult ühe eelmääratud local routine'i. Tulevane päris station executor peab
 routine'i ise lokaalseteks, eelnevalt õpetatud ja kontrollitud positsioonideks
 ning toiminguteks teisendama. Seda executor'it ei ole veel realiseeritud.
 
-Praeguses tarkvaras on `letter` ja `pick_place` kaks lubatud kõrgtaseme tööd.
-Teise töö server-, Atom-, serial-, station- ja mock-tulemuse ahel on
-software-only; ametlik riistvarakriteerium jääb TODO-ks kuni MG400/pumba
-integratsiooni ja kohaliku ohutuskontrollini. `unknown`, test-, status- ja
-poll-päringud ei ole robotitööd.
+Server lubab kolme kõrgtaseme tööd. Kaitsmise teiseks päris tööks on valitud
+`display_image`: Atom näitab üht kahest püsivarasse ehitatud RGB565 pildist.
+URL, failitee, koordinaadid ja lisaväljad ei ole lubatud. See töö ei kasuta
+StationAdapter'it, USB dispatch'i ega MG400/pumpa. `pick_place` jääb senisele
+software-only mock/preflight rajale. `unknown`, test-, status- ja poll-päringud
+ei ole teostatud tööd. Kahe päris töö kriteerium vajab endiselt füüsilist
+`letter` ja `display_image` otsast lõpuni katset.
 
 Whitelist'i mittekuuluv `job`, tundmatu argument, lisaväli, liiga pikk tekst,
 vale tüüp või lubamatu väärtus lükatakse tagasi. Vaikimisi lubamist ei ole.
@@ -156,7 +159,7 @@ Parool tuleb keskkonnamuutujast. Production'is peab nende ees olema HTTPS.
 | Meetod ja tee | Otstarve |
 | :--- | :--- |
 | `GET /` | minimaalne kasutajaleht: Atom status, töö loomine ja tööde ajalugu |
-| `POST /jobs` | HTML-vormi `letter` või eelmääratud `pick_place` töö loomine |
+| `POST /jobs` | HTML-vormi `letter`, eelmääratud `pick_place` või `display_image` töö loomine |
 | `POST /api/jobs` | valideeri whitelist'i töö ja lisa see järjekorda |
 | `GET /api/jobs/{id}` | kuva ühe töö olek ja tulemus |
 | `GET /api/jobs` | kuva hiljutised tööd ja Atomi olek |
@@ -263,7 +266,7 @@ Authorization: Bearer <ATOM_API_KEY>
 Content-Type: application/json
 ```
 
-Eduka lokaalse tulemuse päring:
+Eduka station-tulemuse päring:
 
 ```json
 {
@@ -294,6 +297,23 @@ oli duplikaat:
 `claimed` olek või vastuoluline terminaltulemus `409`; täpselt sama `done` või
 `refused` kordus tagastab `200` ja `duplicate: true`. Näite ID ja andmed on
 formaadinäited, mitte päris täitmise tulemus.
+
+`display_image` loomine kasutab sama `POST /api/jobs` ja pollingut:
+
+```json
+{"job":"display_image","arg":{"image_id":"lab2_logo"},"ttl_seconds":60}
+```
+
+Atom salvestab claim'i enne põhiloopi LCD-päringut. Alles pärast renderer'i
+lõppu ja terminaltulemuse NVS commit'i saadab ta sama `/api/atom/result` kaudu
+`{"id":"example-image-id","status":"done","result":{"source":"local_display"}}`.
+`local_station` jääb `letter`/`pick_place` tulemuse allikaks. Source säilib
+NVS-is, reboot'il ja HTTPS retry ajal; salvestatud tulemust ei asendata ning
+retry ei joonista pilti uuesti. Poolik claim muutub reboot'il
+`refused / ambiguous_after_reboot`, mitte uueks kuvamiseks. Tegelikku
+pildi nähtavust, värve/orientatsiooni ja sama ID-ga serveritulemust tuleb
+ühe Atomiga eraldi kontrollida; software-test ega LCD edastuse lõpp ei ole
+optiline mõõtmine. Serveri tulemuse API ja autentimine ei muutu.
 
 ## Heartbeat, `last_seen` ja roboti olek
 

@@ -13,6 +13,7 @@ struct PendingResult {
   String jobId;
   String status;
   String reason;
+  String source;
 };
 
 class PersistentState {
@@ -28,7 +29,7 @@ class PersistentState {
   PendingResult pendingResult() const;
 
   bool startClaim(const String& jobId);
-  bool queueDone(const String& jobId);
+  bool queueDone(const String& jobId, const String& source = "local_station");
   bool queueRefused(const String& jobId, const String& reason);
   bool acknowledgeResult(const String& jobId);
 
@@ -42,7 +43,8 @@ class PersistentState {
   bool writeString(const char* key,const String& value);
   bool removeIfPresent(const char* key);
   bool finishAcknowledgement();
-  bool queueTerminal(const String& jobId, const char* status, const String& reason);
+  bool queueTerminal(const String& jobId, const char* status, const String& reason,
+                     const String& source);
   mutable Preferences preferences_;
   // Serial results and network delivery run on different ESP32 cores.
   mutable std::recursive_mutex mutex_;

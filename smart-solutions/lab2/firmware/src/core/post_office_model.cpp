@@ -1,4 +1,5 @@
 #include "post_office_model.h"
+#include "display_images.h"
 
 #include <ctype.h>
 #include <string.h>
@@ -69,6 +70,10 @@ ValidationResult validateJob(const Job& job, int64_t nowEpoch, bool clockAvailab
   } else if (strcmp(job.type, "pick_place") == 0) {
     if (strcmp(job.routine, "source_to_finished") != 0) {
       return {ValidationCode::InvalidRoutine, "invalid_routine"};
+    }
+  } else if (strcmp(job.type, "display_image") == 0) {
+    if (!localdisplay::findImage(job.imageId)) {
+      return {ValidationCode::InvalidImage, "invalid_image"};
     }
   } else {
     return {ValidationCode::UnknownJob, "unknown_job"};

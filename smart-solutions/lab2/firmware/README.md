@@ -471,8 +471,9 @@ Klient saadab bearer-autentimisega:
 - `POST /api/atom/poll` — heartbeat ja maksimaalselt ühe töö küsimine;
 - `POST /api/atom/result` — sama ID-ga `done` või `refused` tulemuse retry.
 
-Lubatud on `letter` ühe suurtähega `A`–`Z` ja `pick_place` täpselt routine'iga
-`source_to_finished`. Tundmatu routine või töö, lisaväljad,
+Lubatud on `letter` ühe suurtähega `A`–`Z`, `pick_place` täpselt routine'iga
+`source_to_finished` ning `display_image` täpselt ühe argumendiga `image_id`:
+`lab2_logo` või `lab2_check`. Tundmatu routine, image ID või töö, lisaväljad,
 koordinaadid/liikumiskäsud, kiirus, pump/DO, trajektoor, vigane või aegunud töö
 lükatakse tagasi. See püsivara ei saada MG400 käske.
 
@@ -512,6 +513,47 @@ keeldub koristamisest.
 Kui seade taaskäivitub ebaselge aktiivse claim'iga,
 ei saadeta tähte uuesti: töö muudetakse `ambiguous_after_reboot` põhjusega
 `refused` tulemuseks, mis vajab serverisse saatmist.
+
+### NORMAL: kohalik `display_image`
+
+`display_image` ei lähe station'i ega serial-protokolli. `networkTask`
+valideerib töö ja salvestab `activeId` enne ühe RAM-päringu avaldamist.
+Põhiloop võtab selle päringu üks kord, kontrollib claim'i ja kuvab valitud
+16 × 16 RGB565 ressursi 8-kordse skaleerimisega 128 × 128 LCD-le, rotation 0.
+Sinine L2-logo ja roheline linnuke on püsivaras; Interneti pilte, faile,
+LittleFS-i, JPEG dekoodrit ega uut teeki ei kasutata. Vale LCD geomeetria
+või sprite'i mälueraldusviga annab `refused / display_failed`, kui NVS töötab.
+Renderer ja Wi-Fi olekutekstid jagavad LCD lukku; pärast pildi kuvamist
+ei kirjuta tavaline status pilti üle. Järgmine image-job võib pilti vahetada.
+
+Renderer lõpetab LCD edastuse (`waitDMA` ja `endWrite`) enne `done`
+salvestamist. See kinnitab tarkvaralist edastust, mitte paneeli optilist
+tagasisidet. `resultSource=local_display` salvestatakse enne `resultReady`.
+Vana ilma source-võtmeta `done` loetakse `local_station` tulemuseks ning
+station'i rada jääb samaks. Juba salvestatud staatust/source'i ei muudeta.
+Võrgu retry ja reboot saadavad sama tulemust ilma uue kuvamiseta;
+mitmetähenduslik reboot annab keeldumise. NVS kirjutus-/kustutusviga
+peatab pollingu/saatmise. Image claim'i ajal ei võeta vastu station'i
+serial-tulemust; see ei saa kinnitada kohalikku kuva enne renderer'it.
+
+Kodune päriskatse pärast eraldi upload-luba: ainult USB-toitega Atom,
+station/MG400 väljas, kontrollitud testjärjekorras vaid soovitud image-job.
+NORMAL võib lugeda olemasolevaid Wi-Fi/postkontori seadeid ja pollida;
+enne käivitust peab järjekord ning sihtserver olema eraldi kontrollitud.
+Kontrolli mõlemat pilti, orientatsiooni/värve ja sama ID `done` allikaga
+`local_display`. Katkesta ainult Internet pärast kuva: tulemus peab säilima
+ning taastumisel jõudma serverisse ilma uue kuvamiseta. Reboot'i eel/ajal
+katkenud claim ei tohi uut kuva käivitada. Need päriskatsed on TODO.
+`atoms3r` jääb vaikimisi BENCH-iks; HEALTH_ONLY ei muutu. NORMAL build:
+
+```bash
+pio run -e atoms3r_normal
+```
+
+Host-testid kompileerivad tegeliku handoff'i, renderer'i ja NVS-koodi
+sünteetilise SDK/LCD-ga; native-testid kontrollivad whitelist'i ja ressursse.
+Need ei tõenda LCD nähtavust ega päris flash'i toitekatkestuskindlust.
+SDK flash-coredump/OTA metadata varasem jääkrisk kehtib ka siin.
 
 Need normal-režiimi parandused on tarkvaralised. Native-testid kontrollivad
 TLS-aja ja andurikinnituse loogikat; pytest kompileerib tegeliku

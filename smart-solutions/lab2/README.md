@@ -14,7 +14,7 @@ Kaitsmise kuupäev: [õppejõu ajakohane ülesanne](https://github.com/KKallas/N
 
 **Tarkvara:** valmis on Flask/SQLite postkontor koos autentimise, TTL-i,
 järjekorra, `last_seen` ja tulemuste käsitlemisega; kõrgtaseme tööd `letter`
-ja `pick_place`; station-adapter (`pick_place` täitmine on ainult mock);
+ja `pick_place` ning kohalik `display_image`; station-adapter (`pick_place` täitmine on ainult mock);
 Atomi väljaminev polling ja Wi-Fi recovery; USB/XIAO kaamerate tarkvaraalus;
 rõhuanduri UI, kalibratsioonimudel ja NVS-seaded; production-paigalduse
 runbook ning software-regressiooni skript `check.sh`.
@@ -97,13 +97,35 @@ ettevalmistus. 23.10.26 eraldi HEALTH_ONLY katses kinnitas Atom Wi-Fi ja TLS-i,
 kuid `/health` lõppes veaga; edukas HTTP/JSON ja production-polling on TODO.
 Üksikasjad: [firmware README](firmware/README.md#production-tls-ettevalmistus--20102026).
 
-**Laboris veel teha:** päris `pick_place` executor ja kalibratsioon, füüsiline
-Lab 2 end-to-end, mõlemad päris kaamerad, sensor/op-amp ahel ja Andmehõive
+**Laboris veel teha:** füüsiline `letter` ja `display_image` end-to-end
+(valitud teine päris töö; `pick_place` jääb mock/preflight rajale),
+mõlemad päris kaamerad, sensor/op-amp ahel ja Andmehõive
 Lab 2 rõhukalibratsioon, tegelikud latency/metrics mõõtmised, production
 HTTPS polling, BOM-i ja tellimuse kontroll ning iga liikme isiklik
 ohutuskinnitus. Asendus-AtomS3R-i esimene isoleeritud bench-katse on tehtud;
 normaalrežiim vajab eraldi luba ja katseplaani. Lõplik tag tehakse alles pärast
 kriteeriumide täitmist.
+
+## `display_image` — tarkvaraline ettevalmistus
+
+Task 4.1 postkontori/UI `display_image` on nüüd ühendatud NORMAL-püsivara
+kohaliku LCD rajaga: ainult `lab2_logo` ja `lab2_check`, ilma URL-i või
+failideta. Järjekord: valideerimine → claim NVS-is → üks RAM-päring
+põhiloopi → LCD edastuse lõpp → NVS terminaltulemus → olemasolev HTTPS retry.
+StationAdapter'it ega MG400/pumpa selle töö jaoks ei kasutata.
+Tulemus on `done / result.source=local_display`; senine station'i tulemus
+säilitab `local_station`. Reboot/retry ei kuva pilti uuesti; poolik claim
+keeldutakse põhjusega `ambiguous_after_reboot`. Pilt jääb nähtavaks ka
+tavalise Wi-Fi status-uuenduse ajal.
+
+See on software-only teostus, mitte uus riistvaratulemus ega päevikukanne.
+Kaitsmiseks tuleb päris Atomil näha mõlemat õiget pilti, kinnitada suurus,
+orientatsioon/värvid, sama ID ja `local_display` serveris ning Interneti
+katkestuse järel tulemuse retry ilma uue kuvamiseta. Teine päris töö ei
+eelda pick-place kalibratsiooni; `letter`, kaamerate, rõhuanduri ja muud
+ametlikud füüsilised kriteeriumid jäävad eraldi.
+Katsepiirangud: [firmware-juhend](firmware/README.md#normal-kohalik-display_image),
+JSON/source: [server API](docs/server_api.md#example-atomi-tulemus).
 
 ## Eesmärk
 
