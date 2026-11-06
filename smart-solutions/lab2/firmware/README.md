@@ -543,7 +543,15 @@ enne käivitust peab järjekord ning sihtserver olema eraldi kontrollitud.
 Kontrolli mõlemat pilti, orientatsiooni/värve ja sama ID `done` allikaga
 `local_display`. Katkesta ainult Internet pärast kuva: tulemus peab säilima
 ning taastumisel jõudma serverisse ilma uue kuvamiseta. Reboot'i eel/ajal
-katkenud claim ei tohi uut kuva käivitada. Need päriskatsed on TODO.
+katkenud claim ei tohi uut kuva käivitada. 06.11.2026 kinnitati mõlema pildi
+nähtavus uuel päris AtomS3R-il ja `done / local_display` kohaliku HTTP kaudu
+([tõendite raport](../docs/display_image_evidence.md)). Katkestuse, reboot'i
+ja avaliku HTTPS päriskatsed on endiselt TODO. Uue seadme MAC on
+`B4:3A:45:BC:CE:84`; selle algne 8 MiB flash-backup jäi privaatseks.
+NORMAL upload, rakenduse käivitus ning kohalik seadeteleht on kontrollitud.
+Testpostkontoriga kinnitati autentitud polling ja heartbeat, mitte veel
+production-ühendus. Varasemad BENCH/HEALTH_ONLY tulemused kuuluvad teisele,
+laborisse jäänud Atomile.
 `atoms3r` jääb vaikimisi BENCH-iks; HEALTH_ONLY ei muutu. NORMAL build:
 
 ```bash

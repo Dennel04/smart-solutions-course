@@ -118,12 +118,15 @@ säilitab `local_station`. Reboot/retry ei kuva pilti uuesti; poolik claim
 keeldutakse põhjusega `ambiguous_after_reboot`. Pilt jääb nähtavaks ka
 tavalise Wi-Fi status-uuenduse ajal.
 
-See on software-only teostus, mitte uus riistvaratulemus ega päevikukanne.
-Kaitsmiseks tuleb päris Atomil näha mõlemat õiget pilti, kinnitada suurus,
-orientatsioon/värvid, sama ID ja `local_display` serveris ning Interneti
-katkestuse järel tulemuse retry ilma uue kuvamiseta. Teine päris töö ei
-eelda pick-place kalibratsiooni; `letter`, kaamerate, rõhuanduri ja muud
-ametlikud füüsilised kriteeriumid jäävad eraldi.
+**06.11.2026 täiendus:** mõlemad pildid kuvati uuel füüsilisel AtomS3R-il
+(MAC `B4:3A:45:BC:CE:84`) kohaliku HTTP-testpostkontori kaudu. Mõlemad
+tööd said `done / local_display`; kasutaja kinnitas LCD-l L2-pildi ja seejärel
+rohelise linnukese. Üle kontrollitud JSON-id ja test-SQLite kinnitavad täpselt
+kahte lõpetatud tööd. [Päriskatse tõendite raport](docs/display_image_evidence.md)
+eristab neid tulemusi simulatsioonidest ja loetleb minimaalsed järgmised
+kodused katsed. Kaks pilti on üks töö tüüp, mitte kaks eri tööd.
+Avalik HTTPS, katkestuse/reboot'i retry, päris `letter`, kaamerate,
+rõhuanduri ja muud ametlikud füüsilised kriteeriumid jäävad eraldi lahti.
 Katsepiirangud: [firmware-juhend](firmware/README.md#normal-kohalik-display_image),
 JSON/source: [server API](docs/server_api.md#example-atomi-tulemus).
 
@@ -432,7 +435,9 @@ tulemust; füüsilise katse juurde lisatakse kuupäev, meetod ja failiviide.
 
 - [ ] `letter` töö jõuab postkontorist Atomi ja Labori 1 kohaliku kanali kaudu
   jaama ning käivitab lubatud MG400 täitmisraja.
-- [ ] Teine whitelist'i töö on riistvaraga integreeritud ja kontrollitud.
+- [ ] Teine whitelist'i töö on kogu avalikus ahelas kontrollitud.
+  `display_image` kohalik LCD-katse läbis 06.11.2026 mõlema pildiga
+  ([tõendid](docs/display_image_evidence.md)); avalik HTTPS end-to-end on TODO.
 - [ ] 30 sõnumit on mõõdetud kiire polling-intervalliga failis
   `docs/latency_poll_fast.csv`.
 - [ ] 30 sõnumit on mõõdetud aeglase polling-intervalliga failis
@@ -1040,6 +1045,69 @@ ei muudeta.
   logimiseta ning teha eraldi lubatud `/health` korduskatse. Autentitud
   production-polling, füüsiline station/MG400/pump, kaamerad, Andmehõive
   kalibratsioon, NVS-i säilimine, latency ja ametlik mid-job katse jäävad TODO.
+
+**06.11.2026 — tarkvaraintegratsioon ja füüsilised Atomi LCD-katsed**
+
+* Tegime: Valmistasime tarkvaraliselt ette kontrollitud live-letter raja:
+  Lab 1 read-only terminalolek, stabiilne töö identiteet, SQLite safety
+  interlock, protsessilukk ja selgesõnalised kohalikud käivitusload
+  (`77fa985`; [käivitusjuhend](docs/live_letter_runbook.md)). MG400-ga seda
+  veel ei katsetatud. Ühendasime kaks olemasolevat kaameravoogu Lab 1 station'i
+  lehele, säilitades loopback-juhtimise ja eraldi worker'id (`19909ca`);
+  kontroll kasutas mock-kaameraid, mitte päris kaameramõõtmisi.
+  Postkontori server/UI sai `display_image` whitelist'i (`b38c6cc`) ning
+  NORMAL-püsivara kohaliku renderer'i ja NVS-i `local_display` allika
+  (`957142c`). Uuele AtomS3R-ile loodi privaatne 8 MiB täis-flash backup,
+  kontrolliti SHA-256 ja laaditi üks kord `atoms3r_normal`; esptool kinnitas
+  kirjutatud andmete hash'i. LCD näitas Setup AP-d ja kasutaja avas Maci
+  Safaris kohaliku lehe ning GET `/state` ja `/settings`; algul olid
+  active/pending tühjad ning SSID, server ja API-võti seadistamata.
+  Seejärel kasutati eraldi test-SQLite'iga Flask-postkontorit ja Xiaomi
+  WPA2 / 2,4 GHz hotspot'i. Pärast testivõtme parandamist asendus polling'u
+  403 vastus HTTP 200-ga ning `last_seen` hakkas uuenema.
+  Kontrollisime ühe päris AtomS3R-iga (MAC `B4:3A:45:BC:CE:84`)
+  NORMAL-püsivara kahte sisseehitatud pilti kohaliku Flask/SQLite
+  HTTP-testpostkontori kaudu. Kasutaja kinnitas LCD-l L2-pildi ja seejärel
+  rohelise linnukese; StationAdapter'it, MG400-t ega production'it ei kasutatud.
+* Juhtus (numbrid): Avaldamiseelne tarkvarakontroll: pytest `888 passed,
+  1 skipped`, native `72/72`, NORMAL/BENCH/HEALTH_ONLY buildid `SUCCESS`.
+  Need on software-only tulemused. Uue Atomi backup oli `8 388 608` baiti;
+  privaatset sisu ei avaldatud. NORMAL upload ja rakenduse esimene käivitus
+  olid edukad; kohalik seadeleht töötas. Polling-seade oli `1000 ms`.
+  Loodi täpselt `2` tööd, üks POST kummagi kohta, TTL
+  `120 s`. Mõlema loomine andis HTTP `201`, Atomi poll/result HTTP `200`
+  ning terminaltulemus oli `done / local_display`. JSON-id ja test-SQLite
+  kinnitavad kahte lõpetatud tööd; ID-d ja tõendite piirid on
+  [LCD-katsete raportis](docs/display_image_evidence.md). Visuaalse tulemuse
+  kinnitas kasutaja vestluses; fotode lisamine on kirjas 07.11 jätkukandes.
+* Otsustasime, ja miks: Eristame füüsilist LCD-kuva mock-tulemustest ja
+  kohaliku HTTP katset avalikust HTTPS-ist. Kaks pilti on sama töö tüübi
+  kaks argumenti ega täida üksi kahe eri töö nõuet koos Lab 1 tähega.
+* Lahti järgmiseks korraks: Aegumine, whitelist-keeldumine, offline-kuva,
+  avalik HTTPS ning katkestuse/reboot'i retry. Päris `letter`, kolm mid-job
+  katkestuskatset, roboti latentsus,
+  kaamerad ja rõhuanduri integratsioon jäävad laborisse. Lab 2 ei ole lõpetatud.
+
+**07.11.2026 — tõendite ja dokumentatsiooni avaldamise ettevalmistus**
+
+* Tegime: Võrdlesime mõlemat privaatset LCD-katse JSON-i test-SQLite'i
+  kirjetega ning täiendasime README-d, firmware README-d ja
+  [tõendite raportit](docs/display_image_evidence.md). Varasemad päevikukanded
+  jäid muutmata. Vaatasime üle kasutaja kaks LCD-fotot ja paigutasime need
+  `docs/evidence/` kausta pildibaite muutmata. Uusi riistvarakatseid ega töid
+  ei käivitatud.
+* Juhtus (numbrid): Kontrollitud baasis oli täpselt `2` lõpetatud
+  `display_image` tööd, mõlemad `done / local_display`. Mõlemal on kasutaja
+  visuaalne LCD-kinnitus ja nüüd ka foto. Lisati `2` kontrollitud JPEG-i;
+  EXIF/XMP ega kommentaariplokke neis ei leitud. Markdowni viited ja
+  `git diff --check` läbisid.
+* Otsustasime, ja miks: Git'i läheb kontrollitud dokumentatsioon ning ainult
+  üle vaadatud fotod. Credentials, SQLite, USB/serverilogid ja flash-backup'id
+  jäävad privaatseks. Kohalikku HTTP tõendit ei esitata avaliku HTTPS-i ega
+  roboti täieliku integratsiooni tulemusena.
+* Lahti järgmiseks korraks: Avaldada kontrollitud dokumentatsioon ja fotod
+  ning jätkata raporti koduste ja laboratoorsete TODO-dega.
+  Lõplikku Lab 2 tag'i veel ei looda.
 
 ### Väljundid ja tulemused
 
