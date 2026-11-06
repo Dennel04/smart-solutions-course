@@ -49,10 +49,19 @@ def validate_job_request(payload, default_ttl_seconds, max_ttl_seconds):
                 "pick_place routine must be 'source_to_finished'.",
             )
         normalized_argument = {"routine": routine}
+    elif job_type == "display_image":
+        _reject_extra_fields(argument, {"image_id"}, "arg")
+        image_id = argument.get("image_id")
+        if not isinstance(image_id, str) or image_id not in ("lab2_logo", "lab2_check"):
+            raise ValidationError(
+                "invalid_image",
+                "display_image image_id must be 'lab2_logo' or 'lab2_check'.",
+            )
+        normalized_argument = {"image_id": image_id}
     else:
         raise ValidationError(
             "unknown_job",
-            "Only the enabled high-level jobs 'letter' and 'pick_place' are accepted.",
+            "Only the enabled high-level jobs 'letter', 'pick_place' and 'display_image' are accepted.",
         )
 
     ttl = payload.get("ttl_seconds", default_ttl_seconds)

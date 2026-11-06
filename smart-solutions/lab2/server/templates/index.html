@@ -47,6 +47,7 @@
               <select id="job" name="job" aria-describedby="job-help">
                 <option value="letter" data-i18n="job.letter">Joonista täht</option>
                 <option value="pick_place" data-i18n="job.pick_placeOption">Teisalda detail (eelmääratud)</option>
+                <option value="display_image" data-i18n="job.display_image">Näita pilti Atomil</option>
               </select>
             </div>
             <div class="form-field" id="letter-field">
@@ -59,6 +60,14 @@
                 <option value="source_to_finished" data-i18n="form.routineOption">Algkohast valmis detailide alale</option>
               </select>
               <p id="routine-help" class="field-help"><span data-i18n="form.routinePrefix">Tegevus</span> <code>source_to_finished</code><span data-i18n="form.routineHelp">. Jaam peab selle kohapeal lubama.</span></p>
+            </div>
+            <div class="form-field" id="image-field">
+              <label for="image-id" data-i18n="form.image">Atomi pilt</label>
+              <select id="image-id" name="image_id" aria-describedby="image-help">
+                <option value="lab2_logo" data-i18n="image.lab2_logo">Lab 2 logo</option>
+                <option value="lab2_check" data-i18n="image.lab2_check">Kontrollpilt</option>
+              </select>
+              <p id="image-help" class="field-help" data-i18n="form.imageHelp">Vali püsivarasse ehitatav pilt. Päris kuvamine vajab Atomi püsivara tuge.</p>
             </div>
             <div class="form-field">
               <label for="ttl-seconds" data-i18n="form.ttl">Ooteaeg (TTL), sekundites</label>
@@ -99,7 +108,7 @@
               {% for job in jobs %}
                 <tr role="row">
                   <td role="cell"><span class="field-label" aria-hidden="true" data-i18n="field.id">ID</span><code>{{ job.id }}</code></td>
-                  <td role="cell"><span class="field-label" aria-hidden="true" data-i18n="field.job">Töö</span><span data-i18n="job.{{ job.job if job.job in ['letter', 'pick_place'] else 'unknown' }}">{{ {'letter': 'Joonista täht', 'pick_place': 'Teisalda detail'}.get(job.job, 'Tundmatu töö') }}</span><br><code>{{ job.job }}</code></td>
+                  <td role="cell"><span class="field-label" aria-hidden="true" data-i18n="field.job">Töö</span><span data-i18n="job.{{ job.job if job.job in ['letter', 'pick_place', 'display_image'] else 'unknown' }}">{{ {'letter': 'Joonista täht', 'pick_place': 'Teisalda detail', 'display_image': 'Näita pilti Atomil'}.get(job.job, 'Tundmatu töö') }}</span><br><code>{{ job.job }}</code></td>
                   <td role="cell"><span class="field-label" aria-hidden="true" data-i18n="field.arg">Argument</span><code>{{ job.arg | tojson }}</code></td>
                   <td role="cell"><span class="field-label" aria-hidden="true" data-i18n="field.status">Olek</span><span class="status status--{{ job_tones.get(job.status, 'neutral') }}"><span data-i18n="status.{{ job.status if job.status in job_labels else 'unknown' }}">{{ job_labels.get(job.status, 'Tundmatu olek') }}</span> <code>{{ job.status }}</code></span></td>
                   <td role="cell"><span class="field-label" aria-hidden="true" data-i18n="field.created">Loodud</span><time datetime="{{ job.created_at }}">{{ job.created_at }}</time></td>
@@ -122,13 +131,19 @@
         const job = document.getElementById('job');
         const letter = document.getElementById('letter');
         const routine = document.getElementById('routine');
+        const image = document.getElementById('image-id');
         function updateFields() {
           const isLetter = job.value === 'letter';
+          const isPickPlace = job.value === 'pick_place';
+          const isImage = job.value === 'display_image';
           document.getElementById('letter-field').hidden = !isLetter;
-          document.getElementById('routine-field').hidden = isLetter;
+          document.getElementById('routine-field').hidden = !isPickPlace;
+          document.getElementById('image-field').hidden = !isImage;
           letter.disabled = !isLetter;
           letter.required = isLetter;
-          routine.disabled = isLetter;
+          routine.disabled = !isPickPlace;
+          image.disabled = !isImage;
+          image.required = isImage;
         }
         job.addEventListener('change', updateFields);
         window.addEventListener('pageshow', updateFields);

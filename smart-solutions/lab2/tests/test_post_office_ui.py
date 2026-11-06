@@ -42,7 +42,7 @@ def test_page_has_labeled_unchanged_form_contract(client, user_headers):
     fields = [node for node in page.tagged("input") + page.tagged("select")
               if form in node["parents"]]
     assert {node["attrs"]["name"] for node in fields} == {
-        "job", "letter", "routine", "ttl_seconds"
+        "job", "letter", "routine", "image_id", "ttl_seconds"
     }
     for node in fields:
         assert any(label["attrs"].get("for") == node["attrs"]["id"]
@@ -50,14 +50,14 @@ def test_page_has_labeled_unchanged_form_contract(client, user_headers):
         assert form in node["parents"]
     assert [node["attrs"]["value"] for node in page.tagged("option")
             if form in node["parents"]] == [
-        "letter", "pick_place", "source_to_finished"
+        "letter", "pick_place", "display_image", "source_to_finished", "lab2_logo", "lab2_check"
     ]
     ttl, = [node for node in fields if node["attrs"]["name"] == "ttl_seconds"]
     assert ttl["attrs"]["value"] == "60"
     assert "required" in ttl["attrs"]
     letter, = [node for node in fields if node["attrs"]["name"] == "letter"]
     assert "required" not in letter["attrs"]  # Pick-place needs no letter.
-    # Both fields remain usable when JavaScript is disabled.
+    # All job fields remain usable when JavaScript is disabled.
     for node in fields:
         assert "disabled" not in node["attrs"]
         assert not any("hidden" in parent["attrs"] for parent in node["parents"])
@@ -69,17 +69,19 @@ def test_page_has_labeled_unchanged_form_contract(client, user_headers):
 
 
 @pytest.mark.parametrize(
-    "job_type,letter,expected",
-    [("letter", "b", {"letter": "B"}),
-     ("pick_place", "", {"routine": "source_to_finished"})],
+    "job_type,letter,image_id,expected",
+    [("letter", "b", "lab2_check", {"letter": "B"}),
+     ("pick_place", "", "lab2_logo", {"routine": "source_to_finished"}),
+     ("display_image", "Z", "lab2_logo", {"image_id": "lab2_logo"}),
+     ("display_image", "Z", "lab2_check", {"image_id": "lab2_check"})],
 )
 def test_form_submits_both_job_types_with_all_visible_fields(
-    client, user_headers, job_type, letter, expected
+    client, user_headers, job_type, letter, image_id, expected
 ):
     response = client.post(
         "/jobs", headers=user_headers,
         data={"job": job_type, "letter": letter,
-              "routine": "source_to_finished", "ttl_seconds": "30"},
+              "routine": "source_to_finished", "image_id": image_id, "ttl_seconds": "30"},
         follow_redirects=True,
     )
     assert response.status_code == 200
@@ -361,7 +363,10 @@ def test_translation_dictionaries_are_complete(translations):
     ("letter must be a string.", "error.letter"),
     ("letter must be exactly one character A-Z.", "error.letter"),
     ("pick_place routine must be 'source_to_finished'.", "error.routine"),
+    ("display_image image_id must be 'lab2_logo' or 'lab2_check'.", "error.image"),
     ("Only the enabled high-level jobs 'letter' and 'pick_place' are accepted.", "error.job"),
+    ("Only the enabled high-level jobs 'letter', 'pick_place' and 'display_image' are accepted.", "error.job"),
+    ("request contains unsupported form fields.", "error.fields"),
     ("TTL must be an integer.", "error.ttlInteger"),
     ("ttl_seconds must be an integer.", "error.ttlInteger"),
     ("ttl_seconds must be between 1 and 3600.", "error.ttlRange"),
@@ -387,3 +392,88 @@ def test_unknown_error_is_never_treated_as_a_translation_key(client, user_header
     assert hostile in error["text"]
     labels = [node["attrs"].get("data-i18n") for node in page.elements if error in node["parents"]]
     assert "error.general" in labels and "error.letter" not in labels
+
+
+@pytest.mark.parametrize("image_id", ["lab2_logo", "lab2_check"])
+def test_display_image_form_matches_api_and_history_is_localized(client, user_headers, translations, image_id):
+    api = client.post("/api/jobs", headers=user_headers,
+                      json={"job": "display_image", "arg": {"image_id": image_id}, "ttl_seconds": 30})
+    form = client.post("/jobs", headers=user_headers,
+                       data={"job": "display_image", "image_id": image_id, "ttl_seconds": "30"})
+    assert api.status_code == 201 and form.status_code == 302
+    jobs = client.get("/api/jobs", headers=user_headers).get_json()["jobs"]
+    assert len(jobs) == 2
+    assert all(job["job"] == "display_image" and job["arg"] == {"image_id": image_id} for job in jobs)
+    assert all(job["expires_at"] == api.get_json()["expires_at"] for job in jobs)
+    page = Page(client.get("/", headers=user_headers).get_data(as_text=True))
+    labels = [node for node in page.tagged("span") if node["attrs"].get("data-i18n") == "job.display_image"]
+    assert len(labels) == 2 and all(node["text"] == translations["et"]["job.display_image"] for node in labels)
+    for language in ("et", "ru", "en"):
+        assert all(key in translations[language] for key in (
+            "job.display_image", "form.image", "form.imageHelp", "image.lab2_logo", "image.lab2_check", "error.image"))
+    assert "display_image" in page.tagged("table")[0]["text"]
+    assert image_id in page.tagged("table")[0]["text"]
+
+
+@pytest.mark.parametrize("data,key", [
+    ({"image_id": "https://example.invalid/image.jpg"}, "error.image"),
+    ({"image_id": "../lab2_logo"}, "error.image"),
+    ({}, "error.image"),
+    ({"image_id": "unknown"}, "error.image"),
+    ({"image_id": "lab2_logo", "pump": "suck"}, "error.fields"),
+])
+def test_bad_image_form_is_localized_and_never_creates_job(client, user_headers, translations, data, key):
+    response = client.post("/jobs", headers=user_headers,
+                           data={"job": "display_image", "ttl_seconds": "60", **data}, follow_redirects=True)
+    assert response.status_code == 200
+    page = Page(response.get_data(as_text=True))
+    assert any(node["attrs"].get("data-i18n") == key and node["text"] == translations["et"][key]
+               for node in page.tagged("span"))
+    assert client.get("/api/jobs", headers=user_headers).get_json()["jobs"] == []
+
+
+def test_duplicate_image_form_values_are_rejected(client, user_headers):
+    from werkzeug.datastructures import MultiDict
+
+    response = client.post("/jobs", headers=user_headers, follow_redirects=True, data=MultiDict([
+        ("job", "display_image"), ("image_id", "lab2_logo"), ("image_id", "lab2_check"), ("ttl_seconds", "60")]))
+    assert response.status_code == 200
+    assert client.get("/api/jobs", headers=user_headers).get_json()["jobs"] == []
+
+
+def test_job_field_script_switches_all_types_without_losing_values(client, user_headers):
+    # Execute the existing inline script without a browser, sockets or new packages.
+    import shutil
+    import subprocess
+
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("optional local JavaScript check requires the existing Node runtime")
+    page = Page(client.get("/", headers=user_headers).get_data(as_text=True))
+    script = next(node["text"] for node in page.tagged("script") if node["attrs"].get("id") == "job-fields")
+    harness = r"""
+const assert = require('node:assert/strict');
+const vm = require('node:vm');
+const fs = require('node:fs');
+const fields = Object.fromEntries(['job','letter','routine','image-id','letter-field','routine-field','image-field']
+  .map(id => [id, {value: '', addEventListener: (event, fn) => {handlers[event] = fn;}}]));
+const handlers = {};
+Object.assign(fields.job, {value:'letter'});
+fields.letter.value = 'K'; fields.routine.value = 'source_to_finished'; fields['image-id'].value = 'lab2_check';
+vm.runInNewContext(fs.readFileSync(0, 'utf8'), {
+  document: {getElementById: id => fields[id]}, window: {addEventListener: (event, fn) => {handlers[event] = fn;}}
+});
+for (const type of ['letter','pick_place','display_image','letter','display_image']) {
+  fields.job.value = type;
+  handlers.change(); handlers.pageshow();
+  for (const [kind, id, container] of [['letter','letter','letter-field'],['pick_place','routine','routine-field'],['display_image','image-id','image-field']]) {
+    assert.equal(fields[id].disabled, kind !== type);
+    assert.equal(fields[container].hidden, kind !== type);
+  }
+  assert.equal(fields.letter.required, type === 'letter');
+  assert.equal(fields['image-id'].required, type === 'display_image');
+  assert.equal(fields.letter.value, 'K'); assert.equal(fields.routine.value, 'source_to_finished');
+  assert.equal(fields['image-id'].value, 'lab2_check');
+}
+"""
+    subprocess.run([node, "-e", harness], input=script, text=True, capture_output=True, check=True, timeout=10)

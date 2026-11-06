@@ -122,11 +122,19 @@ def create_app(test_config=None, clock=None):
             return redirect(url_for("index", error="TTL must be an integer."))
         try:
             job_type = request.form.get("job", "letter")
-            argument = (
-                {"letter": request.form.get("letter", "")}
-                if job_type == "letter"
-                else {"routine": request.form.get("routine", "")}
-            )
+            if job_type == "display_image":
+                # Inactive legacy fields may be present when JavaScript is disabled.
+                if set(request.form) - {"job", "image_id", "letter", "routine", "ttl_seconds"}:
+                    raise ValidationError("unexpected_field", "request contains unsupported form fields.")
+                if len(request.form.getlist("image_id")) != 1:
+                    raise ValidationError(
+                        "invalid_image", "display_image image_id must be 'lab2_logo' or 'lab2_check'.",
+                    )
+                argument = {"image_id": request.form.get("image_id", "")}
+            elif job_type == "letter":
+                argument = {"letter": request.form.get("letter", "")}
+            else:
+                argument = {"routine": request.form.get("routine", "")}
             create_validated_job(
                 {"job": job_type, "arg": argument, "ttl_seconds": ttl}
             )

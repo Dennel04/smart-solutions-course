@@ -34,6 +34,126 @@ def test_valid_pick_place_job_creation(create_pick_place):
     assert response.get_json()["arg"] == {"routine": "source_to_finished"}
 
 
+def display_request(image_id="lab2_logo", **changes):
+    payload = {"job": "display_image", "arg": {"image_id": image_id}, "ttl_seconds": 60}
+    payload.update(changes)
+    return payload
+
+
+@pytest.mark.parametrize("image_id", ["lab2_logo", "lab2_check"])
+def test_display_image_roundtrip_and_atom_poll(app, client, clock, user_headers, atom_headers, valid_poll, image_id):
+    response = client.post("/api/jobs", headers=user_headers, json=display_request(image_id))
+    assert response.status_code == 201
+    created = response.get_json()
+    assert created["job"] == "display_image" and created["arg"] == {"image_id": image_id}
+    assert created["status"] == "queued"
+    # Reopen the existing schema without migrations or a new queue.
+    restarted = create_app(dict(app.config), clock=clock).test_client()
+    assert restarted.get("/api/jobs/" + created["id"], headers=user_headers).get_json() == created
+    assert restarted.get("/api/jobs", headers=user_headers).get_json()["jobs"] == [created]
+    polled = claim(restarted, atom_headers, valid_poll).get_json()["job"]
+    assert polled["id"] == created["id"] and polled["status"] == "claimed"
+    assert polled["job"] == "display_image" and polled["arg"] == {"image_id": image_id}
+    assert claim(client, atom_headers, valid_poll).get_json()["job"] is None
+
+
+@pytest.mark.parametrize("image_id", [
+    None, "", "unknown", "LAB2_LOGO", " lab2_logo", "lab2_logo ",
+    "https://example.invalid/image.jpg", "http://127.0.0.1/image.jpg",
+    "../lab2_logo", "/tmp/lab2_logo", "C:\\image.jpg", "file:///tmp/image.jpg",
+    "lab2_logo\x00extra", "<script>alert(1)</script>", 1, True, [], {},
+])
+def test_display_image_rejects_any_non_whitelisted_id(client, user_headers, image_id):
+    response = client.post("/api/jobs", headers=user_headers, json=display_request(image_id))
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "invalid_image"
+    assert client.get("/api/jobs", headers=user_headers).get_json()["jobs"] == []
+
+
+@pytest.mark.parametrize("argument", [{}, None, [], "lab2_logo"])
+def test_display_image_requires_image_id_object(client, user_headers, argument):
+    response = client.post("/api/jobs", headers=user_headers, json=display_request(arg=argument))
+    assert response.status_code == 400
+    assert client.get("/api/jobs", headers=user_headers).get_json()["jobs"] == []
+
+
+@pytest.mark.parametrize("field,value", [
+    ("url", "https://example.invalid/image.jpg"), ("path", "/tmp/image.jpg"),
+    ("x", 1), ("y", 2), ("z", 3), ("r", 4), ("speed", 20), ("DO", 1),
+    ("do", 1), ("pump", "suck"), ("script", "run"), ("trajectory", []), ("repetitions", 2),
+])
+def test_display_image_rejects_extra_arguments_and_commands(client, user_headers, field, value):
+    payload = display_request()
+    payload["arg"][field] = value
+    response = client.post("/api/jobs", headers=user_headers, json=payload)
+    assert response.status_code == 400 and response.get_json()["error"]["code"] == "unexpected_field"
+    assert client.get("/api/jobs", headers=user_headers).get_json()["jobs"] == []
+
+
+@pytest.mark.parametrize("ttl", [0, 3601, True, 1.5, "60", None])
+def test_display_image_uses_existing_ttl_validation(client, user_headers, ttl):
+    response = client.post("/api/jobs", headers=user_headers, json=display_request(ttl_seconds=ttl))
+    assert response.status_code == 400 and response.get_json()["error"]["code"] == "invalid_ttl"
+
+
+def test_expired_display_image_is_not_delivered(client, clock, user_headers, atom_headers, valid_poll):
+    created = client.post("/api/jobs", headers=user_headers, json=display_request(ttl_seconds=1)).get_json()
+    clock.advance(2)
+    assert claim(client, atom_headers, valid_poll).get_json()["job"] is None
+    saved = client.get("/api/jobs/" + created["id"], headers=user_headers).get_json()
+    assert saved["status"] == "expired" and saved["reason"] == "ttl_expired"
+    assert saved["arg"] == {"image_id": "lab2_logo"}
+
+
+def test_display_image_is_claimed_by_only_one_concurrent_atom(app, client, user_headers, atom_headers, valid_poll):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+
+    created = client.post("/api/jobs", headers=user_headers, json=display_request()).get_json()
+    ready = Barrier(2)
+
+    def poll(device):
+        ready.wait(timeout=5)
+        response = app.test_client().post("/api/atom/poll", headers=atom_headers,
+                                         json={**valid_poll, "device_id": device})
+        assert response.status_code == 200
+        return response.get_json()["job"]
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(poll, ("synthetic-atom-1", "synthetic-atom-2")))
+    jobs = [job for job in results if job is not None]
+    assert len(jobs) == 1 and jobs[0]["id"] == created["id"]
+    assert results.count(None) == 1
+
+
+def test_display_image_keeps_user_and_atom_authentication(client, user_headers, atom_headers, valid_poll):
+    assert client.post("/api/jobs", json=display_request()).status_code == 401
+    assert client.post("/jobs", data={"job": "display_image", "image_id": "lab2_logo", "ttl_seconds": "60"}).status_code == 401
+    created = client.post("/api/jobs", headers=user_headers, json=display_request()).get_json()
+    assert claim(client, {}, valid_poll).status_code == 401
+    assert claim(client, {"Authorization": "Bearer wrong"}, valid_poll).status_code == 403
+    assert claim(client, atom_headers, valid_poll).get_json()["job"]["id"] == created["id"]
+
+
+def test_display_image_server_path_has_no_hardware_or_network_side_effects(client, user_headers, atom_headers, valid_poll, monkeypatch):
+    import socket
+    from unittest import mock
+    import requests
+    import serial
+    import cv2
+
+    denied = mock.Mock(side_effect=AssertionError("hardware/network must not be used"))
+    monkeypatch.setattr(socket, "create_connection", denied)
+    monkeypatch.setattr(requests.Session, "request", denied)
+    monkeypatch.setattr(serial, "serial_for_url", denied)
+    monkeypatch.setattr(serial, "Serial", denied)
+    monkeypatch.setattr(cv2, "VideoCapture", denied)
+    created = client.post("/api/jobs", headers=user_headers, json=display_request()).get_json()
+    assert claim(client, atom_headers, valid_poll).get_json()["job"]["id"] == created["id"]
+    assert client.get("/", headers=user_headers).status_code == 200
+    denied.assert_not_called()
+
+
 @pytest.mark.parametrize("routine", ["", "other", None])
 def test_unknown_or_missing_pick_place_routine_is_rejected(create_pick_place, routine):
     response = create_pick_place(routine)
