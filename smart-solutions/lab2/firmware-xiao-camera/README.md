@@ -103,9 +103,10 @@ jõudma selle IP-ni; alamvõrgud, marsruutimine ja client isolation on laboris
 kontrollimata. USB-C kannab toidet; selle töövoo JPEG tuleb Wi-Fi kaudu.
 Verbatim AWC-03 ühendub station'iga USB kaudu, MG400 Ethernet/TCP kaudu,
 Atom USB Seriali kaudu ning Atom suhtleb dropletiga väljamineva Wi-Fi/HTTPS-iga.
-Droplet videovooge ei vahenda. `src.camera_server` on praegu eraldi
-autentimiseta leht, vaikebind `127.0.0.1:5002`; station'i olemasoleva lehega
-integreerimine ja kaitstud LAN-ligipääs on TODO. [Ühendused ja katseplaan](../docs/cameras.md).
+Droplet videovooge ei vahenda. `src.camera_server` on eraldi
+autentimiseta leht, vaikebind `127.0.0.1:5002`; Lab 1 station'i leht kuvab
+seda kohalikus iframe'is. Kaitstud LAN-ligipääs on TODO; juhtimislehte ei
+avata selleks LAN-i. [Ühendused, käivituskäsud ja katseplaan](../docs/cameras.md).
 
 | Endpoint | Vastus |
 | :--- | :--- |

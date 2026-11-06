@@ -36,6 +36,10 @@
   .warn { color: var(--danger); }
   .good { color: var(--ok); }
   .mode { font-size: 13px; color: var(--muted); }
+  .cameras { grid-column: 1 / -1; min-width: 0; }
+  .cameras h2 { margin-top: 0; }
+  .cameras iframe { display: block; width: 100%; height: 800px; border: 0; border-radius: 6px; }
+  @media (max-width: 760px) { .cameras iframe { height: 1200px; } }
 </style>
 </head>
 <body>
@@ -74,6 +78,14 @@ Nutikad lahendused</textarea>
     <div id="stats"></div>
   </section>
   <section><div id="preview"></div></section>
+  <section class="cameras" aria-labelledby="cameras-title">
+    <h2 id="cameras-title">Jaama kaamerad</h2>
+    <p class="mode">Lauakaamera näitab kogu tööala ja robotit; tööriistakaamera otsikut ja detaili.
+      Kui pilti pole, kontrolli kohalikku kaameraprotsessi. Pilte ei saadeta dropletisse.</p>
+    <iframe src="http://127.0.0.1:5002/" title="Laua- ja tööriistakaamera"
+      sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer"></iframe>
+    <p><a href="http://127.0.0.1:5002/" target="_blank" rel="noopener noreferrer">Ava kohalik kaameravaade eraldi</a></p>
+  </section>
 </main>
 <script>
 const $ = (id) => document.getElementById(id);

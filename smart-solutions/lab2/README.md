@@ -235,8 +235,9 @@ kuupäevaga kirjas.
 - Valmis on ühine kaameraabstraktsioon, USB OpenCV backend ja XIAO HTTP
   snapshot backend.
 - Eraldi `src.camera_server` leht näitab kahte kaamerat ning pakub snapshot- ja
-  MJPEG route'e. Vaikebind on `127.0.0.1:5002`, autentimist ei ole. Olemasoleva
-  station'i lehega ühendamine ja kaitstud LAN-ligipääs on TODO. Mock-kaamerad
+  MJPEG route'e. Vaikebind on `127.0.0.1:5002`, autentimist ei ole. Lab 1
+  station'i leht kuvab seda kahe kaameraga iframe'is; mõlemad protsessid
+  jäävad loopback'ile. Kaitstud LAN-ligipääs on TODO. Mock-kaamerad
   võimaldavad mõlemat rada riistvarata testida.
 - Tarkvaralised loendurid mõõdavad kaadrite arvu, väljastatud baite ning
   arvutatud FPS/Mbit/s väärtusi; need ei ole füüsiliste kaamerate mõõtetulemused.
@@ -596,9 +597,11 @@ python -m src.camera_server --mock
 Leht on aadressil `http://127.0.0.1:5002/`. See näitab kõrvuti Table camera
 ja Tool camera mock-pilte, allika olekut, resolutsiooni ning tarkvaralisi
 FPS/ribalaiuse loendureid. Demo ei pöördu dropleti, MG400 ega päris kaamera
-poole ja ei ava brauserit automaatselt. See on eraldi autentimiseta leht
-localhost-bind'iga; olemasoleva station'i lehega ühendamine, kaitstud
-LAN-ligipääs, päris USB/XIAO seaded ja mõõtmised on TODO; vt `docs/cameras.md`.
+poole ja ei ava brauserit automaatselt. Lab 1 station'i leht aadressil
+`http://127.0.0.1:5000/` kuvab sama kahe kaamera lehte iframe'is. Käivita
+Lab 1 selleks `--host 127.0.0.1 --port 5000 --dry-run`; juhtimisliidest ei
+avata LAN-i. Kaitstud LAN-ligipääs, päris USB/XIAO seaded ja mõõtmised on
+TODO; täpsed kahe protsessi ja päriskaamerate käsud on [kaamerajuhendis](docs/cameras.md).
 
 Testid ja import-/süntaksikontroll:
 

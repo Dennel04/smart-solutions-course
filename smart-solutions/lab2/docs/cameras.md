@@ -125,8 +125,58 @@ Lokaalsed route'id:
 | `GET /stream/{table|tool}.mjpg` | MJPEG multipart-voog |
 
 Need route'id kuuluvad eraldi `src.camera_server` protsessile, mitte avalikku
-`server.app` postkontorisse. Olemasoleva station'i lehega integreerimine ja
-kaitstud LAN-ligipääs on TODO.
+`server.app` postkontorisse. Lab 1 station'i leht kuvab sama kaameralehte
+iframe'is aadressilt `http://127.0.0.1:5002/`: mõlemad olemasolevad MJPEG-vood,
+status API ja worker'id jäävad muutmata. Kaamera pole robotitöö callback;
+kaameraprotsessi puudumine ei peata Lab 1 ega Lab 2 töid. Kitsal ekraanil
+on kaamerad üksteise all; mõlemad vood on samal lehel aktiivsed.
+
+See integratsioon on vaatamiseks station PC enda brauseris. Loopback iframe
+ei tähenda LAN-kliendi jaoks station PC aadressi. Juhtimislehte ei seota
+kaameravaate pärast `0.0.0.0` ega LAN-aadressile. Kaitstud kaugem LAN-vaade
+ja ühine autentimine jäävad TODO-ks; avalikku proxy't ega dropleti muudatusi
+ei lisata.
+
+### Station'i tarkvaraline kontroll kahe mock-kaameraga
+
+Aktiveeri ettevalmistatud Python-keskkond. Esimene terminal repo juurkaustast:
+
+```powershell
+cd smart-solutions/lab2
+python -m src.camera_server --mock --host 127.0.0.1 --port 5002
+```
+
+Teine terminal repo juurkaustast:
+
+```powershell
+cd smart-solutions/lab1
+python src/station.py --host 127.0.0.1 --port 5000 --dry-run
+```
+
+Ava station PC brauseris `http://127.0.0.1:5000/`. Teksti eelvaade ja
+joonistusnupud säilivad; lehe all on korraga Table camera ja Tool camera.
+Kaameravaate test ei vaja `--execute`, Atomit, USB seriali ega MG400-t.
+Mock-pildid on selgelt sünteetilised 2 × 2 JPEG-id; need ei tõenda FOV-d ega
+päris kaamera eraldust. Automaatkontroll kasutab Flask test client'i, mitte
+päris võrku või brauseri riistvarakatset.
+
+### Verbatim + XIAO tulevane laborikäsk
+
+Jäta Lab 1 leht loopback'ile. Peata mock-kaameraprotsess ja kasuta selle
+asemel järgmist käsku Lab 2 kataloogis, alles eraldi lubatud riistvarakatsel:
+
+```powershell
+$usbDevice = Read-Host "Verbatim AWC-03 tegelik OpenCV seadmeindeks"
+$xiaoUrl = Read-Host "Kontrollitud XIAO kohalik http://aadress/snapshot.jpg URL"
+python -m src.camera_server --host 127.0.0.1 --port 5002 --usb-device "$usbDevice" --usb-capture-width 1920 --usb-capture-height 1080 --stream-width 800 --stream-height 600 --fps 5 --xiao-snapshot-url "$xiaoUrl"
+```
+
+Need on algsed tarkvaralised taotlused, mitte Verbatimi mõõdetud režiim ega
+valmis FPS-valik. Praegune XIAO lähtekood valib `FRAMESIZE_SVGA` (800 × 600);
+station'i XIAO resolutsiooniväljad on oodatud mõõtmed, mitte JPEG-ist
+automaatselt mõõdetud eraldus. Kontrolli tegelikke mõõtmeid ja vali mõlema
+kaamera FOV järgi lõplikud seaded. Kaamerat ei pea ega tohi selle juhendi
+tarkvarakontrolli ajal ühendada või uuesti flash'ida.
 
 Praegu autentimist camera route'idel ei ole ja vaikebind `127.0.0.1` hoiab need
 ainult station-arvutis. Kui päris laborikatse nõuab hiljem station'i lehe
