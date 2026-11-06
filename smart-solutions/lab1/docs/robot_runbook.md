@@ -7,7 +7,7 @@ reaalselt ja esimene katse tehakse 20% kiirusel.
 ## A. Uuenda Smart Solutions repo
 
 ```sh
-cd ~/Developer/Nutilahendused
+cd ~/Developer/courses/Nutilahendused
 git remote set-url origin git@github.com:Dennel04/smart-solutions-course.git
 git pull --ff-only
 ```
@@ -17,7 +17,7 @@ git pull --ff-only
 macOS/Linux:
 
 ```sh
-cd ~/Developer/Nutilahendused
+cd ~/Developer/courses/Nutilahendused
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r smart-solutions/lab1/src/requirements.txt
@@ -38,7 +38,7 @@ Eraldi terminalis:
 macOS/Linux:
 
 ```sh
-cd ~/Developer/mg400-base
+cd ~/Developer/hardware/mg400-base
 source .venv/bin/activate
 mg400 serve
 ```
@@ -82,7 +82,7 @@ Enne jätkamist kontrolli, et robot on lubatud ning puuduvad `error`,
 Uues terminalis:
 
 ```sh
-cd ~/Developer/Nutilahendused/smart-solutions/lab1
+cd ~/Developer/courses/Nutilahendused/smart-solutions/lab1
 source ../../.venv/bin/activate
 python src/station.py
 ```
@@ -90,7 +90,7 @@ python src/station.py
 Teises terminalis kontrolli tarkvarateed:
 
 ```sh
-cd ~/Developer/Nutilahendused/smart-solutions/lab1
+cd ~/Developer/courses/Nutilahendused/smart-solutions/lab1
 source ../../.venv/bin/activate
 python src/mock_atom.py --url http://127.0.0.1:5000 --letter A
 ```
@@ -126,7 +126,7 @@ kui vastav suurus on roboti juures päriselt mõõdetud.
 Kui kõik kalibratsiooniväljad sisaldavad reaalselt mõõdetud õhukatse väärtusi:
 
 ```sh
-cd ~/Developer/Nutilahendused/smart-solutions/lab1
+cd ~/Developer/courses/Nutilahendused/smart-solutions/lab1
 source ../../.venv/bin/activate
 python src/station.py --execute --mg400-url http://127.0.0.1:8000
 ```
