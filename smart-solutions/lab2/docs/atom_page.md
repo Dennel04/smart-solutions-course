@@ -9,11 +9,11 @@ AtomS3 püsivara kohustuslik projektitöövoog on PlatformIO: reprodutseeritav
 `platformio.ini`, lähtekoodipuu ja sõltuvused ning build/upload PlatformIO
 kaudu. Arduino IDE ei ole selle repo peamine firmware-töövoog. XIAO ESP32S3
 Sense püsivara asub eraldi PlatformIO projektis `../firmware-xiao-camera/`.
-AtomS3 ja XIAO buildid on tarkvaraliselt kontrollitud. Lab 2 baasfirmware on
-füüsilisse AtomS3R-i laaditud ning lokaalne autentitud HTTP polling, seadete
-püsivus ja Wi-Fi fallback/reconnect/recovery on päris seadmel kontrollitud.
-Pärast rõhuanduri tarkvaralaiendust ei ole uut firmware versiooni AtomS3R-i
-laaditud. XIAO upload on endiselt TODO.
+AtomS3 ja XIAO buildid on tarkvaraliselt kontrollitud. 06.11.2026 laaditi
+uude AtomS3R-i NORMAL-püsivara ning kontrolliti kohalikku seadete lehte ja
+autenditud HTTP pollingut. Selle seadme rõhukalibratsiooni, seadete
+püsimist taaskäivituse järel ja võrgu taastumist pole veel kontrollitud.
+XIAO upload on endiselt TODO. [Atomi katseraport](display_image_evidence.md)
 
 > Siin eristatakse teostatud tarkvaraalust ja kontrollimata riistvaratööd.
 > Allolev rõhuanduri osa on software-only. See ei tõenda päris sensor/op-amp
@@ -129,8 +129,8 @@ andur on olemas; seetõttu ei tõenda edukas HTTP vastus sensor chain'i korrasol
 
 ## Riistvarakontroll
 
-- [ ] Rõhukalibratsiooni seaded püsivad pärast praeguse pressure-extension
-  firmware AtomS3-le laadimist ja taaskäivitust.
+- [ ] Rõhukalibratsiooni seaded püsivad pärast NORMAL-püsivaraga Atomi
+  taaskäivitust.
 - [ ] Production-hostile tehakse päris HTTPS polling.
 - [ ] Vale või puuduva võtme vastus kuvatakse saladust avaldamata.
 - [ ] `TEST SERVER HEALTH` vastus ja round-trip aeg on kontrollitud.

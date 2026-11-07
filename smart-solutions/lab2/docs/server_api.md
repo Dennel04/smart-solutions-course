@@ -81,7 +81,7 @@ on samuti kontrollimata.
 | :--- | :--- | :--- |
 | `letter` | objekt väljaga `letter`, üks suurtäht `A`–`Z` | serveris lubatud ja testitud; hardware integration TODO |
 | `pick_place` | täpselt `{"routine":"source_to_finished"}` | software-only ahelas lubatud ja testitud; MG400/pump TODO |
-| `display_image` | täpselt `{"image_id":"lab2_logo"}` või `{"image_id":"lab2_check"}` | NORMAL täidab Atomi LCD-l; päriskatse TODO |
+| `display_image` | täpselt `{"image_id":"lab2_logo"}` või `{"image_id":"lab2_check"}` | mõlemad pildid kinnitatud Atomi LCD-l kohaliku HTTP kaudu |
 
 `pick_place` ei tohi sisaldada kasutaja antud X/Y/Z/R koordinaate, kiirust,
 pumba-/DO-käske, korduste arvu, trajektoori või skripti. Avalik argument valib
@@ -94,8 +94,9 @@ Server lubab kolme kõrgtaseme tööd. Kaitsmise teiseks päris tööks on valit
 URL, failitee, koordinaadid ja lisaväljad ei ole lubatud. See töö ei kasuta
 StationAdapter'it, USB dispatch'i ega MG400/pumpa. `pick_place` jääb senisele
 software-only mock/preflight rajale. `unknown`, test-, status- ja poll-päringud
-ei ole teostatud tööd. Kahe päris töö kriteerium vajab endiselt füüsilist
-`letter` ja `display_image` otsast lõpuni katset.
+ei ole teostatud tööd. `display_image` kohalik katse on tehtud. Päris
+`letter` ja Atomi avalik HTTPS ahel vajavad veel kontrolli.
+[Atomi katseraport](display_image_evidence.md)
 
 Whitelist'i mittekuuluv `job`, tundmatu argument, lisaväli, liiga pikk tekst,
 vale tüüp või lubamatu väärtus lükatakse tagasi. Vaikimisi lubamist ei ole.
@@ -310,10 +311,11 @@ lõppu ja terminaltulemuse NVS commit'i saadab ta sama `/api/atom/result` kaudu
 `local_station` jääb `letter`/`pick_place` tulemuse allikaks. Source säilib
 NVS-is, reboot'il ja HTTPS retry ajal; salvestatud tulemust ei asendata ning
 retry ei joonista pilti uuesti. Poolik claim muutub reboot'il
-`refused / ambiguous_after_reboot`, mitte uueks kuvamiseks. Tegelikku
-pildi nähtavust, värve/orientatsiooni ja sama ID-ga serveritulemust tuleb
-ühe Atomiga eraldi kontrollida; software-test ega LCD edastuse lõpp ei ole
-optiline mõõtmine. Serveri tulemuse API ja autentimine ei muutu.
+`refused / ambiguous_after_reboot`, mitte uueks kuvamiseks. 06.11.2026
+kinnitas kasutaja mõlema pildi nähtavust päris Atomi LCD-l. Kohalikus
+testpostkontoris kontrolliti sama ID-ga tulemust `done / local_display`.
+Serveri tulemuse API ja autentimine ei muutu.
+[Atomi katseraport](display_image_evidence.md#kinnitatud-füüsilised-tulemused)
 
 ## Heartbeat, `last_seen` ja roboti olek
 

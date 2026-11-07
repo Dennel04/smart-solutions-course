@@ -1109,7 +1109,30 @@ ei muudeta.
   ning jätkata raporti koduste ja laboratoorsete TODO-dega.
   Lõplikku Lab 2 tag'i veel ei looda.
 
+**07.11.2026 — rollide täpsustus 06.–07.11 tööde kohta**
+
+* 06.11 aitas Codex tarkvaramuudatusi ette valmistada ja testida. Kasutaja
+  ühendas füüsilise AtomS3R-i, kontrollis seadete lehte, seadistas
+  testühenduse ning kinnitas mõlemad pildid LCD-l. Codex laadis kasutaja
+  loal NORMAL-püsivara ja kontrollis testpostkontori kaudu tööde tulemusi.
+* 07.11 esitas kasutaja LCD-fotod. Codex võrdles katsetulemusi, täiendas
+  dokumentatsiooni ja avaldas selle koos fotodega kasutaja loal (`7f1aab2`).
+
 ### Väljundid ja tulemused
+
+**Kinnitatud Atomi katsed (06.11.2026)**
+
+* Üks füüsiline AtomS3R pollis autentimisega üle kohaliku HTTP testpostkontorit,
+  mis töötas MacBookis Flaski ja eraldi test-SQLite'iga. Polling andis HTTP
+  200 ja seadme `last_seen` uuenes.
+* Kasutaja kinnitas Atomi LCD-l kaks kuva, L2-pildi ja rohelise linnukese.
+  Sama `display_image` töö tüübi mõlemad tööd lõppesid olekuga
+  `done / local_display`. [Katseraport](docs/display_image_evidence.md) ·
+  [L2-pildi foto](docs/evidence/atoms3r-lab2-logo-2026-11-06.jpg) ·
+  [Linnukese foto](docs/evidence/atoms3r-lab2-check-2026-11-06.jpg).
+* Atomi avalik HTTPS polling, päris `letter` MG400-l, mõlemad päris
+  kaamerad, latentsusmõõtmised ning võrgu- ja taaskäivituskatsed on
+  [endiselt lahti](#vajab-päris-riistvara-või-laborikatset).
 
 **Väljundid**
 * Lab 3 saab siit postkontori tarkvara ning 16.10.26 ja 20.10.26 dropleti
