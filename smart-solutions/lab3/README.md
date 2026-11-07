@@ -177,6 +177,24 @@ Uue tööriistaga õpetatakse/kontrollitakse punktid uuesti.
 * Tegelik tulemus: dokumentaalne ettevalmistus. Füüsilist sessiooni, riistvara koostamist, võrgu seadistamist, firmware laadimist ega mõõtmisi ei toimunud; ruuterit, tunnelit, dropletit, MG400-t, klappi ja LED-i ei katsetatud. Varasem päevikukanne säilitati muutmata; selle 17.11 kuupäev kajastab toonast ülesannet.
 * Lahti järgmiseks korraks: kontrollida Lab 2 sõltuvusi, ruuteri mudelit ja inventuuri; kooskõlastada riistvaraliides, otsejuhtimise ohutus ning neli tööriistanihet enne päris Lab 3 tööd.
 
+**07.11.2026: Step 1, klapi ja UV ohutusmudel**
+
+* Tegime: lisasime Lab 2 PlatformIO projekti C++17 olekumudeli klapi, UV ja alarmiluku jaoks. Mudel nõuab enne väljundi lubamist ühekordset taimerit. UV käivitamiseks ja alarmiluku vabastamiseks on vaja uut kohalikku kinnitust.
+* Kontroll: pärast operatsiooni-ID käsitluse täpsustamist läbisid 19 mudelitesti. In-place lähtestus säilitab viimase aktsepteeritud ID; uue käivituse pakettide eristamine jääb tulevase USB-adapteri ülesandeks.
+* Järgmine samm: kinnitada GPIO-d, elektrilised tasemed ja sõltumatu UV-blokeering. Mudel ei juhi füüsilisi väljundeid. [Step 1 ja Step 2B commit](https://github.com/Dennel04/smart-solutions-course/commit/5fc4fbf76653ef1a0e92037cb38ebd10012faf00).
+
+**07.11.2026: Step 2B, sündmuste edastuse simulatsioon**
+
+* Tegime: lisasime sündmuste puhvri, mis säilitab lühikese komparaatorihäire ja edastab selle mudelile enne taimeri aegumise teadet. Kontrollime seansi- ja operatsiooni-ID-d, et eelmise käivituse või toimingu teade ei lõpetaks uut toimingut.
+* Kontroll: läbisid 13 sündmuste testi ja kõik 104 native-testi. PlatformIO koosted `atoms3r_normal`, `atoms3r` ja `atoms3r_health` õnnestusid.
+* Järgmine samm: lahendada sündmuste ohutu üleandmine katkestusrutiinist ja kontrollida väljundi füüsilist väljalülitust. Simulatsioon ei kasuta päris GPIO-d ega taimerikatkestusi.
+
+**07.11.2026: Step 3A, WireGuardi logimise ettevalmistus**
+
+* Tegime: lisasime 48 tunni tunneli logija ja võrguühenduseta analüüsi. Pärast ülevaatust lisasime WireGuardi liidese ja marsruudi kontrolli ning 48 tunni akna valideerimise. Logija salvestab alustatud kontrolli tähise enne päringut, et taaskäivitus ei kordaks sama kontrolli. Puuduv või teadmata tulemus ei lähe arvesse katkestusena.
+* Kontroll: läbisid 23 Python-testi sünteetiliste andmete ja asendatud käsuvastustega. 17 280 on 10-sekundiliste kontrollivahemike kavandatud arv. Ametlik CSV jäi ainult päisega. [Step 3A commit](https://github.com/Dennel04/smart-solutions-course/commit/f13f2d8ba6df99e16f3ffaad3ff75376e6e3ad4b).
+* Järgmine samm: kooskõlastada siht, liides ja mõõteaken enne päris seiret. Dropletil logijat ei käivitanud ning VPN-i ega riistvara ei katsetanud.
+
 ### Väljundid ja tulemused
 
 **Väljundid**
