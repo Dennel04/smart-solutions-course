@@ -1,13 +1,28 @@
 # Lab 3 olemasoleva Atomi lehe laienduse plaan
 
 Kasutatakse olemasolevat AtomS3 seadete/testide lehte; uut lehte ei looda.
-Selles etapis ei muudeta käske ega püsivara.
+Klapi ja UV seaded ning testinupud Atomi lehel on TODO.
 
-**TODO — käsud ja riistvaraliides tuleb enne teostust Andmehõive Lab 3-ga kokku leppida.**
+**TODO — lõplik käsuleping ja riistvaraliides tuleb Andmehõive Lab 3-ga kokku leppida.**
 
 [Andmehõive avaldatud alus](https://github.com/Dennel04/data-acquisition-course/blob/74764e6dc8a83f868b90862edb48158d3619b595/data-acquisition/lab3/README.md)
 sisaldab näidiskäske. Need ei kinnita meeskonna lõplikku käsulepingut,
 GPIO-sid, releekontakte, vahemikke ega töötavat riistvara.
+
+## Tarkvaramudel ja integratsiooni seis
+
+[Step 1 ja Step 2B](https://github.com/Dennel04/smart-solutions-course/commit/5fc4fbf76653ef1a0e92037cb38ebd10012faf00)
+lisavad Lab 2 püsivaraprojekti ühise C++17 olekumudeli klapi, UV ja
+alarmiluku jaoks ning sündmuste puhvri. 19 mudelitesti ja 13 sündmuste
+testi läksid läbi. [Andmehõive Lab 3 lähtekoodi kirjeldus](https://github.com/Dennel04/data-acquisition-course/blob/b4b6a08aafc643e2345c66a2168da18e135640b3/data-acquisition/lab3/src/README.md#olemasolev-tarkvaramudel)
+viitab samale mudelile ja testidele.
+
+Atomi kasutajaliidese käsud `dispense`, `uv` ja `clear` on TODO. Töötavat
+Lab 3 püsivara pole kinnitatud. GPIO, relee, katkestusrutiini (ISR) ja
+LED-draiveri ühendamine ning automaatse riistvaralise väljalülituse kontroll
+on TODO. Mudelitestid katavad loogilisi väljundeid. Klapi vooluta olek,
+sõltumatu füüsiline UV-blokeering ja UV ohutu kohalik käivitus tuleb päris
+seadmel kinnitada.
 
 ## Klapp
 
@@ -36,7 +51,7 @@ Päris ohutu oleku mõõtmine: TODO.
 | Ohutus | 405 nm kaitseprillid, lamp laua poole, läbipaistmatu must kaitsekate; valgus ei pääse välja | TODO — kohalik kontroll |
 
 Võrguasukohta või VPN-i kuulumist ei loeta kohaloleku tõendiks.
-Kohaliku lubamise mehhanism kooskõlastatakse enne koodi kirjutamist;
+Kohaliku lubamise mehhanism kooskõlastatakse enne Atomi juhtliidese teostamist;
 seni UV kasutamist ei lubata.
 
 ## Tulevase kontrolli väljad

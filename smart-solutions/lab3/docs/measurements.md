@@ -1,7 +1,7 @@
 # Lab 3 tulevaste mõõtmiste metoodika
 
-Kõik tulemused on TODO. Neli CSV-d jäävad ainult päistega; allpool on
-planeeritud andmetähendus ja analüüs, mitte katse tulemus.
+Kõik füüsiliste mõõtmiste tulemused on TODO. Neli CSV-d jäävad ainult
+päistega; allpool on planeeritud andmetähendus ja analüüs, mitte katse tulemus.
 Olemasolevad päised on piisavad, kui iga seeria tingimused ja tõendid
 seotakse allpool kirjeldatud viidetega. Päiseid selles töös ei muudeta.
 
@@ -60,7 +60,7 @@ ei ole VPN-i ega kahe füüsilise kaamera mõõtmistulemused.
 
 [tunnel_48h.csv](../data/tunnel_48h.csv) kogutakse tulevikus dropleti poolt:
 üks kontroll läbi tunneli iga 10 sekundi järel, järjest 48 tundi.
-Kontrolli siht, timeout ning tunneli kaudu minemise kontroll: TODO.
+Tegeliku seire siht, liides, timeout ja marsruudi kinnitamine: TODO.
 
 | Veerg | Tähendus ja ühik |
 |---|---|
@@ -89,7 +89,15 @@ Analüüsiplaan:
   jääda märkamata. Põhjused lisada ainult logitõendi olemasolul.
 
 Kõik tegelikud kokkuvõtted ja katkestuste põhjused: TODO.
-Logijat selles etapis ei rakendata ega käivitata.
+
+[WireGuardi 48 tunni logija ja võrguühenduseta analüüs](../tools/tunnel_monitor.py)
+on Step 3A-s olemas. Logija kontrollib tarkvaras, kas liides on WireGuardi
+liides ja kas marsruut sihtmärgini läbib seda. Kinnitamata marsruudiga
+kontrolli tulemus jääb teadmata. Kõik 23 [Python-testi](../tests/test_tunnel_monitor.py)
+läksid läbi sünteetiliste andmete ja asendatud käsuvastustega.
+
+Logijat pole päris dropletil käivitatud. 48 tunni VPN-logi puudub ja
+`tunnel_48h.csv` sisaldab ainult päist. Tunneli tegelik kättesaadavus on TODO.
 
 ## VPN-i kadumine liikumise ajal
 

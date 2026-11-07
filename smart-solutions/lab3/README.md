@@ -195,7 +195,28 @@ Uue tööriistaga õpetatakse/kontrollitakse punktid uuesti.
 * Kontroll: läbisid 23 Python-testi sünteetiliste andmete ja asendatud käsuvastustega. 17 280 on 10-sekundiliste kontrollivahemike kavandatud arv. Ametlik CSV jäi ainult päisega. [Step 3A commit](https://github.com/Dennel04/smart-solutions-course/commit/f13f2d8ba6df99e16f3ffaad3ff75376e6e3ad4b).
 * Järgmine samm: kooskõlastada siht, liides ja mõõteaken enne päris seiret. Dropletil logijat ei käivitanud ning VPN-i ega riistvara ei katsetanud.
 
+**07.11.2026, dokumentatsiooni sünkroonimine**
+
+Codex võrdles lähtekoodi, teste, avaldatud commit'e ja Andmehõive Lab 3
+kirjeldust. Codex täpsustas Atomi lehe plaanis, mõõtemetoodikas ja README-s
+mudeli, sündmuste puhvri ja VPN-logija seisu ning testide ulatust.
+Mõlema viidatud commiti autoriks on GitHubis märgitud `Nikikikl`.
+Riistvara integreerimine ja päris VPN-seire on TODO.
+
 ### Väljundid ja tulemused
+
+**Kontrollitud tarkvara**
+
+* Step 1. C++17 ohutusmudel klapi, UV ja alarmiluku jaoks. 19 edukat mudelitesti.
+* Step 2B. Sündmuste edastuse simulatsioon. 13 edukat sündmuste testi ja kokku 104 edukat native-testi. Õnnestusid PlatformIO koosted `atoms3r_normal`, `atoms3r` ja `atoms3r_health`.
+* Step 3A. WireGuardi 48 tunni logija ja võrguühenduseta analüüs. 23 edukat Python-testi sünteetiliste andmete ja asendatud käsuvastustega.
+
+**Füüsiline integratsioon ja katsed on TODO.** Kinnitada tuleb Atomi
+riistvara ja juhtliides, klapi vooluta olek ning UV sõltumatu füüsiline
+blokeering ja automaatne väljalülitus. Päris 48 tunni VPN-logi puudub.
+VPN-i kadu ei taga roboti seiskumist. Enne kaugliikumist tuleb teostada
+ja kohapeal kontrollida ohutu katkestuskäitumine. Füüsiline hädastopp,
+kaugjuhtimisload ja iga liikme ohutuskinnitus on eraldi eeltingimused.
 
 **Väljundid**
 * Andmehõive L3: TODO — kontrollitud klapi ja UV LED-i käsud, seaded, testid ning vajaduse korral alarmisündmus.
