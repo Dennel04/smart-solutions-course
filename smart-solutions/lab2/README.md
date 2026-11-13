@@ -1,183 +1,224 @@
 # Nutikad Lahendused: Labor 2 — internetipostkontor ja kaks kaamerat
 
-> See on tööleht, mitte valminud süsteemi kirjeldus. Dropleti, võrgu, roboti,
-> kaamerate ja AtomS3 päriskatsed on tegemata, kuni nende juures on kirjas
-> mõõtmise kuupäev, meetod ja tegelik tulemus.
-
 **Töömaht:** 28 tundi | **Hindamine:** 20 punkti | **Meeskond:** 3 tudengit
 
 **Välja antud:** 07.10.26 | **Tellimise kuupäev:** 16.10.26 | **Esimene kaitsmine:** 29.10.26, veebis
 
-Kaitsmise kuupäev: [õppejõu ajakohane ülesanne](https://github.com/KKallas/Narva-subjects/blob/main/EST/2026-27/Smart%20Solutions/Smart%20Solutions%20%5BLab%202%5D%20EST.md).
+[Õppejõu ülesanne ja hindamiskriteeriumid](https://github.com/KKallas/Narva-subjects/blob/main/EST/2026-27/Smart%20Solutions/Smart%20Solutions%20%5BLab%202%5D%20EST.md).
 
-## Praegune seis — 23.10.26
+## Ülevaade
 
-**Tarkvara:** valmis on Flask/SQLite postkontor koos autentimise, TTL-i,
-järjekorra, `last_seen` ja tulemuste käsitlemisega; kõrgtaseme tööd `letter`
-ja `pick_place` ning kohalik `display_image`; station-adapter (`pick_place` täitmine on ainult mock);
-Atomi väljaminev polling ja Wi-Fi recovery; USB/XIAO kaamerate tarkvaraalus;
-rõhuanduri UI, kalibratsioonimudel ja NVS-seaded; production-paigalduse
-runbook ning software-regressiooni skript `check.sh`.
+Laboris 1 valiti täht Atomi nupuga ja kohalik jaam edastas töö Dobot
+MG400-le. Labor 2 lisab **avaliku HTTPS-postkontori** ehk veebiteenuse,
+kuhu kasutaja jätab lubatud töö ja kust ta näeb hiljem tulemust.
+**AtomS3R** on ekraaniga mikrokontroller, mis küsib ise korrapäraselt uusi
+töid. Seda nimetatakse pollinguks. Töö võib oodata järjekorras kuni
+kehtivusaja (TTL) lõpuni. **Jaam** on laboriarvuti, mis vahendab robotitööd
+ja kuvab kohalikke kaamerapilte.
 
-**Kontrollitud:** 23.10.26 pärast HEALTH_ONLY lisamist Python `541 passed`,
-Atom native `57/57` (sh HEALTH_ONLY `14/14`) ja health-build `SUCCESS`;
-ELF isolation ja kohaliku CA fingerprint'i kontroll läbisid. Varasemad
-BENCH-kontrollid olid Python `480 passed`, Atom native `43/43` ja
-`atoms3r` BENCH_MODE=1 puhas build `SUCCESS`. Varasemad XIAO native `6/6`,
-deployment-testid `18 passed` ja XIAO build jäävad eraldi tarkvaratulemusteks.
-Mõlema töö software E2E läbib tulemusega `done` ja `hardware_used=false`.
-Varasemad Atomi lokaalse autentitud HTTP pollingu, reboot-püsivuse ning
-Wi-Fi fallback/reconnect/recovery katsed on tehtud päris seadmel. Need
-tarkvarakontrollid ei tõenda kogu Lab 2 riistvaravalmidust.
+[Praegune seis](#praegune-seis-13112026) · [Tõendid](#tõendid-ja-tulemused) ·
+[Arhitektuur](#süsteemi-arhitektuur) · [Kiirstart](#kiirstart-ilma-riistvarata) ·
+[Kaitsmine](#kaitsmise-juhend) · [Kontrollnimekiri](#kontrollnimekiri) ·
+[Arenduspäevik](#arenduspäevik).
 
-**Asendus-AtomS3R-i BENCH-katse:** seadmesse (ESP32-S3-PICO-1, 8 MB flash)
-laaditi 23.10.26 `atoms3r` BENCH_MODE=1. Enne laadimist kontrolliti
-Lab 1 täis-flash backup'i suurust ja SHA-256 ning Lab 1 ekraan töötas pärast
-backup'i. LCD näitab `BENCH` / `execution disabled`; MacBook ühines kaitstud
-`Lab2AtomBench` AP-ga ja Safari avas aadressil `http://192.168.4.1` eestikeelse
-read-only lehe. Salvestus- ja postkontori testinupud olid keelatud. Nikita
-Teterev kontrollis hiljem samal päeval MacBookist curl'iga üle selle AP:
-`POST /settings`, `POST /test/post-office` ja `POST /pressure/settings`
-andsid kõik `HTTP/1.1 423`
-ning `{"error":"bench_read_only"}`. Päringutes ei olnud paroole ega API-võtmeid.
-G5 ilma andurita andis `raw_adc=7`,
-`not_calibrated`, voltage/kPa `null`: see on ujuva sisendi vaatlus, mitte
-rõhumõõtmine. Reset'i järel taastus BENCH-ekraan; rakenduse serial-teateid
-ei salvestatud ega kinnitatud. Production-polling ja station-kanal on bench'is
-keelatud. Vana musta ekraaniga seadme rike jääb tõestamata; selle ajalugu on
-[`docs/atom_display_diagnostic.md`](docs/atom_display_diagnostic.md) failis.
-Piirangud ja bench-juhend: [`firmware/README.md`](firmware/README.md).
+| Töö | Mida kasutaja tellib | Teostuse seis |
+| --- | --- | --- |
+| `letter` | Ühe tähe A–Z joonistamine Labori 1 jaama kaudu. | Tarkvaraline tervikahel on kontrollitud näidistäituriga. Lab 2 postkontorist päris MG400-ni ulatuv katse on ootel. [Katse eeldused](docs/live_letter_runbook.md). |
+| `display_image` | Ühe püsivarasse ehitatud pildi kuvamine Atomi LCD-l. Valikud on `lab2_logo` ja `lab2_check`. | Mõlemad valikud on ühel päris Atomil kohaliku HTTP kaudu kontrollitud. Avalik HTTPS-ahel on ootel. [LCD-katsete raport](docs/display_image_evidence.md). |
+| `pick_place` | Eelmääratud `source_to_finished` tööjada, mis viiks detaili lähtekohast lõppkohta. | Olemas on näidistäitur, simulatsioon ja eelkontroll. Päris täitja, pumba ja haarde kontroll on ootel. [Täitja piirid](docs/pick_place_executor.md) · [Simulatsioon](docs/pick_place_simulation.md). |
 
-**HEALTH_ONLY katse 23.10.26:** Nikita Teterev laadis seejärel eraldi
-`atoms3r_health` püsivara ning kontrollis LCD-d ja USB-helper'it. Redmi
-telefoni hotspot'i kaudu sai ta `WIFI CONNECTED`, `TLS VERIFIED`,
-seejärel `HEALTH ERROR`; helper naasis shell'i. HTTP 200 ega oodatud
-`/health` JSON ei ole kinnitatud. Production-pollingut, jobs'i ega station
-dispatch'i selles build'is ei ole. Vea täpne HTTP/read/framing põhjus
-on lahtine; [diagnostikaplaan](firmware/README.md#health-error-23102026-piiratud-tulemus-ja-järgmine-diagnostika)
-ei tähenda paranduse ega eduka korduskatse läbimist. Seadme hilisemat
-olekut teiste kursuste katsetes see kanne ei kinnita.
+Kaitsmiseks valitud tööliigid on `letter` ja `display_image`. Kaks LCD-pilti
+on ühe tööliigi kaks sisendit. Postkontor võtab vastu ainult lubatud
+tööliike ja argumente. Koordinaadid, liikumiskäsud ja pildi URL-id lükatakse
+tagasi. [API leping](docs/server_api.md#whitelist).
 
-**Droplet:** Nikita Teterev kontrollis 20.10.26 avalikku postkontorit aadressil
-`https://narva2.roboarena.org`. Maci väline curl sai `/health` päringule
-HTTP/2 200 korrektse TLS-iga; Safari Macis ja Chrome telefonis 5G kaudu
-avasid autentitud kasutajaliidese. Ubuntu 24.04.5 LTS serveris uuendati
-11 paketti, SSH parooli- ja keyboard-interactive autentimine on keelatud
-ning võtmega sõltumatu login pärast UFW aktiveerimist on kontrollitud.
-UFW on `active`, sissetulevad TCP 22/80/443 lubatud ja vaikepoliitika
-`deny incoming`. Caddy 2.11.7 ja `smart-solutions-lab2` on `active` ning
-`enabled`. Aktiivne 1 GiB swap-fail on kirjas `/etc/fstab` failis.
+## Praegune seis (13.11.2026)
 
-**Production-kontrollid:** `letter A` loodi ja aegus põhjusega `ttl_expired`;
-SQLite kirje säilis teenuse restardi järel. Backup oli 24 576 baiti,
-`root:root 0600`; eraldi testbaasi taastamisel oli `integrity_check` tulemus
-`ok` ja töö kirje taastati. `deploy/verify.sh`: `12 PASS, 0 FAIL, 0 SKIP`.
-Atom on avalikus serveris offline ja production pollingut pole testitud.
-Kogu dropleti reboot ning füüsiline MG400 integratsioon on kontrollimata.
-Kuupäevaga tulemused on päevikus ja [paigaldusjuhendis](deploy/README.md).
+- **Avalik postkontor.** 20.10 kontrolliti HTTPS-i ja sisselogimist telefoni
+  5G kaudu. `letter A` aegus järjekorras, selle kirje säilis teenuse
+  taaskäivitamisel ja taastati varukoopiast eraldi testbaasi. Atomi
+  autentitud HTTPS-polling ja kogu dropleti taaskäivituse katse on ootel.
+  [Paigalduse kontrollid](deploy/README.md#kinnitatud-deployment-kontrollid--20102026).
+- **Atomi eraldi katserežiimid.** 23.10 töötas asendusseadmel BENCH-i
+  kirjutuskaitstud seadistusleht ja kolm kirjutuspäringut said HTTP 423.
+  HEALTH_ONLY katses õnnestusid Wi-Fi ja TLS, kuid `/health` lõppes
+  teatega `HEALTH ERROR`. HTTP 200 ja oodatud JSON jäid kinnitamata.
+  [Püsivara ja katsed](firmware/README.md#ehitus-ja-hostitestid) ·
+  [Varasema seadme ekraanidiagnostika](docs/atom_display_diagnostic.md).
+- **Ühe füüsilise AtomS3R-i katsed.** 06.11 töötasid NORMAL-püsivaraga
+  seadmel kohaliku HTTP kaudu autentitud polling ja mõlemad LCD-kuvad.
+  NORMAL-is seadistati testühendus. Seadete, testinuppude ja NVS-i
+  püsivuse terviklik kontroll on ootel.
+  13.11 näitas sama MAC-iga Atom Redmi võrgus olekut `sta_connected`.
+  `GET /state` ja `GET /settings` õnnestusid ning aktiivse töö ja ootel
+  tulemuse ID-d olid tühjad. Kohalik server ei kuulanud pordil 5001,
+  seega oli `poll_failed` ootuspärane. Iga seadme püsivara ja ühendus
+  tuleb enne uut katset kohapeal üle kontrollida.
+  [LCD-katsete raport](docs/display_image_evidence.md) · [13.11 kanne](#arenduspäevik).
+- **SSH-ligipääs.** 13.11 logis Nikita dropletisse sisse ja Raimo kinnitas
+  isiklikult ligipääsu oma sudo-õiguseta kontole. Ülejäänud liikmete
+  isiklik ligipääs on kontrollimata. [SSH kontrollid](deploy/README.md#ligipääs-ja-avalik-https-kontrollitud).
+- **Tarkvarakontrollid.** Postkontori järjekord, jaama adapter,
+  `letter` ja `pick_place` näidisahelad ning kahe kaameravoo kuva
+  testallikatega on kontrollitud. Päris robotitöö, mõlema füüsilise kaamera
+  ühiskatse ja rõhuanduri mõõtmised on ootel.
+  [Testitulemused](#tarkvaralise-kontrolli-tulemused).
 
-**Production UI uuendus:** Nikita uuendas 20.10.26 serveri commit'ilt
-`7571582` commit'ile `7d374915f48e9f4cc7e4357e3a2c82df6191f231`
-`deploy/update.sh` kaudu. Fast-forward läbis ja SQLite backup'id loodi enne
-uuendust. Vahetu kontroll pärast restarti sai lokaalse connection refused
-ning avaliku HTTPS 502: Gunicorn polnud veel porti avanud. Pärast Gunicorni
-valmisolekut läbis korduv `deploy/verify.sh` kõik 12 kontrolli (`0 FAIL`),
-serveri tööpuu oli puhas ja `letter A` kirje säilis (`expired`, `ttl_expired`).
-Uus UI, mobiilikaardid ja letter/pick-place väljade vahetus on kontrollitud
-Safari Macis ning Chrome Androidis 5G kaudu. Repos lisatud readiness-ootamine
-on kohalik parandus; seda versiooni pole veel production'is kontrollitud.
+## Tõendid ja tulemused
 
-**Atomi production TLS ettevalmistus:** Nikita kontrollis 20.10.26 Macis
-serveri TLS-ahelat OpenSSL-iga (`Verify return code: 0 (ok)`). Ta lisas
-ametlikust allikast saadud ja fingerprint'i järgi kontrollitud ISRG Root X2
-CA lokaalsesse ignoreeritud header'isse. CA-ga Atom build läbis ja
-`firmware.bin` sisaldas PEM-sertifikaati; `check.sh` lõpetas teatega
-`All software-only regression checks passed.` See on software-only
-ettevalmistus. 23.10.26 eraldi HEALTH_ONLY katses kinnitas Atom Wi-Fi ja TLS-i,
-kuid `/health` lõppes veaga; edukas HTTP/JSON ja production-polling on TODO.
-Üksikasjad: [firmware README](firmware/README.md#production-tls-ettevalmistus--20102026).
+| Tõend | Mida saab selle põhjal öelda | Kust vaadata |
+| --- | --- | --- |
+| Päris Atomi LCD ja kohalik HTTP, 06.11.2026 | Kasutaja nägi L2-pilti ja rohelist linnukest. Mõlemad tööd lõppesid olekuga `done / local_display`. Raport seob töö ID-d HTTP-vastuste ja testbaasi kirjetega. | [Raport](docs/display_image_evidence.md#kinnitatud-füüsilised-tulemused) · [L2-pildi foto](docs/evidence/atoms3r-lab2-logo-2026-11-06.jpg) · [Linnukese foto](docs/evidence/atoms3r-lab2-check-2026-11-06.jpg) |
+| Avalik server, 20.10.2026 | Väline `/health` andis HTTP/2 200. `deploy/verify.sh` andis 12 PASS, 0 FAIL, 0 SKIP. Taastatud SQLite'i testbaasis oli töö kirje olemas. | [Kontrollide tabel](deploy/README.md#kinnitatud-deployment-kontrollid--20102026) · [Kontrollskript](deploy/verify.sh) |
+| Atomi BENCH, 23.10.2026 | Kolm POST-päringut andsid HTTP 423. Andurita G5 sisendilt loeti `raw_adc=7`. Pinge ja rõhk jäid määramata. | [BENCH-katse](firmware/README.md#kinnitatud-bench-katse--23102026) |
+| XIAO USB diagnostika, 23.10.2026 | 3D Printing Lab 2 katses saadi üks 1600 × 1200 JPEG USB Seriali kaudu. Siinse XIAO Wi-Fi püsivara voog ja vaateväli ootavad katset. | [Diagnostika ja kaameravalik](docs/cameras.md#kinnitatud-lähtefaktid-ja-püsivara-valik) · [XIAO projekt](firmware-xiao-camera/README.md) |
+| Tarkvaraline tervikahel | `letter` ja `pick_place` jõuavad sama töö ID-ga järjekorrast tagasi serverisse olekuga `done` ja tunnusega `hardware_used: false`. | [Demo lähtekood](src/e2e_demo.py) · [Postkontori testid](tests/test_post_office.py) · [Kaameratestid](tests/test_cameras.py) |
+| Füüsiliste mõõtmiste ootel mallid | Kõigis neljas CSV-s on ainult päised. LCD-katse ajatemplid ja sünteetilised FPS-loendurid ei anna roboti latentsust ega päris kaamerate mõõteandmeid. | [Kiire polling](docs/latency_poll_fast.csv) · [Aeglane polling](docs/latency_poll_slow.csv) · [Kaamerad](docs/camera_metrics.csv) · [Juhtimislatentsus](docs/control_latency_cameras.csv) |
 
-**Laboris veel teha:** füüsiline `letter` ja `display_image` end-to-end
-(valitud teine päris töö; `pick_place` jääb mock/preflight rajale),
-mõlemad päris kaamerad, sensor/op-amp ahel ja Andmehõive
-Lab 2 rõhukalibratsioon, tegelikud latency/metrics mõõtmised, production
-HTTPS polling, BOM-i ja tellimuse kontroll ning iga liikme isiklik
-ohutuskinnitus. Asendus-AtomS3R-i esimene isoleeritud bench-katse on tehtud;
-normaalrežiim vajab eraldi luba ja katseplaani. Lõplik tag tehakse alles pärast
-kriteeriumide täitmist.
+## Süsteemi arhitektuur
 
-## `display_image` — tarkvaraline ettevalmistus
-
-Task 4.1 postkontori/UI `display_image` on nüüd ühendatud NORMAL-püsivara
-kohaliku LCD rajaga: ainult `lab2_logo` ja `lab2_check`, ilma URL-i või
-failideta. Järjekord: valideerimine → claim NVS-is → üks RAM-päring
-põhiloopi → LCD edastuse lõpp → NVS terminaltulemus → olemasolev HTTPS retry.
-StationAdapter'it ega MG400/pumpa selle töö jaoks ei kasutata.
-Tulemus on `done / result.source=local_display`; senine station'i tulemus
-säilitab `local_station`. Reboot/retry ei kuva pilti uuesti; poolik claim
-keeldutakse põhjusega `ambiguous_after_reboot`. Pilt jääb nähtavaks ka
-tavalise Wi-Fi status-uuenduse ajal.
-
-**06.11.2026 täiendus:** mõlemad pildid kuvati uuel füüsilisel AtomS3R-il
-(MAC `B4:3A:45:BC:CE:84`) kohaliku HTTP-testpostkontori kaudu. Mõlemad
-tööd said `done / local_display`; kasutaja kinnitas LCD-l L2-pildi ja seejärel
-rohelise linnukese. Üle kontrollitud JSON-id ja test-SQLite kinnitavad täpselt
-kahte lõpetatud tööd. [Päriskatse tõendite raport](docs/display_image_evidence.md)
-eristab neid tulemusi simulatsioonidest ja loetleb minimaalsed järgmised
-kodused katsed. Kaks pilti on üks töö tüüp, mitte kaks eri tööd.
-Avalik HTTPS, katkestuse/reboot'i retry, päris `letter`, kaamerate,
-rõhuanduri ja muud ametlikud füüsilised kriteeriumid jäävad eraldi lahti.
-Katsepiirangud: [firmware-juhend](firmware/README.md#normal-kohalik-display_image),
-JSON/source: [server API](docs/server_api.md#example-atomi-tulemus).
-
-## Eesmärk
-
-Labor 2 lisab Labori 1 lokaalsele Atom → jaam → MG400 ahelale internetis
-kättesaadava postkontori. Kasutaja loob autentitud HTTPS-lehel kõrgtaseme
-töö. Atom küsib dropletilt töid väljamineva polling-ühendusega ja annab need
-Laborist 1 pärit lokaalse kanali kaudu jaamale. Ainult jaam suhtleb MG400-ga.
-
-Lisaks tuleb jaama lehele kaks kohalikku kaamerapilti: laua üldvaade ja
-tööriista juures olev lähivaade. Kaameravood ei lähe dropleti postkontorisse.
-
-Smart Solutions Lab 2 ei ava jaama lehte dropleti kaudu ega loo dropleti ja
-jaama vahele VPN-i, SSH pöördtunnelit või muud otsejuhtimise teed. Atom küsib
-ise dropletilt töid. Otsene kaugjuurdepääs jaamale kuulub Smart Solutions
-Lab 3 ulatusse.
-
-Labor 1 jääb muutmata lähtebaasiks:
-
-- `smart-solutions/lab1/src/station.py` sisaldab jaam → MG400 täitmisrada;
-- `smart-solutions/lab1/docs/letter_channel.md` kirjeldab Atomi lokaalset
-  HTTP/USB kanalit, korduste tuvastamist ja ohutusväravaid;
-- Labori 1 Atomi püsivara ning sama seadete/testide leht on edasise töö alus;
-- Labori 1 MG400 ohutusreeglid kehtivad täielikult edasi.
-
-Kavandatud ühendused (tervikahel vajab laborikatset):
+Skeem näitab kavandatud ühendusi. Katsetatud osad on kirjeldatud allpool.
 
 ```text
-MG400 <--- Ethernet/TCP ---> station PC
-Verbatim AWC-03 <--- USB ---> station PC
-AtomS3R <--- USB Serial ---> station PC
-AtomS3R --- Wi-Fi/HTTPS ---> droplet <--- HTTPS --- kasutaja brauser
-station PC --- kohalik IP-võrk / Wi-Fi / GET /snapshot.jpg ---> XIAO
-USB-C toiteallikas (TODO) ---> XIAO
+Brauser → HTTPS → avalik postkontor ← väljaminev HTTPS-polling ← AtomS3R
+AtomS3R → sisseehitatud pilt → LCD
+AtomS3R → USB-jadaühendus → kohalik jaam → Ethernet → MG400
+Verbatim lauakaamera → USB → jaam
+XIAO tööriistakaamera → kohalik IP-võrk (Wi-Fi) → jaam
 ```
 
-Ethernetiga station PC peab jõudma Wi-Fi-s oleva XIAO IP-ni. Alamvõrgud,
-marsruutimine ja Wi-Fi client isolation tuleb laboris kontrollida; PC enda
-Wi-Fi adapter pole vajalik, kui võrgud lubavad IP-liiklust. XIAO toiteallikas
-ja kaablitee on TODO. Droplet ei vahenda videovooge. Täpsemalt: [kaamerad](docs/cameras.md).
+- **Avalik pool.** Caddy teenindab HTTPS-i. Gunicorn käitab Flaski
+  loopback-aadressil ja SQLite hoiab järjekorda, töö tulemusi ning Atomi
+  viimase pollingu aega (`last_seen`). Atom algatab ühenduse ise ja tagastab
+  tulemuse sama töö ID-ga. Avalik server ja Atomi kohalik HTTP-rada on
+  eraldi kontrollitud. [Paigaldus](deploy/README.md#arhitektuur-ja-piir) ·
+  [API](docs/server_api.md).
+- **Kohalik pool.** Pilditöö lõpetab Atom oma LCD-l. Robotitöö kavandatud
+  rada läbib USB kaudu jaama adapteri ja Labori 1 jaama. Adapteri
+  püsiv tööolek aitab vältida ebaselge töö korduskäivitust. SQLite'i
+  juhtimisõiguse mudel on tarkvaraprototüüp ja programmide otseühendused
+  MG400-ga jäävad selle ulatusest välja. Päris ühine juhtimisvärav on
+  kavandatud. [Adapter](src/station_adapter.py) · [Juhtimisõiguse mudel](docs/ownership_gateway.md).
+- **Kaamerad ja järgmine labor.** Verbatim näitab plaani järgi kogu lauda
+  ja robotit. XIAO näitab otsikut ning selle all olevat detaili. Jaam
+  küsib XIAO-lt kohalikke JPEG-kaadreid ja kuvab mõlemat voogu.
+  Jaama brauseris on see kontrollitud testallikatega. Päris jaama IP-teekond
+  XIAO-ni, toide, kaablitee, vaateväljad ja kaitstud LAN-vaade on ootel.
+  Vood jäävad kohalikku võrku. Lab 3 kavandab eraldi privaatse VPN-i tee
+  jaamale ja kaameratele. [Kaamerad](docs/cameras.md) · [Lab 3 sõltuvused](../lab3/README.md#smart-solutions-lab-2).
 
 ![Lab 2 süsteemiarhitektuur](docs/system.svg)
 
-Muudetav skeem: [`docs/system.drawio`](docs/system.drawio). Skeem näitab eraldi
-avalikku postkontorit, Atomi väljaminevat pollingut, lokaalset robotirada ja
-ainult station'i lehele minevaid kaameravooge.
+[Muudetav draw.io skeem](docs/system.drawio).
 
-Täpne protokoll on failis [`docs/server_api.md`](docs/server_api.md).
-Kohalik kaamera-arhitektuur ja tulevaste pärismõõtmiste metoodika on failis
-[`docs/cameras.md`](docs/cameras.md).
+## Kiirstart ilma riistvarata
+
+Ava macOS-i või Linuxi terminal repo juurkaustas. Vaja läheb Pythonit
+(3.11 või uuem). Paigalda sõltuvused enne kaitsmist. Käivita ülejäänud
+käsud samas terminalis, nüüd juba Lab 2 kaustas.
+
+```sh
+cd smart-solutions/lab2
+demo_dir=$(mktemp -d)
+python3 -m venv "$demo_dir/venv"
+demo_python="$demo_dir/venv/bin/python"
+"$demo_python" -m pip install -r server/requirements.txt 'requests>=2.32,<3'
+```
+
+### Kohalik järjekord brauseris
+
+Käivita testserver esiplaanil. Port 5001 peab olema vaba. Ava brauser alles
+siis, kui Flask teatab käivitumisest aadressil `http://127.0.0.1:5001`.
+Server kasutab uut ajutist SQLite'i ja avalikke näidisväärtusi ainult
+selleks demoks.
+
+```sh
+env POST_OFFICE_BIND=127.0.0.1 \
+  POST_OFFICE_DB="$demo_dir/queue.sqlite3" \
+  POST_OFFICE_USER=demo-user POST_OFFICE_PASSWORD=demo-password \
+  ATOM_API_KEY=demo-atom-key "$demo_python" -B -m server.app
+```
+
+Ava [kohalik postkontor](http://127.0.0.1:5001/) ja logi sisse kasutajaga
+`demo-user`, parooliga `demo-password`. Vali „Joonista täht“, sisesta
+`A`, määra TTL-iks 30 sekundit ja loo näidistöö. Näita tööde ajaloos
+ID-d ja olekut `queued`. Pärast 30 sekundi möödumist värskenda lehte,
+et näha olekut `expired` ja põhjust `ttl_expired`.
+Seejärel peata server klahvidega Ctrl+C. [Serveri lähtekood](server/app.py).
+
+### Tarkvaraline tervikahel
+
+```sh
+"$demo_python" -B -m src.e2e_demo
+```
+
+Demo loob oma ajutised andmebaasid. Flaski testklient ja näidistäiturid
+läbivad ahela postkontor → simuleeritud Atom → jaama adapter → tulemus
+ilma võrgu või jadapordita. Leia JSON-ist mõlema töö `job_id` ja võrdle
+seda `station_result.id` väärtusega. Oodatav serveriolek on `done` ja
+`hardware_used` on `false`. [Demo lähtekood](src/e2e_demo.py).
+
+### Kahe kaameravaate näidis
+
+```sh
+"$demo_python" -B -m src.camera_server --mock --host 127.0.0.1 --port 5002
+```
+
+Ava [kohalik kaameraleht](http://127.0.0.1:5002/) ja näita mõlemat
+sünteetilist voogu. Peata server klahvidega Ctrl+C.
+[Kaameraserveri lähtekood](src/camera_server.py).
+
+## Kaitsmise juhend
+
+See 7-minutiline näidis tutvustab dokumenteeritud seisu. Ametlik kaitsmine
+kestab 15 minutit ja hõlmab päriskatseid.
+[Õppejõu kaitsmisjuhend](https://github.com/KKallas/Narva-subjects/blob/main/EST/2026-27/Smart%20Solutions/Smart%20Solutions%20%5BLab%202%5D%20EST.md#kaitsmine).
+
+Enne alustamist valmista ette terminal ja ava brauseris selle README,
+LCD-raport ning paigalduse kontrollitabel. Käivita kohalik postkontor
+[kiirstardi järgi](#kiirstart-ilma-riistvarata).
+
+| Aeg | Mida näidata | Mida see tõendab |
+| --- | --- | --- |
+| 0:00–1:00 | Ava skeem ja osuta avaliku serveri, Atomi ja kohaliku jaama piirile. | Kasutaja jätab töö järjekorda ja Atom küsib seda väljamineva ühendusega. |
+| 1:00–2:30 | Loo kohalikus UI-s üks `letter A`. Näita ID-d ja olekut `queued`, seejärel pärast TTL-i olekut `expired`. Näita ka `display_image` valikut. | Veebivorm, kohaliku järjekorra kirje ja aegumine. |
+| 2:30–3:30 | Peata testserver ja käivita `src.e2e_demo`. Võrdle töö ID-sid ja näita `done` ning `hardware_used: false`. | Töö ja tulemus läbivad tarkvaraahela näidistäituriga. |
+| 3:30–5:00 | Ava LCD-raport, töö ID-d ja mõlemad fotod. Seejärel ava 20.10 serverikontroll. | Kohalik HTTP ja füüsiline LCD on kinnitatud ühe seadme kahe pilditööga. Avalik HTTPS ja TTL on kinnitatud eraldi serverikatses. |
+| 5:00–6:00 | Käivita kaameraserver käsuga `--mock` ja ava kaks vaadet. | Kohalik vaade kahe sünteetilise vooga. |
+| 6:00–7:00 | Ava kontrollnimekiri ja 13.11 päevikukanne. Too välja katsete ohutuseeldused ning täitmata punktid. | Tõendid on kuupäevastatud ja järgmised katsed on jälgitavad. |
+
+## Puuduvad katsed ja järgmised sammud
+
+### Enne füüsilist robotikatset
+
+1. Kinnitada kohalik vastutaja, füüsilise hädastopi kättesaadavus, vaba
+   tööala, kogu tööala nähtavus üldkaameras ja meeskonna ohutuskokkulepe.
+   Kontrollida kohapeal, et MG400 käske saadab korraga ainult üks programm.
+   [Ohutuskokkulepe](docs/safety.md) · [Letter-katse eeldused](docs/live_letter_runbook.md#enne-käivitamist).
+2. Kontrollida seadme režiimi, USB-ühendust, järjekorra seisu ja jaama
+   valmisolekut kohapealse katsejuhendi järgi. Kontrollida Verbatimi ja XIAO
+   kinnitust, kaableid, vaatevälja ja kohalikku võrguühendust.
+   [Kaamerate kontrolliplaan](docs/cameras.md#labori-kontrolliplaan).
+
+### Järgmised tõendid
+
+1. Kinnitada Atomi autentitud avalik HTTPS-polling, `last_seen` ja
+   offline-olek ning `display_image` tulemus avaliku ahela kaudu. Korrata
+   päris Atomiga TTL-i ja lubamatu töö kontrolli.
+   [Atomi järgmised katsed](docs/display_image_evidence.md#minimaalne-järgmine-kodune-kontroll).
+2. Pärast ohutuseelduste täitmist kinnitada `letter`-töö tervikahel ja
+   teha kolm kontrollitud internetikatkestuse katset aktiivse töö ajal.
+   Atomi taaskäivitus ja saatmata tulemuse kordussaatmine vajavad oma
+   kontrolli. [Tulemused ja katkestused](docs/live_letter_runbook.md#tulemused-ja-katkestused).
+3. Mõõta kaks 30 tööga pollingu latentsusseeriat. Esitada kummagi keskmine,
+   maksimum ja pollingute arv tunnis ning võrrelda Labori 1 tulemusega.
+   Kinnitada mõlemad päris kaameravaated ja mõõta viide, FPS, ribalaius
+   ning juhtimislatentsus 0, 1 ja 2 kaameraga.
+   [Mõõtefailid](#tõendid-ja-tulemused) · [Kaamera mõõtemetoodika](docs/cameras.md#tulevane-mõõtmismetoodika).
+4. Viia Andmehõive kalibratsioon Atomi lehele ja kontrollida toorest ADC-d,
+   pinget ja kPa-d sama prooviga. Kontrollida ülejäänud SSH-ligipääsud,
+   dropleti taaskäivitus ja täielik taastamine, BOM ning esitamise tõendid.
+   [Atomi leht](docs/atom_page.md) · [Paigaldus](deploy/README.md) · [BOM](docs/bom.md).
 
 ## Püsivara töövoog
 
@@ -205,8 +246,8 @@ kuupäevaga kirjas.
 ### Postkontori server
 
 - Valmis on Flaski ja SQLite'i kasutav postkontor, kus autentitud kasutaja saab
-  luua lubatud kõrgtaseme `letter` ja `pick_place` töid. `pick_place` lubab
-  ainult eelmääratud routine'i `source_to_finished`.
+  luua lubatud kõrgtaseme `letter`, `display_image` ja `pick_place` töid.
+  Lubatud argumendid on kirjas [API lepingus](docs/server_api.md#whitelist).
 - Atomil on kasutajaliidesest eraldatud bearer-võtmega polling- ja tulemuse API.
 - Server rakendab TTL-i ja aegumist, lubatud tööde whitelist'i, atomaarset
   claim'i ning idempotentset tulemust. Tundmatuid töid, otseliikumiskäske ja
@@ -307,12 +348,12 @@ kuupäevaga kirjas.
 
 ## Tarkvaralise kontrolli tulemused
 
-Allolev tabel on praeguse tarkvaraseisu koond, mitte varasemate arenduspäeviku
-kannete ümberkirjutus. Kontrollid on software-only, kui piirangu veerus ei ole
-selgesõnaliselt märgitud päris riistvara.
+Tabel koondab kuupäevaga dokumenteeritud tarkvarakontrollid.
+Püsivara seadmekatsed on eraldi [tõendite tabelis](#tõendid-ja-tulemused).
 
 | Kontroll | Tegelik tulemus | Piirang |
 | :--- | :--- | :--- |
+| Lab 2 regressioon, 06.11.2026 | pytest 888 läbis, 1 vahele jäetud. Atomi native-testid 72/72. NORMAL, BENCH ja HEALTH_ONLY buildid SUCCESS. | [Kuupäevaga päevikukanne](#arenduspäevik) |
 | Lab 2 Python `pytest` | 23.10.26 pärast HEALTH_ONLY lisamist: 541 testi läbis | software-only |
 | `python -m src.e2e_demo` | `letter` ja `pick_place`: `server_status=done`, sama `job_id` kogu ahelas, `hardware_used=false` | ajutine DB, mock Atom ja mock executor |
 | AtomS3R `pio run -e atoms3r` | 23.10.26: BENCH_MODE=1 puhas build SUCCESS | lokaalne build; tavaline postkontoriklient on sellest build'ist väljas |
@@ -324,16 +365,6 @@ selgesõnaliselt märgitud päris riistvara.
 | WSGI import ja deploy shell syntax | läbis | lokaalne/static kontroll |
 | `deploy/verify.sh` arendusmasinas | `SKIP` | systemd/Caddy production-kontroll vajab päris Ubuntu dropletit |
 | Mock-kaameraserver | HTTP 200 lehel, API-s ning table/tool snapshot'idel | sünteetilised mock-kaadrid, mitte füüsiline mõõtmine |
-
-Tabeli software-only tulemused ise ei tõenda seadme upload'i, MG400 täitmist,
-päris kaamerate tööd, internetist kättesaadavat HTTPS-i, SSH hardening'ut ega
-tulemüüri olekut. Hilisem osaline AtomS3R upload/boot-katse on eraldi kirjas
-12.10.26 arenduspäeviku riistvarakande juures ning asendusseadme isoleeritud
-bench-katse 23.10.26 kandes; selle repo XIAO Wi-Fi firmware upload on TODO.
-
-Varasemad testiarvud jäävad kuupäevaga arenduspäeviku kannetes ajalooliseks
-tõendiks. Praegune koond ei ole MG400, pumba, rõhuanduri, XIAO ega kaamerate
-füüsiline katsetulemus.
 
 ## Kontrollnimekiri
 
@@ -530,54 +561,10 @@ Tarkvaralised vaikeväärtused on arenduseks, mitte labori lõplikud otsused:
 
 ### Korratav kohalik käivitus
 
-Käivita käsud kaustas `smart-solutions/lab2/`:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r server/requirements-dev.txt
-export ATOM_API_KEY=local-dev-only-atom-key
-export POST_OFFICE_USER=dev-user
-export POST_OFFICE_PASSWORD=local-dev-only-user-password
-python -m server.app
-```
-
-Need väärtused on ainult lokaalse arenduse näited, mitte production-saladused.
-Ilma `ATOM_API_KEY` või `POST_OFFICE_PASSWORD` muutujata server ei käivitu.
-Kasutajaleht avaneb aadressil `http://127.0.0.1:5001/` ja küsib HTTP Basic
-kasutajat/parooli. HTTP on lubatud ainult lokaalseks arenduseks.
-
-Füüsilise Atomi samas LAN-is testimiseks tuleb development-server eraldi ja
-teadlikult LAN-ile bind'ida:
-
-```bash
-export POST_OFFICE_BIND=0.0.0.0  # development LAN test only
-python -m server.app
-```
-
-Vaikeväärtus jääb `127.0.0.1`. Seda opt-in'i ei kasutata production'is:
-systemd/Gunicorn kuulab endiselt ainult `127.0.0.1:5001` ning avalik HTTPS piir
-on Caddy.
-
-Loo teises terminalis testtöö:
-
-```bash
-curl -u dev-user:local-dev-only-user-password \
-  -H 'Content-Type: application/json' \
-  -d '{"job":"letter","arg":{"letter":"A"},"ttl_seconds":60}' \
-  http://127.0.0.1:5001/api/jobs
-```
-
-Polli ja simuleeri Atom → lokaalne station → tulemus piir ilma MG400-ta:
-
-```bash
-export ATOM_API_KEY=local-dev-only-atom-key
-python -m server.tools.mock_atom --once --outcome done
-```
-
-Seejärel vaata tulemust kasutajalehelt või `GET /api/jobs/<id>` kaudu.
-Kunstliku pollingu viite jaoks kasuta näiteks `--poll-delay 2`. Keeldumise
-simulatsiooniks kasuta `--outcome refused`.
+Kasuta [riistvarata kiirstarti](#kiirstart-ilma-riistvarata). Päris Atomi
+kohaliku HTTP-katse keskkond ja seadistuse piirid on kirjas
+[Atomi juhendis](firmware/README.md#seaded-ja-transport) ja
+[LCD-katsete raportis](docs/display_image_evidence.md#katsekeskkond-ja-tõendite-kontroll).
 
 ## Kohalik station-adapter
 
@@ -588,32 +575,10 @@ Adapter ei kopeeri Lab 1 Flask UI-d ega motion-koodi: letter mock kontrollib
 toetatud tähte Lab 1 `config/letters.json` failist ning pick-place mock ei ava
 võrku ega kasuta MG400 või pumpa.
 
-Reaalset porti kasutava software-only mock adapteri näidiskäsk:
-
-```bash
-python -m src.station_adapter --port COM4 --baud 115200 --allow-mock-jobs
-```
-
-Vaikimisi on lokaalne täitmine keelatud. `--allow-mock-jobs` kasutab ainult
-mock executor'it; MG400 klienti ei impordita ega ühendata. Eraldi
-`--allow-live-letter` nõuab nii `--confirm-local-safety` kui ka
-`--confirm-exclusive-control` kinnitust ning kasutab olemasolevat Lab 1 HTTP
-täitmisrada. Live `pick_place` puudub. Kohapealne ettevalmistus, käivituskäsud
-ja interlock'i reeglid on [kontrollitud letter-katse juhendis](docs/live_letter_runbook.md).
-See on tarkvaraline ettevalmistus, mitte kinnitatud füüsiline integratsioon.
-Serial-porti tohib omada ainult üks programm. Porti kadumisel proovib adapter
-uuesti ühenduda, vigane üksikrida ei lõpeta protsessi.
-
-Täielik lokaalne tarkvarademo loob ajutise Flask/SQLite postkontori, läbib
-eraldi `letter` ja `pick_place` töö mock Atomina, saadab firmware-formaadis
-read station-adapterile ning tagastab mõlema sama ID terminaltulemuse serverisse:
-
-```bash
-python -m src.e2e_demo
-```
-
-Demo kasutab ainult ajutisi placeholder-saladusi ja kustutatavaid SQLite
-faile. See ei ava serial-porti, võrguühendust ega MG400 klienti.
+Vaikimisi on lokaalne täitmine keelatud. Riistvarata katse kasutab
+adapterit otse [tarkvaralises tervikahelas](#tarkvaraline-tervikahel).
+Päris USB-porti ja kohapeal lubatud `letter`-töö rada käsitleb
+[letter-katse juhend](docs/live_letter_runbook.md).
 
 ## Kohalik kaameraleht
 
