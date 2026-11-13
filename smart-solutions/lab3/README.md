@@ -1,14 +1,63 @@
 # Nutikad Lahendused: Labor 3 — Ruuter ja VPN
 
-> Labor 3 füüsiline töö ei ole veel alanud. See on tulevase labori
-> dokumentaalne ettevalmistus. IP-aadressid, marsruudid, seadmevalikud,
-> latentsused, kaameramõõdikud ja 48 tunni logi jäävad kuni päris kontrollini
-> **TODO**. Varasemate laborite tulemusi kasutatakse ainult kontrollitud
-> failiviidetega. Privaatvõtmeid, paroole ja tokeneid ei lisata siia kunagi.
-
 **Töömaht:** 30 tundi | **Hindamine:** 20 punkti | **Meeskond:** 3 tudengit
 
 **Välja antud:** 28.10.26 | **Tellimise kuupäev:** 06.11.2026 | **Esimene kaitsmine:** 19.11.2026, veebis
+
+[Ametlik ülesanne](assignment-EST.md) · [Praegune seis](#praegune-seis-13112026) ·
+[Tõendid](#tõendid-ja-tulemused) · [Arhitektuur](#süsteemi-arhitektuur) ·
+[Tööplaan](#tööplaan) · [Kiirstart](#kiirstart-ilma-riistvarata) ·
+[Kaitsmine](#kaitsmise-juhend) · [Kontrollnimekiri](#kontrollnimekiri) ·
+[Arenduspäevik](#arenduspäevik).
+
+## Ülevaade
+
+Laboris 3 ühendame roboti, jaama, Atomi ja kaameramooduli ühte
+laborivõrku. Seejärel kavandame telefonile privaatse tee jaamani,
+mõõdame ühenduse mõju juhtimisele ja kaamerapildile ning kontrollime,
+kuidas süsteem käitub ühenduse katkemisel. Atomi lehele on kavas lisada
+klapi ja UV LED-i seaded ning kohalikud testinupud.
+
+| Osa | Roll Lab 3-s |
+| --- | --- |
+| Labori ruuter | Ühendab seadmed kohalikku võrku, jagab aadresse ja valib tee teistesse võrkudesse. Tulemüür piirab ühendusi. |
+| Droplet | Internetis kättesaadav virtuaalserver, kuhu Lab 2-s paigaldati HTTPS-postkontor. Lab 3 plaanis vahendab droplet eraldi WireGuardi ühendusi. |
+| WireGuard ja telefon | WireGuard loob krüpteeritud tunneli seadmete vahel. Telefon liitub oma võtmega ja kasutab katsel mobiilset andmesidet, et proovida jaama lehte väljastpoolt laborivõrku. |
+| Jaam ja MG400 | Jaam on laboriarvuti, kus jookseb roboti juhtimistarkvara ja kuvatakse kaamerapilti. MG400 on robot, mis täidab jaamast saadetud liikumiskäske. |
+| AtomS3R | Ekraaniga mikrokontroller, mis küsib postkontorilt lubatud töid. Klapi ja UV juhtimine on kavandatud Atomi olemasolevale lehele. |
+| Kaamerad | USB-lauakaamera peab näitama kogu tööala. XIAO tööriistakaamera on mõeldud otsiku lähivaateks. Mõlemat pilti kuvab plaani järgi jaam. |
+
+Avalik HTTPS-postkontor on tööde tellimiseks. Privaatne VPN on
+kavandatud volitatud ligipääsuks labori jaamale ja kaameravaatele.
+
+## Praegune seis (13.11.2026)
+
+- **Tarkvara.** Olemas on WireGuardi logija ja võrguühenduseta analüüs,
+  klapi ja UV olekumudel ning alarmisündmuste puhver. Testid kasutavad
+  sünteetilisi andmeid, asendatud käsuvastuseid ja loogilisi väljundeid.
+- **Varasemad päriskatsed.** Lab 1-s joonistas MG400 tähti. Lab 2-s
+  kontrolliti 20.10 avalikku HTTPS-i, 06.11 ühe Atomi LCD-d kohaliku
+  HTTP kaudu ning 13.11 Atomi oleku- ja seadete päringuid telefoni
+  pääsupunktis ja eraldi dropleti SSH-ligipääsu. Need katsed käisid
+  varasemate laborite seadistuste kohta. [Lab 1 tõend](../lab1/docs/letters.md) ·
+  [Lab 2 seis](../lab2/README.md#praegune-seis-13112026).
+- **Ettevalmistus.** Aadressiplaani, marsruutide ja WireGuardi tööfailid,
+  inventuurimall, ohutuskokkuleppe mustand ning mõõtemetoodika on olemas.
+  Neljas mõõte-CSV-s on ainult päised. [Tööplaan](#tööplaan).
+- **Lab 3 päriskatsed.** Ruuteri ja tunneli seadistus, jaama ja kaamerate
+  ligipääs, roboti katkestuskäitumine, 48 tunni seire ning klapi ja UV
+  füüsiline juhtimine ootavad katseid. Lab 3 füüsilised tulemused on TODO.
+
+## Tõendid ja tulemused
+
+| Tõend | Tulemus ja selle ulatus | Kust vaadata |
+| --- | --- | --- |
+| WireGuardi logija ja analüüs | Kõik 23 Python-testi õnnestusid sünteetiliste ridade ja asendatud käsuvastustega. Testid katavad liidese ja marsruudi kontrolli, logi jätkamist ning puuduvaid andmeid. Lab 3 päris tunneliseire on ootel. | [Logija ja analüsaator](tools/tunnel_monitor.py) · [Testid](tests/test_tunnel_monitor.py) · [Metoodika](docs/measurements.md#tunneli-48-tunni-logi) |
+| Klapi ja UV C++17 olekumudel | 19 hostitesti kontrollivad muu hulgas klapi ühe impulsi piirangut, UV kohalikku luba ja loogilise väljundi väljalülitumist. GPIO, relee, elektrilised tasemed ja tegelik väljalülitus ootavad kinnitust. | [Mudel](../lab2/firmware/src/core/actuator_model.cpp) · [Testid](../lab2/firmware/test/test_actuator_model/test_main.cpp) · [Integratsiooni seis](docs/atom_page.md#tarkvaramudel-ja-integratsiooni-seis) |
+| Alarmisündmuste edastus | 13 hostitesti kontrollivad, et lühike häire jääb meelde, häirel on taimeri ees eelis ning vana seansi sündmus ei lõpeta uut toimingut. Päris katkestusrutiini (ISR) sidumine on ootel. | [Sündmuste puhver](../lab2/firmware/include/actuator_events.h) · [Testid](../lab2/firmware/test/test_actuator_events/test_main.cpp) |
+| Varasem püsivara regressioon, 07.11.2026 | Päevikus on kirjas 104 läbitud native-testi ja kolm edukat PlatformIO koostet. Koostetulemus näitab, et projekt kompileerus. | [Arenduspäevik](#arenduspäevik) · [Platvormi seadistus](../lab2/firmware/platformio.ini) |
+| Varasem Lab 2 päriskatse, 06.11.2026 | Ühe Atomi LCD näitas kaht pilti. Kohalik HTTP-testserver sai mõlemale tööle oleku `done / local_display`. | [LCD-katsete raport](../lab2/docs/display_image_evidence.md) |
+| Füüsiliste mõõtmiste mallid | Latentsuse, kaamerate ja VPN-i mõõteridu veel pole. 17 280 on 48 tunni jooksul kavandatud 10-sekundiliste intervallide arv. | [Kohalik latentsus](data/latency_local.csv) · [VPN-latentsus](data/latency_vpn.csv) · [Kaamerad](data/camera_vpn_metrics.csv) · [Tunneli logi](data/tunnel_48h.csv) |
 
 ## Allikad ja tõendite piirid
 
@@ -21,19 +70,15 @@ Originaalkoopia ainepassi suhteline viide on säilitatud muutmata ja ei ole
 selle repo kohalik faililink; siin navigeerimiseks kasuta allolevaid tööfailide
 ning kontrollitud algallikate linke.
 
-| Tõendi liik | Praegune seis ja piir |
-|---|---|
-| Valmis tarkvaraalus | Lab 2 Flask/SQLite, Atomi polling, XIAO HTTP ja kohalik kaameraserver koos mock-testidega; täpne seis [Lab 2 README-s](../lab2/README.md). See ei tõenda terviklikku robotirada. |
-| Modelleerimine ja simulatsioon | Seotud kursuste CAD ja simulatsioonid ei kinnita uue tööriista füüsilist sobivust, võrku ega roboti ohutuskäitumist. |
-| Dokumentaalne ettevalmistus | Siin on nõuded, kontrollimata otsuste väljad ja tühjad mõõtemallid. |
-| Päris katsed | Lab 2 kuupäevaga kinnitatud tulemusi eristatakse allpool selle TODO-dest. Lab 3 võrgu-, VPN-, liikumis-, klapi- ja UV-katseid pole tehtud. |
+## Süsteemi arhitektuur
 
-## Eesmärk ja arhitektuur
+### Avalik HTTPS-postkontor
 
-Kaks sõltumatut kanalit jäävad lahku. Avalik HTTPS-postkontor võtab vastu
-ainult lubatud kõrgtaseme töid. Atom algatab väljamineva pollingu ja edastab
-vastuvõetud töö lokaalsele jaamale. Avalik postkontor ei vahenda otseseid
-MG400 käske ega videovooge.
+Brauser jätab HTTPS-i kaudu järjekorda lubatud töö. Atom küsib töid
+korrapäraselt väljamineva HTTPS-päringuga. Robotitöö kavandatud rada läheb
+Atomist kohaliku jaama kaudu MG400-ni. Avaliku teenuse roll piirdub
+tööjärjekorra ja tulemustega. Lab 2 skeem näitab ka USB- ja kaameraühendusi.
+[Skeem](../lab2/docs/system.svg) · [Muudetav draw.io fail](../lab2/docs/system.drawio).
 
 ```text
 Kasutaja --HTTPS--> avalik postkontor <--väljaminev polling-- Atom
@@ -43,9 +88,11 @@ Kasutaja --HTTPS--> avalik postkontor <--väljaminev polling-- Atom
                                                            jaam --> MG400
 ```
 
-Privaatne WireGuardi kanal võimaldab tulevikus lubatud ligipääsu jaamale,
-kohalikele kaameratele ja MG400 juhtimisele. Telefon on omaette peer;
-ruuter algatab dropleti poole väljamineva ühenduse.
+### Privaatne WireGuardi tee (plaan)
+
+Telefon ja ruuter algatavad kumbki dropleti poole oma WireGuardi ühenduse.
+Telefon avab plaani järgi jaama lehe. Jaam jääb kaamerate ja MG400
+kohalikuks ühenduspunktiks.
 
 ```text
 Telefon --WireGuard--> droplet <--WireGuard-- labori ruuter
@@ -55,13 +102,15 @@ Telefon --WireGuard--> droplet <--WireGuard-- labori ruuter
                                               |     +-- USB lauakaamera
                                               |     +-- kohalik HTTP XIAO kaamera
                                               +-- AtomS3R
-                                              +-- XIAO ESP32S3 Sense
 ```
 
-See on kontseptuaalne vaade; tegelik aadressiplaan ja lubatud teed on **TODO**.
-WireGuardi lõpetamine jaamas on õpetaja lubatud varuvariant ainult siis,
-kui päris ruuteri mudeli ja toe kontroll näitab selle vajadust.
-Avalikul veebirakendusel ei tohi olla võimalust tunneli kaudu robotit juhtida ega kaameraid vahendada. Selle piirangu tegelik rakendamine ja kontroll on TODO.
+Tegelik aadressiplaan ja lubatud teed on TODO. Kui ruuter WireGuardi ei
+toeta, lubab õppejõud varuvariandina tunneli jaamas lõpetada. Igal tunneli
+osalejal ehk peer'il on oma võtmepaar. `AllowedIPs` seob sihtvõrgud
+peer'iga ja piirab temalt vastu võetavaid lähteaadresse. Ligipääsu
+piiravad lisaks tulemüür ja teenuse autentimine.
+Avaliku postkontoriprotsessi eraldamine tunneli juhtimisrajast ja
+videovoogudest tuleb rakendada ning kontrollida. [WireGuardi plaan](docs/wireguard/README.md#ligipääs-ja-tulemüür).
 
 **KAARDISTA ISE — eesmärk nii, nagu ta tegelikult välja tuli.**
 
@@ -93,6 +142,167 @@ Dokumentatsiooni sünkroonimine ei täida neid kriteeriume.
 **KAARDISTA ISE — kuupäevad ja sinu enda sammud.**
 
 TODO — täita päris töö käigus.
+
+## Tööplaan
+
+Punktinumbrid viitavad [ametliku kontrollnimekirja](#kontrollnimekiri)
+järjekorrale. Kasuta etappe töö korraldamiseks ja tõendite leidmiseks.
+Kõik 17 punkti on avatud.
+
+### A. Inventuur ja aadressiplaan
+
+- **Eeldus ja alus (punktid 1, 16).** Vaja on õppejõu ruuterit,
+  admin-ligipääsu, labori võrgupesa ja seadmete loendit. Alusta olemasoleva
+  aadressi- ja inventuurimalli põhjal.
+- **Järgmine töö.** Kontrolli laboris ruuteri mudelit, WireGuardi tuge,
+  kaableid ja jaama Etherneti ühendust. Pane paberile ja draw.io-sse
+  seadmed, alamvõrgud ning kes aadressid määrab. Põhjenda roboti aadressi
+  säilitamise või muutmise otsus. Tellimuse tegelik seis vajab kinnitamist.
+- **Tõend ja failid.** Kanna kontrollitud seadmed, LAN/WAN piirid ja
+  aadresside allikad aadressiplaani. Lisa skeemi pilt koos muudetava
+  draw.io viitega. Märgi inventuur ja kinnitatud tellimus BOM-i.
+  Mallide ülevaatus sobib võrguühenduseta, inventuur ja kinnitamine
+  vajavad ligipääsu laborile ja tellimuse andmetele.
+  [Aadressiplaan](docs/network_plan.md) · [BOM](docs/bom.md).
+
+### B. Ruuter, marsruudid ja NAT
+
+- **Eeldus ja alus (punktid 2–5).** Vajalikud on kinnitatud aadressiplaan
+  ja ruuteri ligipääs. Jaama ning ruuteri tabelite jaoks on väljad olemas.
+- **Järgmine töö.** Seadista püsivad aadressid kinnitatud plaani järgi ja
+  vaheta ruuteri vaikimisi admin-parool. Kontrolli Lab 1 ja 2 töövooge uues
+  võrgus ohutuskokkuleppe järgi. Ennusta jaama teed robotini, dropletini
+  ja internetti ning võrdle ennustusi vaatlustega. Selgita, millist
+  lähteaadressi droplet näeb. NAT tähendab aadressi teisendamist võrgu piiril.
+- **Tõend ja failid.** Salvesta saladusteta ruuteriseadistus, mõlema
+  ruutimistabeli seletused, kolm ennustust koos mõõtetulemusega ning
+  NAT-i vaatlus ja selle allikas. Ennustused saab kirja panna enne katset.
+  Tabelite ja teekondade kinnitamine vajab päris võrku, NAT-i vaatlus
+  dropleti ligipääsu. [Aadressiplaan](docs/network_plan.md) ·
+  [Ruutimine ja NAT](docs/routing.md).
+
+### C. WireGuard ja võrgu eraldus
+
+- **Eeldus ja alus (punktid 6–9).** Vaja on kinnitatud tunneli
+  lõpp-punkte ja volitatud ligipääsu. WireGuardi plaanis on peer'ide
+  rollid ning lubatud teede kontrolli väljad.
+- **Järgmine töö.** Kinnita iga lubatud tee eesmärk, jaama ligipääsupiir
+  ja avaliku postkontori eraldus. Kontrolli tunnelit pärast ruuteri
+  taaskäivitust ja ligipääsu väljast ilma tunnelita. Pane enne
+  marsruudikatset kirja ennustus ja taastamisplaan. Seejärel võrdle
+  tulemust ennustusega ja kinnita taastumine. Telefoni jaama- ja
+  liikumiskatse eeldused on etapis D.
+- **Tõend ja failid.** Lisa võtmeteta tunneli skeem ja seadistuse ülevaade,
+  taastumisaeg, välise ligipääsu kontroll ning marsruudikatse tulemus.
+  Ligipääse ja taastamist saab kavandada võrguühenduseta. Katseteks on
+  vaja ruuterit, dropletit ning telefoni mobiilset andmesidet.
+  [WireGuardi plaan](docs/wireguard/README.md#tulevased-kontrollid) ·
+  [Marsruudikatse](docs/routing.md#tahtlikult-katkine-marsruut).
+
+### D. Jaama leht ja kaamerapildi ohutus
+
+- **Eeldus ja alus (punktid 3, 7, 11, 14).** Lab 2-s on jaama leht ja
+  kaameratestid näidisvoogudega. Vaja on kaitstud jaamavaadet, kogu
+  tööala näitavat kaamerat ja meeskonna ohutuskokkulepet.
+- **Järgmine töö.** Kinnita kohapeal mõlema kaamera pilt ning vaateväljad.
+  Kontrolli jaama lehte telefonis mobiilse andmesidega, Wi-Fi välja
+  lülitatud. Enne kaugliikumist rakenda ja kontrolli katkestuskäitumist
+  kohapeal. Süsteem peab ühenduse kadumisel jõudma kokkulepitud
+  ohutusse olekusse. Kaugjuhtimine eeldab isiklikku volitust
+  ja kohaliku vastutaja luba. Liikumiskatsel peab vastutaja nägema kogu
+  tööala ning ulatuma füüsilise hädastopini. Iga liige kinnitab
+  kokkuleppe ise.
+- **Tõend ja failid.** Lisa jaamavaate ja ligipääsu tõendid, mõlema kaamera
+  vaate kinnitused ning meeskonna nõusolekud. Mõõdud kogutakse etapis E.
+  Plaani saab lugeda võrguühenduseta, vaate ja juhtimise kontroll toimub
+  laboris. [Kaameraplaan](../lab2/docs/cameras.md#labori-kontrolliplaan) ·
+  [WireGuardi kontrollid](docs/wireguard/README.md#tulevased-kontrollid) ·
+  [Ohutuskokkulepe](docs/safety.md#otsejuhtimise-eeltingimused).
+
+### E. Latentsus, katkestused ja 48 tunni seire
+
+- **Eeldus ja alus (punktid 10–13).** Olemas on mõõtemetoodika,
+  CSV-päised ja testitud logija. Mõõtmiseks on vaja toimivat tunnelit,
+  võrreldavaid katsetingimusi ning kohapeal kinnitatud ohutut
+  katkestuskäitumist.
+- **Järgmine töö.** Mõõda 30 vajutust kohalikus võrgus ja 30 läbi tunneli
+  ning võrdle kummagi seeria keskmist ja maksimumi. Mõõda mõlema kaamera
+  viidet, kaadrisagedust ja ribalaiust. Pärast kohalikku ohutuskontrolli
+  dokumenteeri kolm katkestuskatset koos taastumisega. Kogu dropletilt
+  48 tunni logi ja arvuta vaadeldud katkestused ning andmekatvus.
+- **Tõend ja failid.** Salvesta tingimused, ajabaas ja toortõendid koos
+  mõõteridadega. Katkestuskatsete käitumine ja taastamine lähevad
+  ohutuskokkuleppesse. Analüsaator töötab võrguühenduseta. Mõõteridade
+  kogumine vajab laborit ning 48 tunni seire ka päris dropletit.
+  [Metoodika](docs/measurements.md) · [Kohalik latentsus](data/latency_local.csv) ·
+  [VPN-latentsus](data/latency_vpn.csv) · [Kaamerad](data/camera_vpn_metrics.csv) ·
+  [Tunneli logi](data/tunnel_48h.csv) · [Katkestuskatsed](docs/safety.md#vpn-i-kadumine-liikumisel).
+
+### F. Atomi klapi- ja UV-liides
+
+- **Eeldus ja alus (punktid 14–15).** Olemas on C++ olekumudel,
+  sündmuste puhver ja Atomi lehe plaan. Andmehõivega tuleb kokku leppida
+  käsud, vahemikud ja elektriline liides. Tööriista katsed eeldavad
+  kontrollitud sobivust ja nelja flantsinihet.
+- **Järgmine töö.** Ühenda ja kontrolli laboris GPIO, relee, ISR ja
+  LED-draiver. Lisa klapi impulsi ning UV kestuse ja ülempiiri seaded
+  koos kohalike testinuppudega. Kinnita süstlaharu ohutu vooluta olek,
+  UV sõltumatu blokeering ja automaatne kustumine ka ühenduse kadumisel.
+  UV aktiveerimine on kohalik, 405 nm kaitseprillidega ja läbipaistmatu
+  katte all.
+- **Tõend ja failid.** Dokumenteeri Atomi lehel kinnitatud käsuleping ja
+  katsete tulemused ning lisa viited püsivarale ja mõõtetõenditele.
+  Mudeli hostitestid sobivad võrguühenduseta. Elektrilised,
+  pneumaatilised ja UV kontrollid vajavad kohapealset riistvara.
+  [Atomi lehe plaan](docs/atom_page.md) · [UV ja süstlaharu](docs/safety.md#uv-ja-süstlaharu) ·
+  [Seotud kursused](#vajalikud-sisendid-varasematest-laboritest).
+
+Punkti 17 jaoks kogu tööfailid ja päris töö kuupäevaga päevikukanded.
+Esitamise tag kuulub lõplikule esitamisele.
+
+## Kiirstart ilma riistvarata
+
+Ava macOS-is või Linuxis terminal repo juurkaustas. Järgmised käsud
+kasutavad Python 3 standardteeki. Testid kasutavad ajutisi faile ja
+asendatud võrguvastuseid. Analüsaator avab CSV ainult lugemiseks.
+
+```sh
+cd smart-solutions/lab3
+python3 -B -m unittest discover -s tests -v
+python3 -B tools/tunnel_monitor.py analyze \
+  --log data/tunnel_48h.csv --start 2026-01-01T00:00:00Z
+```
+
+Esimene käsk pärast kausta vahetamist käivitab 23 testi. Vaata näiteks,
+kuidas test käsitleb kadunud marsruuti teadmata olekuna ja kuidas logija
+väldib pärast taaskäivitust kordusmõõtmist. Teises käsus on algusaeg
+näidis. Päisereaga mall annab `expected_checks: 17280`,
+`recorded_checks: 0`, `missing_intervals: 17280` ja
+`known_availability_percent: null`. Kättesaadavuse arvutamiseks
+puuduvad vaatlused. [Testid](tests/test_tunnel_monitor.py) ·
+[Analüüsi metoodika](docs/measurements.md#tunneli-48-tunni-logi).
+
+Klapi ja UV osa saad näidata mudeli ja testide järgi.
+PlatformIO hostitestide käsk ning projekti eeldused on Lab 2 juhendis.
+[Hostitestide juhend](../lab2/firmware/README.md#ehitus-ja-hostitestid) ·
+[Mudel](../lab2/firmware/src/core/actuator_model.cpp).
+
+## Kaitsmise juhend
+
+19.11.2026 kaitsmiseks valmista ette seitsmeminutiline ülevaade, mida
+saab esitada ka ilma tunneli ja MG400-ta. Õppejõu 15-minutilise kaitsmise
+kirjeldus sisaldab ka päriskatseid. Ava enne esitlust README,
+ruutimisplaan ja terminal. [Ametlik kaitsmine](assignment-EST.md#kaitsmine).
+
+| Aeg | Mida näidata ja öelda |
+| --- | --- |
+| 0:00–1:00 | Näita [arhitektuuri](#süsteemi-arhitektuur). Selgita, kuidas Atom küsib avalikust järjekorrast töid ja kuidas telefon kasutaks eraldi privaatset teed jaama lehele. |
+| 1:00–2:00 | Ava [aadressiplaan](docs/network_plan.md) ja [teekonnad](docs/routing.md#teekondade-ennustus-ja-mõõtmine). Osuta LAN/WAN piirile ning selgita ühe kavandatud teekonna ennustust ja tulevast tõendit. |
+| 2:00–3:00 | Ava [WireGuardi plaan](docs/wireguard/README.md). Näita telefoni, ruuteri ja dropleti rolle. Põhjenda minimaalseid lubatud teid ning postkontori eraldamist tunnelist. |
+| 3:00–4:30 | Käivita [kiirstardi](#kiirstart-ilma-riistvarata) testid ja analüüs. Näita 23 testi kokkuvõtet, 17 280 oodatud intervalli, nulli logirida ja määramata kättesaadavust. |
+| 4:30–5:30 | Ava [Atomi lehe plaan](docs/atom_page.md#tarkvaramudel-ja-integratsiooni-seis). Selgita ühe impulsi piirangut, UV kohalikku luba, alarmilukku ja puhvri rolli. Osuta [tarkvaratõenditele](#tõendid-ja-tulemused). |
+| 5:30–6:30 | Ava [mõõtemetoodika](docs/measurements.md) ja [ohutuseeldused](docs/safety.md#otsejuhtimise-eeltingimused). Nimeta päris võrgu-, kaamera-, liikumis- ja väljundikatsed, mille tõendid on veel puudu. |
+| 6:30–7:00 | Näita [kontrollnimekirja](#kontrollnimekiri) ja [päevikut](#arenduspäevik). Järjesta järgmised katsed [tööplaani](#tööplaan) järgi, alustades inventuurist ja kohalikest kontrollidest. |
 
 ## Vajalikud sisendid varasematest laboritest
 
@@ -127,9 +337,10 @@ süstlasse, vooluta pump lahutatud ja süstal atmosfääri. See ei ole pumba
 ümberlüliti napa ning süstla vahel. Tööjärjekord on
 **doseerimine → klaasi tõstmine → kõvendamine → väljund**.
 
-Klapi ja UV LED-i käsud, riistvaraliides, vahemikud, ohutuskäitumine ning
-alarmi-/sündmuseleping kooskõlastatakse enne koodi kirjutamist.
-Dokumenteeritud JSON-käsud on seni näited, mitte kinnitatud teostus.
+Enne Atomi lehe ja riistvara ühendamist tuleb kooskõlastada klapi ja UV
+LED-i käsud, vahemikud, riistvaraliides, ohutuskäitumine ning sündmuste
+vorming. JSON-käsud on näited. Ühine C++ mudel ja testide ulatus on
+kirjeldatud [Andmehõive püsivaraplaanis](https://github.com/Dennel04/data-acquisition-course/blob/b4b6a08aafc643e2345c66a2168da18e135640b3/data-acquisition/lab3/src/README.md#olemasolev-tarkvaramudel).
 **TODO — füüsiline teostus ja liidese kokkulepe pole veel kinnitatud.**
 
 ### 3D printimise Lab 3
@@ -205,18 +416,7 @@ Riistvara integreerimine ja päris VPN-seire on TODO.
 
 ### Väljundid ja tulemused
 
-**Kontrollitud tarkvara**
-
-* Step 1. C++17 ohutusmudel klapi, UV ja alarmiluku jaoks. 19 edukat mudelitesti.
-* Step 2B. Sündmuste edastuse simulatsioon. 13 edukat sündmuste testi ja kokku 104 edukat native-testi. Õnnestusid PlatformIO koosted `atoms3r_normal`, `atoms3r` ja `atoms3r_health`.
-* Step 3A. WireGuardi 48 tunni logija ja võrguühenduseta analüüs. 23 edukat Python-testi sünteetiliste andmete ja asendatud käsuvastustega.
-
-**Füüsiline integratsioon ja katsed on TODO.** Kinnitada tuleb Atomi
-riistvara ja juhtliides, klapi vooluta olek ning UV sõltumatu füüsiline
-blokeering ja automaatne väljalülitus. Päris 48 tunni VPN-logi puudub.
-VPN-i kadu ei taga roboti seiskumist. Enne kaugliikumist tuleb teostada
-ja kohapeal kontrollida ohutu katkestuskäitumine. Füüsiline hädastopp,
-kaugjuhtimisload ja iga liikme ohutuskinnitus on eraldi eeltingimused.
+Tarkvaratulemused ja nende ulatus on [tõenditabelis](#tõendid-ja-tulemused).
 
 **Väljundid**
 * Andmehõive L3: TODO — kontrollitud klapi ja UV LED-i käsud, seaded, testid ning vajaduse korral alarmisündmus.
