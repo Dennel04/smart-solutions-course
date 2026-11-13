@@ -153,9 +153,10 @@ placeholder'e:
 
 Nikita kontrollis 20.10.26 sõltumatut võtmega login'it pärast UFW
 aktiveerimist ning avalikku HTTPS-i domeenil `narva2.roboarena.org`.
-Kõigi teiste kasutajate ligipääs vajab eraldi kontrolli. Runbook'i
-`<HOSTNAME>` ja `<TEAM_HOSTNAME>` tähistavad selle deployment'i puhul
-`narva2.roboarena.org`; serveri IP-d ja SSH kasutajanime siin ei avaldata.
+13.11.2026 kinnitas Raimo isiklikult oma võtmega SSH-sisselogimist
+sudo-õiguseta kontole. Ülejäänud meeskonnaliikmete ligipääs vajab eraldi
+kontrolli. Runbook'i `<HOSTNAME>` ja `<TEAM_HOSTNAME>` tähistavad selle
+deployment'i puhul `narva2.roboarena.org`.
 
 Repo olemasolevates konfiguratsioonimallides tähistab `<TEAM_HOSTNAME>` sama
 õppejõult saadud väärtust, mida selle runbook'i käskudes tähistab `<HOSTNAME>`.
@@ -542,7 +543,9 @@ pärast päris dropleti ja laboririistvaraga katset:
   `/health` vastas HTTP 200 ja autentimata `/` HTTP 401.
 - [x] `smart-solutions-lab2` ja Caddy on `enabled` ning `active` (20.10.2026).
 - [ ] Teenuste käivitumine pärast kogu dropleti reboot'i on kontrollitud.
-- [ ] Kõigi kasutajate võtmega SSH login on teises sessioonis kontrollitud.
+- [x] Raimo kinnitas isiklikult oma võtmega SSH-sisselogimist sudo-õiguseta
+  kontole (13.11.2026). [Lab 2 arenduspäevik](../README.md#arenduspäevik)
+- [ ] Ülejäänud meeskonnaliikmete isiklik SSH-ligipääs on veel kontrollimata.
 - [x] SSH effective config: `pubkeyauthentication yes`,
   `passwordauthentication no`, `kbdinteractiveauthentication no`;
   Nikita sõltumatu login pärast UFW aktiveerimist õnnestus (20.10.2026).

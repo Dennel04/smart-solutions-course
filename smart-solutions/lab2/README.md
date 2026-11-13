@@ -404,6 +404,9 @@ tulemust; füüsilise katse juurde lisatakse kuupäev, meetod ja failiviide.
   ega lisata reposse.
 - [x] Nikita sai õppejõult dropleti ligipääsuandmed ja kontrollis võtmega
   SSH login'it 16.10.26.
+- [x] Raimo kinnitas 13.11.2026 isiklikult, et sai oma võtmega dropletisse
+  sisse logida. Tema kontol puudub sudo-õigus.
+- [ ] Ülejäänud meeskonnaliikmete isiklik SSH-ligipääs on veel kontrollimata.
 - [x] Repo on `/opt/smart-solutions-lab2/app`; production-sõltuvused ja
   systemd teenus on paigaldatud, teenus käivitati käsitsi 16.10.26.
 - [x] Env-fail on `root:root 0600`, täidetud ning placeholder'iteta;
@@ -1117,6 +1120,24 @@ ei muudeta.
   loal NORMAL-püsivara ja kontrollis testpostkontori kaudu tööde tulemusi.
 * 07.11 esitas kasutaja LCD-fotod. Codex võrdles katsetulemusi, täiendas
   dokumentatsiooni ja avaldas selle koos fotodega kasutaja loal (`7f1aab2`).
+
+**13.11.2026 — Atomi võrgu ja Raimo SSH-ligipääsu kontroll**
+
+* AtomS3R (MAC `B4:3A:45:BC:CE:84`) ühendus Redmi pääsupunktiga. MacBooki
+  IP oli `10.117.35.52` ja Atomi IP `10.117.35.65`. Päringud
+  `GET /state` ja `GET /settings` õnnestusid. Atomi olek oli
+  `sta_connected` ning `active_job_id` ja `pending_result_id` olid tühjad.
+  MacBookis ei töötanud kohalik postkontor ja port `5001` ei kuulanud,
+  seega oli `poll_failed` ootuspärane.
+* Nikita logis SSH kaudu `root`-kasutajana serverisse
+  `narva2.roboarena.org`. Dropletis loodi sudo-õiguseta konto `raimo` ja
+  lisati Raimo avalik võti faili `/home/raimo/.ssh/authorized_keys`.
+  Kataloogi õigused olid `700` ja faili õigused `600`. Kontroll
+  `sshd -t` õnnestus. Võtme sõrmejälg oli
+  `SHA256:33+xYP4P1FwYsTTgqgxekHIhPoW23xkfmvctZWkHC1I`.
+  Raimo kinnitas isiklikult, et sai oma kontoga SSH kaudu sisse logida.
+* Lahti jäid ülejäänud liikmete SSH-ligipääs, Atomi production HTTPS
+  polling, päris MG400 töö, kaamerad, rõhuandur ja dropleti taaskäivituse katse.
 
 ### Väljundid ja tulemused
 
