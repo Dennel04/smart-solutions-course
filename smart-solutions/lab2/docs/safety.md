@@ -127,4 +127,5 @@ Iga liige lisab oma kinnituse ise pärast kokkuleppe päriselt läbilugemist.
 | Nikita | TODO | TODO — kinnitab isiklikult pärast läbilugemist |
 | Denys | 15.11.26 | Läbi loetud ja kinnitatud |
 | Raimo | TODO | TODO — kinnitab isiklikult pärast läbilugemist |
+| Raimo | 13.11.2026 | Läbi loetud ja kinnitatud. |
 | Maksim | TODO | TODO — kinnitab isiklikult pärast läbilugemist |
