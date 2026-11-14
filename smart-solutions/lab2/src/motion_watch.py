@@ -63,18 +63,18 @@ class MotionDetector:
         """Feed one sample; return (joint_index, delta_deg, rest_ms) on a movement edge."""
         event = None
         if self.last_joints is None:
-            self.last_joints, self.still_since = joints, t
+            self.last_joints, self.still_since, self.still_anchor = joints, t, joints
             return None
-        step = max(abs(a - b) for a, b in zip(joints, self.last_joints))
         self.last_joints = joints
         if self.moving:
-            if step < self.threshold_deg / 10:
-                if self.still_since is None:
-                    self.still_since = t
-                if t - self.still_since >= self.rest_s:
-                    self.moving, self.rest_joints = False, joints
-            else:
-                self.still_since = None
+            # Still = every joint within threshold/2 of where the still period
+            # began. Encoder noise at rest is ~0.008 deg per packet on J4
+            # (measured 14.11.26), so a per-packet step test never settles.
+            if self.still_since is None or max(
+                    abs(a - b) for a, b in zip(joints, self.still_anchor)) >= self.threshold_deg / 2:
+                self.still_since, self.still_anchor = t, joints
+            elif t - self.still_since >= self.rest_s:
+                self.moving, self.rest_joints = False, self.still_anchor
             return None
         deltas = [abs(a - b) for a, b in zip(joints, self.rest_joints)]
         index = max(range(len(deltas)), key=deltas.__getitem__)

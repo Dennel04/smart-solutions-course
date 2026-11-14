@@ -39,3 +39,11 @@ def test_no_event_without_prior_rest_or_with_small_noise():
     d = MotionDetector(threshold_deg=0.05, rest_s=0.3)
     noise = [(i * 0.008, (0.001 * (i % 2), 0.0, 0.0, 0.0)) for i in range(200)]
     assert run(d, noise) == []
+
+
+def test_settles_with_real_j4_encoder_noise_then_detects_move():
+    d = MotionDetector(threshold_deg=0.05, rest_s=0.3)
+    noisy = [(i * 0.008, (5.0, 6.0, 7.0, 33.0 + 0.008 * (i % 3))) for i in range(100)]
+    move = [(0.8 + i * 0.008, (5.0, 6.0, 7.0 - 0.03 * (i + 1), 33.0)) for i in range(10)]
+    events = run(d, noisy + move)
+    assert len(events) == 1 and events[0][1][0] == 3

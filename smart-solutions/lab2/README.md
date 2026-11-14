@@ -1104,6 +1104,47 @@ ei muudeta.
 * Lahti jäid ülejäänud liikmete SSH-ligipääs, Atomi production HTTPS
   polling, päris MG400 töö, kaamerad, rõhuandur ja dropleti taaskäivituse katse.
 
+**14.11.2026 — kaamerad, XIAO püsivara, station'i SSH ja juhtimislatentsus**
+
+* Kaamerad laboriarvutis: Verbatim (OpenCV seade 0) andis `3840 × 2160`
+  kaadri; XIAO ESP32S3 Sense (USB serial `1C:DB:D4:43:35:DC`) andis JPEG-i
+  ka vana 3D Printingu USB-püsivaraga. Verbatimi praeguses asendis ei ole
+  Gridfinity ruudustik servast servani kaadris; ruudunimesid kaadris ei
+  olnud, loetavuse katse jäi tegemata.
+* XIAO-sse laaditi `firmware-xiao-camera` (commit `0e90d98`): OV3660 tuvastati,
+  PSRAM 8 MB, SVGA JPEG ~19,6 KB, USB kaudu 20 kaadrit keskmiselt 78 ms
+  (12,8 FPS). Lisatud: 3D Printingu USB-protokoll (`c`/`i`), et sama
+  püsivara teenindaks ka 3D hubi; `WiFi.setSleep(false)`; OV3660 vflip jäeti
+  välja nagu 3D püsivaras. Wi-Fi seaded ignoreeritud `wifi_private.h` failis;
+  XIAO ühines telefoni pääsupunktiga ja sai IP `10.200.77.31`.
+* Station'i ja XIAO vaheline Wi-Fi rada ei toiminud: laboriarvutil pole
+  Wi-Fi adapterit ning MG400 võrgus `192.168.1.x` pole ruuterit. Telefoni
+  USB-jagamine andis arvutile IP `10.239.80.157`, kuid päring
+  `http://10.200.77.31/status` aegus 10 s jooksul (telefon ei suuna USB- ja
+  Wi-Fi-klientide vahel). USB-jagamise ajal oli arvutil kaks võrdse
+  meetrikaga vaikemarsruuti ja DNS aegus; jagamine lülitati välja.
+  Lahendus vajab Wi-Fi-ga station'i sülearvutit või Etherneti külge
+  ruuterit/pääsupunkti.
+* Atomi (`B4:3A:45:BC:CE:84`) NVS-is oli server `http://10.117.35.52:5001`
+  (MacBooki kohalik postkontor), seega `POST poll_failed`; production URL
+  ja CA-ga püsivara on järgmine samm.
+* Station PC sai oma ed25519 võtme (sõrmejälg
+  `SHA256:scHNEQNcaUa0d/mqWz2wCqyqoikrtnuNpSGUVC9sg0E`); Nikita lisas selle
+  kasutajale `denys`. Kontroll: `whoami` = `denys`, `sudo -v` õnnestus,
+  ilma võtmeta sisselogimine andis `Permission denied (publickey)`.
+* Juhtimislatentsus (`src/latency_bench.py`, uus): station saadab
+  MG400 pordile 30003 `MovL` Z ±3 mm, kiirus 2 %, vabas õhus, inimene
+  hädastopi juures. Esimene liikumine tuvastatakse tagasisidepordist 30004
+  (~8 ms pakett, liigese muutus > 0,05°, `src/motion_watch.py`). Tulemused
+  failis `docs/control_latency_cameras.csv`: ilma kaamerata keskmine 260 ms,
+  max 267 ms (n = 10); USB kaamera töös (1280 × 720, 10 FPS, 1 klient)
+  keskmine 263 ms, max 271 ms (n = 10). Kahe kaamera tingimus jäi tegemata,
+  sest XIAO ei jõua station'ini Wi-Fi kaudu.
+* Kaamera viite katse kaadrite erinevuse järgi ebaõnnestus: 3 mm liikumine
+  2 % kiirusel ei muuda laua kaamera pilti piisavalt (6/10 korral muutust
+  ei leitud). Need read jäeti tulemustest välja; kaamera viide mõõdetakse
+  taimeriga kaadris.
+
 ### Väljundid ja tulemused
 
 **Kinnitatud Atomi katsed (06.11.2026)**
