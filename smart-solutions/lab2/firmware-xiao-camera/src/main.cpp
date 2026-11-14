@@ -153,8 +153,10 @@ bool initializeCamera() {
     g_sensor_name = info != nullptr ? info->name
                                     : tool_camera::sensorModelName(sensor->id.PID);
     if (sensor->id.PID == OV3660_PID) {
-      // Sensor-specific correction from the official Arduino camera example.
-      sensor->set_vflip(sensor, 1);
+      // Colour correction from the official Arduino camera example. Its vflip
+      // is left out, as in the 3D Printing USB firmware: the picture must keep
+      // the orientation the hub and the 3D Lab 2 evidence frames use until the
+      // orientation on the J4 mount is checked.
       sensor->set_brightness(sensor, 1);
       sensor->set_saturation(sensor, -2);
     }
@@ -233,6 +235,49 @@ void serviceWifi() {
   WiFi.begin(TOOL_CAMERA_WIFI_SSID, TOOL_CAMERA_WIFI_PASSWORD);
 }
 
+// USB Serial protocol of the 3D Printing Lab 2 tool-camera firmware
+// (3d-print/lab2/tool-camera/capture.py, hub ToolCamera): 'c' answers
+// "JPG <len>\n" + JPEG bytes, 'i' answers one INFO line. Keeping it here lets
+// one firmware serve both the Wi-Fi /snapshot.jpg path and the USB hub path.
+void serviceSerialCommands() {
+  while (Serial.available() > 0) {
+    const int command = Serial.read();
+    if (command == 'i') {
+      Serial.printf("INFO camera=%s sensor=%s psram=%u wifi=%s frames=%lu\n",
+                    g_camera_available ? "ok" : "fail", g_sensor_name,
+                    static_cast<unsigned>(ESP.getPsramSize()),
+                    WiFi.status() == WL_CONNECTED ? "connected" : "disconnected",
+                    static_cast<unsigned long>(g_frames_served));
+      continue;
+    }
+    if (command != 'c') {
+      continue;
+    }
+    if (!g_camera_available || g_camera_mutex == nullptr) {
+      Serial.println("ERR camera not ready");
+      continue;
+    }
+    if (xSemaphoreTake(g_camera_mutex,
+                       pdMS_TO_TICKS(tool_camera::kCaptureMutexTimeoutMs)) !=
+        pdTRUE) {
+      Serial.println("ERR camera busy");
+      continue;
+    }
+    camera_fb_t* frame = esp_camera_fb_get();
+    if (frame == nullptr) {
+      xSemaphoreGive(g_camera_mutex);
+      Serial.println("ERR capture failed");
+      continue;
+    }
+    Serial.printf("JPG %u\n", static_cast<unsigned>(frame->len));
+    Serial.write(frame->buf, frame->len);
+    Serial.flush();
+    ++g_frames_served;
+    esp_camera_fb_return(frame);
+    xSemaphoreGive(g_camera_mutex);
+  }
+}
+
 }  // namespace
 
 void setup() {
@@ -259,6 +304,10 @@ void setup() {
   }
 
   WiFi.mode(WIFI_STA);
+  // Modem sleep (default WIFI_PS_MIN_MODEM) holds incoming packets until the
+  // next DTIM beacon, ~100-300 ms per request; the official CameraWebServer
+  // example disables it as well. Costs power, the XIAO is USB-powered.
+  WiFi.setSleep(false);
   if (TOOL_CAMERA_HOSTNAME[0] != '\0') {
     WiFi.setHostname(TOOL_CAMERA_HOSTNAME);
   }
@@ -267,6 +316,7 @@ void setup() {
 }
 
 void loop() {
+  serviceSerialCommands();
   serviceWifi();
-  delay(50);
+  delay(5);
 }
