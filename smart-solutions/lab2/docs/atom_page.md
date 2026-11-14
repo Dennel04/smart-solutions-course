@@ -11,9 +11,10 @@ kaudu. Arduino IDE ei ole selle repo peamine firmware-töövoog. XIAO ESP32S3
 Sense püsivara asub eraldi PlatformIO projektis `../firmware-xiao-camera/`.
 AtomS3 ja XIAO buildid on tarkvaraliselt kontrollitud. 06.11.2026 laaditi
 uude AtomS3R-i NORMAL-püsivara ning kontrolliti kohalikku seadete lehte ja
-autenditud HTTP pollingut. Selle seadme rõhukalibratsiooni, seadete
-püsimist taaskäivituse järel ja võrgu taastumist pole veel kontrollitud.
-XIAO upload on endiselt TODO. [Atomi katseraport](display_image_evidence.md)
+autenditud HTTP pollingut. 14.11.2026 säilisid Atomi seaded pärast
+NORMAL-püsivara laadimist ja kontrolliti avalikku HTTPS-pollingut.
+Rõhukalibratsiooni püsivuse ja võrgu taastumise katsed on ootel.
+[Atomi LCD-katseraport](display_image_evidence.md) · [Arenduspäevik](../README.md#arenduspäevik).
 
 > Siin eristatakse teostatud tarkvaraalust ja kontrollimata riistvaratööd.
 > Allolev rõhuanduri osa on software-only. See ei tõenda päris sensor/op-amp
@@ -44,6 +45,12 @@ serveri `/health` endpoint on avalik ega valideeri Atomi võtit. Seega kontrolli
 nupp aadressi, TLS-i ja HTTP tervisevastust; Atomi autentimist kontrollivad
 poll/result päringud. Minimaalne alus näitab HTTP tulemust ja turvalist
 lühivastust. Round-trip aja ning viimase õnnestunud polli kuvamine on veel TODO.
+
+14.11.2026 andis `TEST SERVER HEALTH` avaliku HTTPS-i kaudu `health_ok`.
+Autentitud pollingu eraldi kontrollis muutus `poll_http_403` õige võtme
+sisestamise järel olekuks `poll_ok_no_job`. Intervall oli `1000 ms` ning
+kohaliku HTTP arendusrežiim oli väljas. Avalikul lehel uuenes `last_seen`
+ja olek oli `online`. [Katsekanne](../README.md#arenduspäevik).
 
 - päringu olekut ja HTTP tulemust;
 - serveri vastuse lühikest turvalist sisu või veakoodi;
@@ -131,9 +138,11 @@ andur on olemas; seetõttu ei tõenda edukas HTTP vastus sensor chain'i korrasol
 
 - [ ] Rõhukalibratsiooni seaded püsivad pärast NORMAL-püsivaraga Atomi
   taaskäivitust.
-- [ ] Production-hostile tehakse päris HTTPS polling.
+- [x] Päris Atom pollis avalikku HTTPS-postkontorit oma API võtmega
+  ja sai tühja järjekorra vastuse (14.11.2026).
 - [ ] Vale või puuduva võtme vastus kuvatakse saladust avaldamata.
-- [ ] `TEST SERVER HEALTH` vastus ja round-trip aeg on kontrollitud.
+- [x] `TEST SERVER HEALTH` andis `health_ok` (14.11.2026).
+- [ ] `TEST SERVER HEALTH` round-trip aeg on mõõdetud.
 - [ ] Kiire ja aeglane polling-intervall on päriselt kontrollitud.
 - [ ] Rõhu raw ADC, V ja kPa kuvatakse korraga ning vastavad mõõtmismeetodile.
 - [ ] Andmehõive Lab 2 tegelikud kalibratsioonikonstandid on kasutusel.

@@ -4,8 +4,9 @@
 > `narva2.roboarena.org`, autentimist Macis ja telefonis 5G kaudu, SSH
 > autentimisseadeid, UFW-d, töö loomist/aegumist ning SQLite backup'i
 > taastamist eraldi testbaasi. `deploy/verify.sh`: `12 PASS, 0 FAIL, 0 SKIP`.
-> Atom on offline; production polling, kogu dropleti reboot ning MG400
-> füüsiline integratsioon on kontrollimata.
+> Selles katses oli Atom offline. Hilisem autentitud Atomi HTTPS-polling
+> on kirjas allpool. Kogu dropleti reboot ja MG400 füüsiline integratsioon
+> on kontrollimata.
 
 ## Kinnitatud deployment-kontrollid — 20.10.2026
 
@@ -30,9 +31,8 @@ jaotisse ajaloolise seisuna; uus kontroll ei kirjuta neid üle.
 | `smart-solutions-lab2` | `enabled`, `active` |
 | Atom | Avalikus serveris offline; production pollingut ei testitud |
 
-Teenuse restart ja testbaasi taastamine ei kata kogu dropleti reboot'i ega
-täielikku taastamist puhtale hostile. Need, Atomi production HTTPS polling
-ja füüsilised MG400/kaamerate/latency katsed jäävad TODO-ks.
+Kogu dropleti reboot ja täielik taastamine puhtale hostile on ootel.
+Atomi autentitud HTTPS-polling kinnitati hilisemas 14.11.2026 katses.
 
 ## Production UI uuendus — 20.10.2026
 
@@ -154,16 +154,19 @@ placeholder'e:
 Nikita kontrollis 20.10.26 sõltumatut võtmega login'it pärast UFW
 aktiveerimist ning avalikku HTTPS-i domeenil `narva2.roboarena.org`.
 13.11.2026 kinnitas Raimo isiklikult oma võtmega SSH-sisselogimist
-sudo-õiguseta kontole. Ülejäänud meeskonnaliikmete ligipääs vajab eraldi
-kontrolli. Runbook'i `<HOSTNAME>` ja `<TEAM_HOSTNAME>` tähistavad selle
+sudo-õiguseta kontole. Denysi 14.11.2026 jaamaarvuti SSH-kontroll on
+[arenduspäevikus](../README.md#arenduspäevik).
+Runbook'i `<HOSTNAME>` ja `<TEAM_HOSTNAME>` tähistavad selle
 deployment'i puhul `narva2.roboarena.org`.
 
 Repo olemasolevates konfiguratsioonimallides tähistab `<TEAM_HOSTNAME>` sama
 õppejõult saadud väärtust, mida selle runbook'i käskudes tähistab `<HOSTNAME>`.
 
 Password-login'i ja keyboard-interactive autentimise keelamine, UFW,
-avalik TLS ning telefoni 5G katse on kontrollitud. Atomi production HTTPS
-polling on veel tegemata; Atom oli avalikus serveris offline.
+avalik TLS ning telefoni 5G katse on kontrollitud.
+14.11.2026 kinnitati füüsilise Atomi autentitud HTTPS-polling tühja
+järjekorraga. Avalikul lehel uuenes `last_seen` ja olek oli `online`.
+[Atomi katse](../docs/atom_page.md#postkontori-test).
 
 ## Kohalik eelkontroll
 
@@ -545,7 +548,7 @@ pärast päris dropleti ja laboririistvaraga katset:
 - [ ] Teenuste käivitumine pärast kogu dropleti reboot'i on kontrollitud.
 - [x] Raimo kinnitas isiklikult oma võtmega SSH-sisselogimist sudo-õiguseta
   kontole (13.11.2026). [Lab 2 arenduspäevik](../README.md#arenduspäevik)
-- [ ] Ülejäänud meeskonnaliikmete isiklik SSH-ligipääs on veel kontrollimata.
+- [ ] Seni kinnitamata isiklikud SSH-ligipääsud vajavad kontrolli.
 - [x] SSH effective config: `pubkeyauthentication yes`,
   `passwordauthentication no`, `kbdinteractiveauthentication no`;
   Nikita sõltumatu login pärast UFW aktiveerimist õnnestus (20.10.2026).
@@ -560,10 +563,10 @@ pärast päris dropleti ja laboririistvaraga katset:
   eraldi testbaasi: `integrity_check: ok`, töö kirje taastatud (20.10.2026).
 - [x] Kasutaja autentimine ja UI töötavad Safari Macis ja Chrome telefonis
   5G kaudu (20.10.2026).
-- [ ] Atomi bearer auth ja production polling on päris seadmega kontrollitud.
+- [x] Päris Atom pollis avalikku postkontorit väljamineva HTTPS-ühendusega
+  ja sai oma võtmega vastuse `poll_ok_no_job` (14.11.2026).
 - [x] `letter A` loomine, aegumine (`ttl_expired`) ning kirje säilimine teenuse
   restardi järel on päris hostil kontrollitud (20.10.2026).
 - [x] Täielik `deploy/verify.sh`: `12 PASS, 0 FAIL, 0 SKIP` (20.10.2026).
-- [ ] Atom pollib aadressi `https://<TEAM_HOSTNAME>` väljamineva ühendusega.
 - [ ] Station'i, MG400 ja kaamerate poole ei ole dropletil route'i/proxy't.
 - [ ] Taasteprotseduur on päriselt läbi proovitud ja tulemus kuupäevaga kirjas.
