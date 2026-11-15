@@ -582,7 +582,8 @@ environment'iks; HEALTH_ONLY ja varasemad riistvaratulemused jäävad alles.
 - [x] Wi-Fi/setup-AP ja seadete püsimine taaskäivituse järel;
 - [x] production hosti TLS-ahel Macis kontrollitud; ISRG Root X2 CA-ga
   lokaalne build ja sertifikaadi olemasolu binaaris kontrollitud 20.10.2026;
-- [ ] päris AtomS3R production HTTPS ühendus ja autentitud polling;
+- [x] päris AtomS3R production HTTPS ühendus ja autentitud polling;
+  15.11.26 linnuke: 14.11 `TEST SERVER HEALTH` → `health_ok`, õige võtmega `poll_ok_no_job`, avalikul lehel `online` ja `last_seen` uuenes ([Atomi leht](../docs/atom_page.md#postkontori-test));
 - [x] HEALTH_ONLY upload, LCD/USB, telefoni hotspot ja `WIFI CONNECTED` /
   `TLS VERIFIED` 23.10.2026; katse lõppes `HEALTH ERROR`;
 - [ ] HEALTH_ONLY `/health` HTTP 200 ja oodatud JSON; üldise veateate
