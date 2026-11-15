@@ -586,11 +586,13 @@ environment'iks; HEALTH_ONLY ja varasemad riistvaratulemused jäävad alles.
   15.11.26 linnuke: 14.11 `TEST SERVER HEALTH` → `health_ok`, õige võtmega `poll_ok_no_job`, avalikul lehel `online` ja `last_seen` uuenes ([Atomi leht](../docs/atom_page.md#postkontori-test));
 - [x] HEALTH_ONLY upload, LCD/USB, telefoni hotspot ja `WIFI CONNECTED` /
   `TLS VERIFIED` 23.10.2026; katse lõppes `HEALTH ERROR`;
-- [ ] HEALTH_ONLY `/health` HTTP 200 ja oodatud JSON; üldise veateate
+- [x] HEALTH_ONLY `/health` HTTP 200 ja oodatud JSON; üldise veateate
   täpne põhjus vajab eraldi diagnostikat;
+  15.11.26 linnuke: päris seadmel `TEST SERVER HEALTH` → HTTP 200 ja serveri vastus (14.11 `health_ok`, 15.11 commit `3f68408`); eraldi HEALTH_ONLY diagnostikat pole enam vaja;
 - [x] päris USB-ga AtomS3 → station ning Lab 1 MG400 executor'i otsast lõpuni tulemus;
   15.11.26 linnuke: avalik postkontor → Atom → USB → jaam → MG400, täht A paberil, olek `done` ([Lab 2 README](../README.md));
-- [ ] võrgu katkestus ja NVS retry päris seadmel;
+- [x] võrgu katkestus ja NVS retry päris seadmel;
+  15.11.26 linnuke: kolm päriskatset (tähed C, D, E) — internetikatkestus ei katkestanud vastu võetud tööd ja puhverdatud tulemus saadeti hiljem ([safety.md](../docs/safety.md));
 - [x] pollingu latentsus ja valitud production-intervall;
   15.11.26 linnuke: 30 + 30 sõnumit, 1 s vahega keskm. 4,6 s, 10 s vahega 6,7 s, valitud 1 s ([kiire](../docs/latency_poll_fast.csv), [aeglane](../docs/latency_poll_slow.csv));
 - [x] rõhuanduri seadete, NVS valideerimise ja kohaliku ADC/pinge/kPa testi
