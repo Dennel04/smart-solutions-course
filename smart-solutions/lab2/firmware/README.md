@@ -582,16 +582,22 @@ environment'iks; HEALTH_ONLY ja varasemad riistvaratulemused jäävad alles.
 - [x] Wi-Fi/setup-AP ja seadete püsimine taaskäivituse järel;
 - [x] production hosti TLS-ahel Macis kontrollitud; ISRG Root X2 CA-ga
   lokaalne build ja sertifikaadi olemasolu binaaris kontrollitud 20.10.2026;
-- [ ] päris AtomS3R production HTTPS ühendus ja autentitud polling;
+- [x] päris AtomS3R production HTTPS ühendus ja autentitud polling;
+  15.11.26 linnuke: 14.11 `TEST SERVER HEALTH` → `health_ok`, õige võtmega `poll_ok_no_job`, avalikul lehel `online` ja `last_seen` uuenes ([Atomi leht](../docs/atom_page.md#postkontori-test));
 - [x] HEALTH_ONLY upload, LCD/USB, telefoni hotspot ja `WIFI CONNECTED` /
   `TLS VERIFIED` 23.10.2026; katse lõppes `HEALTH ERROR`;
-- [ ] HEALTH_ONLY `/health` HTTP 200 ja oodatud JSON; üldise veateate
+- [x] HEALTH_ONLY `/health` HTTP 200 ja oodatud JSON; üldise veateate
   täpne põhjus vajab eraldi diagnostikat;
-- [ ] päris USB-ga AtomS3 → station ning Lab 1 MG400 executor'i otsast lõpuni tulemus;
-- [ ] võrgu katkestus ja NVS retry päris seadmel;
-- [ ] pollingu latentsus ja valitud production-intervall;
+  15.11.26 linnuke: päris seadmel `TEST SERVER HEALTH` → HTTP 200 ja serveri vastus (14.11 `health_ok`, 15.11 commit `3f68408`); eraldi HEALTH_ONLY diagnostikat pole enam vaja;
+- [x] päris USB-ga AtomS3 → station ning Lab 1 MG400 executor'i otsast lõpuni tulemus;
+  15.11.26 linnuke: avalik postkontor → Atom → USB → jaam → MG400, täht A paberil, olek `done` ([Lab 2 README](../README.md));
+- [x] võrgu katkestus ja NVS retry päris seadmel;
+  15.11.26 linnuke: kolm päriskatset (tähed C, D, E) — internetikatkestus ei katkestanud vastu võetud tööd ja puhverdatud tulemus saadeti hiljem ([safety.md](../docs/safety.md));
+- [x] pollingu latentsus ja valitud production-intervall;
+  15.11.26 linnuke: 30 + 30 sõnumit, 1 s vahega keskm. 4,6 s, 10 s vahega 6,7 s, valitud 1 s ([kiire](../docs/latency_poll_fast.csv), [aeglane](../docs/latency_poll_slow.csv));
 - [x] rõhuanduri seadete, NVS valideerimise ja kohaliku ADC/pinge/kPa testi
   software-only alus;
 - [ ] Andmehõive Lab 2 päris koefitsiendid, sensor/op-amp wiring ning raw
   ADC/pinge/kPa riistvarakontroll;
+  15.11.26 märkus: vaikekonstandid on lisatud (commit `3f68408`: `kpa_per_volt` 131,24, nihe −14,34 kPa, `3,70 V / 4095`) ja vastavad Andmehõive 15.11 valemile `P = ((V_G5 + 0,185·Vref)/1,185/5,0 − 0,04)/0,0012858` (`Vref` 0,69 V). Andmehõive multimeetri järgi loeb ADC `0,9125 mV/kood − 27,8 mV`, mitte `3,70 V / 4095`; see annab atmosfääril ~2,4 kPa erinevuse (101,6 vs 99,2 kPa). Riistvarakontroll anduriga on tegemata;
 - [ ] Lab 1 pildi-, captive-portali ja pumba funktsioonide kontrollitud ühendus.

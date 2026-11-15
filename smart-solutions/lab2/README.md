@@ -242,6 +242,7 @@ kaameraga), seega jäid alles mõlemad voogud täies seadistuses.
 - [x] Kes mida saadab: [`docs/server_api.md`](docs/server_api.md).
 - [ ] Ohutuskokkulepe kirjas ja kõigil loetud. [`docs/safety.md`](docs/safety.md):
   Denys 15.11.26; teised liikmed kinnitavad ise.
+  15.11.26 märkus: Raimo kinnitas 13.11.26 (tema commit `246ea68` jäi fork'i harule, nüüd lisatud). Puudu Nikita ja Maksim.
 - [x] Lauakaamera näitab kogu lauda ja robotit (15.11.26).
 - [x] Tööriistakaamera näitab otsikut ja detaili selle all (15.11.26).
 - [x] Mõlemad pildid on jaama lehel, labori võrgus (15.11.26).
@@ -250,7 +251,8 @@ kaameraga), seega jäid alles mõlemad voogud täies seadistuses.
 - [x] Rõhuanduri seaded ja testnupp Atomi lehel, [`docs/atom_page.md`](docs/atom_page.md)
   uuendatud (15.11.26; serveri test päris Atomil HTTP 200).
 - [x] Tellimus 16.10: selle labori jaoks ei tellitud midagi ([`docs/bom.md`](docs/bom.md)).
-- [ ] Repo ja arenduspäevik täidetud, tag `smart-solutions-lab2`.
+- [x] Repo ja arenduspäevik täidetud, tag `smart-solutions-lab2`.
+  15.11.26 linnuke (Raimo otsus): repo ja arenduspäevik on täidetud; tag `smart-solutions-lab2` pannakse esitamisel.
 
 ## Tööfailid
 
