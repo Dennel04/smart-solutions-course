@@ -251,7 +251,8 @@ kaameraga), seega jäid alles mõlemad voogud täies seadistuses.
 - [x] Rõhuanduri seaded ja testnupp Atomi lehel, [`docs/atom_page.md`](docs/atom_page.md)
   uuendatud (15.11.26; serveri test päris Atomil HTTP 200).
 - [x] Tellimus 16.10: selle labori jaoks ei tellitud midagi ([`docs/bom.md`](docs/bom.md)).
-- [ ] Repo ja arenduspäevik täidetud, tag `smart-solutions-lab2`.
+- [x] Repo ja arenduspäevik täidetud, tag `smart-solutions-lab2`.
+  15.11.26 linnuke (Raimo otsus): repo ja arenduspäevik on täidetud; tag `smart-solutions-lab2` pannakse esitamisel.
 
 ## Tööfailid
 

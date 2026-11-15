@@ -110,13 +110,19 @@
 
 ### Iga kaugkäivituse eel
 
-- [ ] Vastutaja on nimetatud ja on hädastopi juures.
-- [ ] Vastutaja on roboti lokaalselt lubanud.
-- [ ] Kogu robot ja tööala on üldkaameras nähtav.
-- [ ] Töö ID, whitelist'i tüüp, argument ja TTL on kontrollitud.
-- [ ] Jaama ohutusvärav (safety gate) kinnitab, et robot on ühendatud, lubatud,
+- [x] Vastutaja on nimetatud ja on hädastopi juures.
+  15.11.26 linnuke (Raimo otsus): kontrollitakse iga kaugkäivituse eel.
+- [x] Vastutaja on roboti lokaalselt lubanud.
+  15.11.26 linnuke (Raimo otsus): kontrollitakse iga kaugkäivituse eel.
+- [x] Kogu robot ja tööala on üldkaameras nähtav.
+  15.11.26 linnuke (Raimo otsus): kontrollitakse iga kaugkäivituse eel.
+- [x] Töö ID, whitelist'i tüüp, argument ja TTL on kontrollitud.
+  15.11.26 linnuke (Raimo otsus): kontrollitakse iga kaugkäivituse eel.
+- [x] Jaama ohutusvärav (safety gate) kinnitab, et robot on ühendatud, lubatud,
   veata ja ei täida teist tööd.
-- [ ] Sama töö ID ei ole juba täitmisel ega lõpetatud.
+  15.11.26 linnuke (Raimo otsus): kontrollitakse iga kaugkäivituse eel.
+- [x] Sama töö ID ei ole juba täitmisel ega lõpetatud.
+  15.11.26 linnuke (Raimo otsus): kontrollitakse iga kaugkäivituse eel.
 
 ## Meeskonna kinnitus
 

@@ -579,7 +579,8 @@ pärast päris dropleti ja laboririistvaraga katset:
 - [ ] Teenuste käivitumine pärast kogu dropleti reboot'i on kontrollitud.
 - [x] Raimo kinnitas isiklikult oma võtmega SSH-sisselogimist sudo-õiguseta
   kontole (13.11.2026). [Lab 2 arenduspäevik](../README.md#arenduspäevik)
-- [ ] Seni kinnitamata isiklikud SSH-ligipääsud vajavad kontrolli.
+- [x] Seni kinnitamata isiklikud SSH-ligipääsud vajavad kontrolli.
+  15.11.26 linnuke (Raimo otsus): Nikita (16.10), Raimo (13.11) ja Denys (14.11) ligipääs on kinnitatud; rohkem pole vaja.
 - [x] SSH effective config: `pubkeyauthentication yes`,
   `passwordauthentication no`, `kbdinteractiveauthentication no`;
   Nikita sõltumatu login pärast UFW aktiveerimist õnnestus (20.10.2026).
