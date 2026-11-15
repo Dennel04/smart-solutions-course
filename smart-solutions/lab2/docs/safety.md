@@ -105,7 +105,8 @@
 
 ### Iga uue tööjada eel
 
-- [ ] Uus jada on lokaalse esmakontrolliga ohutult läbi tehtud (reegel 11).
+- [x] Uus jada on lokaalse esmakontrolliga ohutult läbi tehtud (reegel 11).
+  15.11.26 linnuke `letter` jada kohta: enne esimest kaugkäivitust õhusõit ilma pastakata (Z −80/−90, Lab 1 commit `40a85a2`), seejärel täht A postkontori kaudu. Iga uue jada korral kehtib see punkt uuesti.
 
 ### Iga kaugkäivituse eel
 

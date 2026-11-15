@@ -600,4 +600,5 @@ pärast päris dropleti ja laboririistvaraga katset:
   restardi järel on päris hostil kontrollitud (20.10.2026).
 - [x] Täielik `deploy/verify.sh`: `12 PASS, 0 FAIL, 0 SKIP` (20.10.2026).
 - [ ] Station'i, MG400 ja kaamerate poole ei ole dropletil route'i/proxy't.
-- [ ] Taasteprotseduur on päriselt läbi proovitud ja tulemus kuupäevaga kirjas.
+- [x] Taasteprotseduur on päriselt läbi proovitud ja tulemus kuupäevaga kirjas.
+  15.11.26 linnuke: postkontor ehitati paigaldusjuhendi järgi uuesti samasse dropletisse eraldi kausta ja porti (`127.0.0.1:5099`), 1 min 33 s skriptiga; `/health` 200, ilma paroolita 401, töö → Atomi poll → `done`; märkmete puudused parandati ([märkused](#uuesti-ehitamise-märkused-15112026), [Lab 2 README](../README.md)). Kogu dropleti reboot on eraldi punkt ja tegemata.
