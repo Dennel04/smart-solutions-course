@@ -242,6 +242,7 @@ kaameraga), seega jäid alles mõlemad voogud täies seadistuses.
 - [x] Kes mida saadab: [`docs/server_api.md`](docs/server_api.md).
 - [ ] Ohutuskokkulepe kirjas ja kõigil loetud. [`docs/safety.md`](docs/safety.md):
   Denys 15.11.26; teised liikmed kinnitavad ise.
+  15.11.26 märkus: Raimo kinnitas 13.11.26 (tema commit `246ea68` jäi fork'i harule, nüüd lisatud). Puudu Nikita ja Maksim.
 - [x] Lauakaamera näitab kogu lauda ja robotit (15.11.26).
 - [x] Tööriistakaamera näitab otsikut ja detaili selle all (15.11.26).
 - [x] Mõlemad pildid on jaama lehel, labori võrgus (15.11.26).
